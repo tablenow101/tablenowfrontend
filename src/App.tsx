@@ -25,6 +25,24 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   return user ? <>{children}</> : <Navigate to="/login" />;
 };
 
+/** Redirects authenticated user to their restaurant's dashboard */
+const RedirectToDashboard: React.FC = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="loading w-12 h-12"></div>
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/login" />;
+
+  const slug = user.slug || user.id;
+  return <Navigate to={`/r/${slug}/dashboard`} replace />;
+};
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -32,12 +50,21 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
 
-      <Route path="/" element={
+      {/* Redirect legacy routes */}
+      <Route path="/" element={<RedirectToDashboard />} />
+      <Route path="/dashboard" element={<RedirectToDashboard />} />
+      <Route path="/bookings" element={<RedirectToDashboard />} />
+      <Route path="/calls" element={<RedirectToDashboard />} />
+      <Route path="/settings" element={<RedirectToDashboard />} />
+
+      {/* Restaurant-scoped routes */}
+      <Route path="/r/:restaurantSlug" element={
         <PrivateRoute>
           <Layout />
         </PrivateRoute>
       }>
-        <Route index element={<Dashboard />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="bookings" element={<Bookings />} />
         <Route path="calls" element={<CallLogs />} />
         <Route path="settings" element={<Settings />} />
