@@ -1,24 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
-import PrefillStep from '../components/onboarding/PrefillStep';
-
-interface PrefillResult {
-    name?: string;
-    address?: string;
-    phone?: string;
-    website?: string;
-    description?: string;
-    hours?: Record<string, string>;
-    cuisine_type?: string;
-    services?: string[];
-    sources: string[];
-    errors?: Record<string, string>;
-}
 
 const Register: React.FC = () => {
-    const [step, setStep] = useState<'prefill' | 'form'>('prefill');
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -35,16 +20,56 @@ const Register: React.FC = () => {
     const { register } = useAuth();
     const navigate = useNavigate();
 
-    const handlePrefillComplete = (data: PrefillResult) => {
-        setFormData((prev) => ({
-            ...prev,
-            restaurantName: data.name || prev.restaurantName,
-            phone: data.phone || prev.phone,
-            address: data.address || prev.address,
-            cuisineType: data.cuisine_type || prev.cuisineType,
-        }));
-        setStep('form');
-    };
+    // Autocomplete state
+    const [suggestions, setSuggestions]     = useState<any[]>([]);
+    const [showDropdown, setShowDropdown]   = useState(false);
+    const [loadingSuggest, setLoadingSuggest] = useState(false);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    async function handleRestaurantNameChange(value: string) {
+        setFormData((prev) => ({ ...prev, restaurantName: value }));
+        setShowDropdown(false);
+
+        if (value.length < 2) { setSuggestions([]); return; }
+
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(async () => {
+            setLoadingSuggest(true);
+            try {
+                const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/restaurants/autocomplete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: value }),
+                });
+                const data = await res.json();
+                setSuggestions(data.suggestions || []);
+                setShowDropdown(true);
+            } catch { setSuggestions([]); }
+            finally { setLoadingSuggest(false); }
+        }, 300);
+    }
+
+    async function handleSelectSuggestion(placeId: string, name: string) {
+        setFormData((prev) => ({ ...prev, restaurantName: name }));
+        setShowDropdown(false);
+        setSuggestions([]);
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/restaurants/prefill`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ place_id: placeId }),
+            });
+            const data = await res.json();
+            setFormData((prev) => ({
+                ...prev,
+                restaurantName: data.name  || prev.restaurantName,
+                phone:          data.phone || prev.phone,
+                address:        data.address || prev.address,
+                cuisineType:    data.cuisine_type || prev.cuisineType,
+            }));
+        } catch { /* silent — user can fill manually */ }
+    }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -100,23 +125,6 @@ const Register: React.FC = () => {
         );
     }
 
-    if (step === 'prefill') {
-        return (
-            <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
-                <div className="max-w-2xl w-full">
-                    <div className="text-center mb-8">
-                        <h1 className="text-4xl font-bold mb-2">TableNow</h1>
-                        <p className="text-gray-600">Your Restaurant Hostess 24/7</p>
-                    </div>
-
-                    <div className="bg-white border-4 border-black rounded-2xl p-8 shadow-2xl">
-                        <PrefillStep onComplete={handlePrefillComplete} />
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
             <div className="max-w-2xl w-full">
@@ -145,15 +153,35 @@ const Register: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-2">Restaurant Name *</label>
-                                <input
-                                    type="text"
-                                    name="restaurantName"
-                                    value={formData.restaurantName}
-                                    onChange={handleChange}
-                                    className="input"
-                                    placeholder="The Grand Bistro"
-                                    required
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Le Petit Bistrot"
+                                        value={formData.restaurantName}
+                                        onChange={(e) => handleRestaurantNameChange(e.target.value)}
+                                        onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+                                        className="input w-full"
+                                        autoComplete="off"
+                                        required
+                                    />
+                                    {loadingSuggest && (
+                                        <div className="absolute right-3 top-3 text-gray-400 text-xs">...</div>
+                                    )}
+                                    {showDropdown && suggestions.length > 0 && (
+                                        <ul className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
+                                            {suggestions.map((s) => (
+                                                <li
+                                                    key={s.placeId}
+                                                    onMouseDown={() => handleSelectSuggestion(s.placeId, s.name)}
+                                                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-100 last:border-0"
+                                                >
+                                                    <span className="font-medium">{s.name}</span>
+                                                    <span className="text-gray-400 ml-2 text-xs">{s.address}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
                             </div>
 
                             <div>
