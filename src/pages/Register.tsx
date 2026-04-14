@@ -2,8 +2,23 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
+import PrefillStep from '../components/onboarding/PrefillStep';
+
+interface PrefillResult {
+    name?: string;
+    address?: string;
+    phone?: string;
+    website?: string;
+    description?: string;
+    hours?: Record<string, string>;
+    cuisine_type?: string;
+    services?: string[];
+    sources: string[];
+    errors?: Record<string, string>;
+}
 
 const Register: React.FC = () => {
+    const [step, setStep] = useState<'prefill' | 'form'>('prefill');
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -19,6 +34,17 @@ const Register: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const { register } = useAuth();
     const navigate = useNavigate();
+
+    const handlePrefillComplete = (data: PrefillResult) => {
+        setFormData((prev) => ({
+            ...prev,
+            restaurantName: data.name || prev.restaurantName,
+            phone: data.phone || prev.phone,
+            address: data.address || prev.address,
+            cuisineType: data.cuisine_type || prev.cuisineType,
+        }));
+        setStep('form');
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -74,12 +100,29 @@ const Register: React.FC = () => {
         );
     }
 
+    if (step === 'prefill') {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
+                <div className="max-w-2xl w-full">
+                    <div className="text-center mb-8">
+                        <h1 className="text-4xl font-bold mb-2">TableNow</h1>
+                        <p className="text-gray-600">Your Restaurant Hostess 24/7</p>
+                    </div>
+
+                    <div className="bg-white border-4 border-black rounded-2xl p-8 shadow-2xl">
+                        <PrefillStep onComplete={handlePrefillComplete} />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
             <div className="max-w-2xl w-full">
                 <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold mb-2">TableNow</h1>
-                    <p className="text-gray-600">Start your AI-powered booking journey</p>
+                    <p className="text-gray-600">Your Restaurant Hostess 24/7</p>
                 </div>
 
                 <div className="bg-white border-4 border-black rounded-2xl p-8 shadow-2xl">
