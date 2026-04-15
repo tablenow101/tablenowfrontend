@@ -6,7 +6,7 @@ import { LogIn, AlertCircle, Sun, Moon } from 'lucide-react';
 const t = {
     fr: {
         tagline: 'Votre Hotesse de Restaurant 24/7',
-        welcomeBack: 'Bon Retour',
+        welcomeBack: 'Bon retour',
         email: 'Email',
         password: 'Mot de passe',
         loggingIn: 'Connexion...',
@@ -119,14 +119,14 @@ const Login: React.FC = () => {
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium mb-2 text-black dark:text-white">{s.email}</label>
                             <input
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="input"
+                                className="input h-11"
                                 placeholder="your@email.com"
                                 required
                             />
@@ -138,7 +138,7 @@ const Login: React.FC = () => {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="input"
+                                className="input h-11"
                                 placeholder="••••••••"
                                 required
                             />
@@ -147,7 +147,7 @@ const Login: React.FC = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn btn-primary w-full"
+                            className="btn btn-primary w-full h-12"
                         >
                             {loading ? (
                                 <span className="flex items-center justify-center">

@@ -6,7 +6,7 @@ import { UserPlus, AlertCircle, CheckCircle, Sun, Moon } from 'lucide-react';
 const t = {
     fr: {
         tagline: 'Votre Hotesse de Restaurant 24/7',
-        createAccount: 'Creer votre compte',
+        createAccount: 'Créer votre compte',
         restaurantName: 'Nom du restaurant *',
         ownerName: 'Nom du proprietaire *',
         email: 'Email *',
@@ -277,7 +277,7 @@ const Register: React.FC = () => {
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-2 text-black dark:text-white">{s.restaurantName}</label>
@@ -288,7 +288,7 @@ const Register: React.FC = () => {
                                         value={formData.restaurantName}
                                         onChange={(e) => handleRestaurantNameChange(e.target.value)}
                                         onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                                        className="input w-full"
+                                        className="input h-11 w-full"
                                         autoComplete="off"
                                         required
                                     />
@@ -319,7 +319,7 @@ const Register: React.FC = () => {
                                     name="ownerName"
                                     value={formData.ownerName}
                                     onChange={handleChange}
-                                    className="input"
+                                    className="input h-11"
                                     placeholder={s.phOwner}
                                     required
                                 />
@@ -333,7 +333,7 @@ const Register: React.FC = () => {
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                className="input"
+                                className="input h-11"
                                 placeholder={s.phEmail}
                                 required
                             />
@@ -347,7 +347,7 @@ const Register: React.FC = () => {
                                     name="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                    className="input"
+                                    className="input h-11"
                                     placeholder="••••••••"
                                     required
                                 />
@@ -360,7 +360,7 @@ const Register: React.FC = () => {
                                     name="confirmPassword"
                                     value={formData.confirmPassword}
                                     onChange={handleChange}
-                                    className="input"
+                                    className="input h-11"
                                     placeholder="••••••••"
                                     required
                                 />
@@ -375,7 +375,7 @@ const Register: React.FC = () => {
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleChange}
-                                    className="input"
+                                    className="input h-11"
                                     placeholder={s.phPhone}
                                 />
                             </div>
@@ -387,7 +387,7 @@ const Register: React.FC = () => {
                                     name="cuisineType"
                                     value={formData.cuisineType}
                                     onChange={handleChange}
-                                    className="input"
+                                    className="input h-11"
                                     placeholder={s.phCuisine}
                                 />
                             </div>
@@ -400,7 +400,7 @@ const Register: React.FC = () => {
                                 name="address"
                                 value={formData.address}
                                 onChange={handleChange}
-                                className="input"
+                                className="input h-11"
                                 placeholder={s.phAddress}
                             />
                         </div>
@@ -413,14 +413,14 @@ const Register: React.FC = () => {
                                 value={formData.website || ''}
                                 onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                                 onBlur={handleWebsiteBlur}
-                                className="input w-full"
+                                className="input h-11 w-full"
                             />
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn btn-primary w-full"
+                            className="btn btn-primary w-full h-12"
                         >
                             {loading ? (
                                 <span className="flex items-center justify-center">
