@@ -8,10 +8,15 @@ export const isDomainMarketingSite = (): boolean => {
 
   const hostname = window.location.hostname;
 
-  // Marketing domain: tablenow.io (root domain only, not subdomains)
+  // Marketing domain: tablenow.io or www.tablenow.io (root domain)
   // App domain: app.tablenow.io or localhost
 
-  return hostname === 'tablenow.io';
+  // Check if it's the marketing domain (tablenow.io or www.tablenow.io)
+  // but NOT app.tablenow.io
+  const isAppSubdomain = hostname.startsWith('app.');
+  const isRootOrWWW = hostname === 'tablenow.io' || hostname === 'www.tablenow.io';
+
+  return isRootOrWWW && !isAppSubdomain;
 };
 
 export const isAppDomain = (): boolean => {
