@@ -9,7 +9,9 @@ import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import CallLogs from './pages/CallLogs';
 import Settings from './pages/Settings';
+import Landing from './pages/Landing';
 import Layout from './components/Layout';
+import { isDomainMarketingSite } from './lib/domain';
 import './index.css';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -50,6 +52,23 @@ const RedirectToDashboard: React.FC = () => {
 };
 
 const AppRoutes = () => {
+  const isMarketing = isDomainMarketingSite();
+
+  if (isMarketing) {
+    // Marketing site routes
+    return (
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        {/* Redirect all other routes to landing on marketing domain */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
+
+  // App domain routes (app.tablenow.io)
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
