@@ -7,12 +7,13 @@ import {
     Clock,
     Users,
     Mail,
-    CheckCircle,
+    ClipboardList,
     ChevronRight,
     ChevronLeft,
     Save,
     Copy,
     Check,
+    Rocket,
 } from 'lucide-react';
 
 const DAYS = [
@@ -30,7 +31,7 @@ const STEPS = [
     { icon: Clock, label: 'Horaires' },
     { icon: Users, label: 'Services' },
     { icon: Mail, label: 'Email' },
-    { icon: CheckCircle, label: 'Terminé' },
+    { icon: ClipboardList, label: 'Récapitulatif' },
 ];
 
 const DEFAULT_HOURS: Record<string, { open: boolean; from: string; to: string }> = {
@@ -366,19 +367,57 @@ const Onboarding: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Step 5 — Done */}
+                    {/* Step 5 — Recap */}
                     {step === 4 && (
-                        <div className="text-center space-y-6 py-8">
-                            <div className="flex justify-center">
-                                <div className="bg-green-500 text-white p-5 rounded-full">
-                                    <CheckCircle size={48} />
-                                </div>
+                        <div className="space-y-6">
+                            <h2 className="text-xl font-bold flex items-center gap-2"><ClipboardList size={22} /> Récapitulatif</h2>
+                            <p className="text-sm text-gray-500">Vérifiez vos informations. Tout a déjà été sauvegardé — vous pouvez modifier à tout moment dans les réglages.</p>
+
+                            {/* Info */}
+                            <div className="p-4 bg-gray-50 rounded-xl space-y-1">
+                                <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Restaurant</h3>
+                                <p><span className="font-medium">Nom :</span> {info.name || '—'}</p>
+                                <p><span className="font-medium">Adresse :</span> {info.address || '—'}</p>
+                                <p><span className="font-medium">Téléphone :</span> {info.phone || '—'}</p>
+                                <p><span className="font-medium">Cuisine :</span> {info.cuisine_type || '—'}</p>
                             </div>
-                            <h2 className="text-2xl font-bold">Configuration terminée !</h2>
-                            <p className="text-gray-600">Votre restaurant est prêt. Vous pouvez modifier ces paramètres à tout moment dans les réglages.</p>
-                            <button onClick={finish} className="btn btn-primary px-12">
-                                Accéder au tableau de bord
-                            </button>
+
+                            {/* Hours */}
+                            <div className="p-4 bg-gray-50 rounded-xl space-y-1">
+                                <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Horaires</h3>
+                                {DAYS.map(({ key, label }) => {
+                                    const day = hours[key];
+                                    return (
+                                        <p key={key}>
+                                            <span className="font-medium w-24 inline-block">{label} :</span>{' '}
+                                            {day?.open ? `${day.from} → ${day.to}` : <span className="text-gray-400 italic">Fermé</span>}
+                                        </p>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Services */}
+                            <div className="p-4 bg-gray-50 rounded-xl space-y-1">
+                                <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Services & Capacité</h3>
+                                <p><span className="font-medium">Capacité totale :</span> {totalCapacity} couverts</p>
+                                {services.lunch.active && <p><span className="font-medium">Déjeuner :</span> {services.lunch.from} → {services.lunch.to} ({services.lunch.capacity} couverts)</p>}
+                                {!services.lunch.active && <p><span className="font-medium">Déjeuner :</span> <span className="text-gray-400 italic">Désactivé</span></p>}
+                                {services.dinner.active && <p><span className="font-medium">Dîner :</span> {services.dinner.from} → {services.dinner.to} ({services.dinner.capacity} couverts)</p>}
+                                {!services.dinner.active && <p><span className="font-medium">Dîner :</span> <span className="text-gray-400 italic">Désactivé</span></p>}
+                            </div>
+
+                            {/* Email */}
+                            <div className="p-4 bg-gray-50 rounded-xl space-y-1">
+                                <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Notifications</h3>
+                                <p><span className="font-medium">Email de confirmation :</span> {confirmationEmail || '—'}</p>
+                                {user?.bcc_email && <p><span className="font-medium">Adresse BCC :</span> <span className="font-mono text-sm">{user.bcc_email}</span></p>}
+                            </div>
+
+                            <div className="text-center pt-4">
+                                <button onClick={finish} className="btn btn-primary px-12 flex items-center justify-center gap-2 mx-auto">
+                                    <Rocket size={20} /> Lancer mon assistant
+                                </button>
+                            </div>
                         </div>
                     )}
 
