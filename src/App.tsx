@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
+import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import CallLogs from './pages/CallLogs';
@@ -25,7 +26,7 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   return user ? <>{children}</> : <Navigate to="/login" />;
 };
 
-/** Redirects authenticated user to their restaurant's dashboard */
+/** Redirects authenticated user to onboarding or their restaurant dashboard */
 const RedirectToDashboard: React.FC = () => {
   const { user, loading } = useAuth();
 
@@ -39,6 +40,11 @@ const RedirectToDashboard: React.FC = () => {
 
   if (!user) return <Navigate to="/login" />;
 
+  // Check if onboarding is incomplete
+  if (!user.opening_hours || !user.services) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   const slug = user.slug || user.id;
   return <Navigate to={`/r/${slug}/dashboard`} replace />;
 };
@@ -49,6 +55,12 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+
+      <Route path="/onboarding" element={
+        <PrivateRoute>
+          <Onboarding />
+        </PrivateRoute>
+      } />
 
       {/* Redirect legacy routes */}
       <Route path="/" element={<RedirectToDashboard />} />
