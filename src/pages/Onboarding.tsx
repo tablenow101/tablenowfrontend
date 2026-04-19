@@ -120,7 +120,7 @@ const Onboarding: React.FC = () => {
         } else if (step === 2) {
             await saveStep({ total_capacity: totalCapacity, services });
         } else if (step === 3) {
-            await saveStep({ confirmation_email: confirmationEmail });
+            await saveStep({ confirmation_email: confirmationEmail, setup_complete: true });
         }
         if (step < 4) setStep(step + 1);
     }

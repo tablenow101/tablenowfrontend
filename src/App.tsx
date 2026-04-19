@@ -43,7 +43,7 @@ const RedirectToDashboard: React.FC = () => {
   if (!user) return <Navigate to="/login" />;
 
   // Check if onboarding is incomplete
-  if (!user.opening_hours || !user.services) {
+  if (!user.setup_complete && !user.opening_hours) {
     return <Navigate to="/onboarding" replace />;
   }
 
