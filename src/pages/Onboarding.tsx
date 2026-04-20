@@ -17,20 +17,20 @@ import {
 } from 'lucide-react';
 
 const DAYS = [
-    { key: 'monday', label: 'Lundi' },
-    { key: 'tuesday', label: 'Mardi' },
+    { key: 'monday',    label: 'Lundi'    },
+    { key: 'tuesday',   label: 'Mardi'    },
     { key: 'wednesday', label: 'Mercredi' },
-    { key: 'thursday', label: 'Jeudi' },
-    { key: 'friday', label: 'Vendredi' },
-    { key: 'saturday', label: 'Samedi' },
-    { key: 'sunday', label: 'Dimanche' },
+    { key: 'thursday',  label: 'Jeudi'    },
+    { key: 'friday',    label: 'Vendredi' },
+    { key: 'saturday',  label: 'Samedi'   },
+    { key: 'sunday',    label: 'Dimanche' },
 ] as const;
 
 const STEPS = [
-    { icon: Store, label: 'Restaurant' },
-    { icon: Clock, label: 'Horaires' },
-    { icon: Users, label: 'Services' },
-    { icon: Mail, label: 'Email' },
+    { icon: Store,         label: 'Restaurant'   },
+    { icon: Clock,         label: 'Horaires'     },
+    { icon: Users,         label: 'Services'     },
+    { icon: Mail,          label: 'Email'        },
     { icon: ClipboardList, label: 'Récapitulatif' },
 ];
 
@@ -52,10 +52,11 @@ const DEFAULT_SERVICES = {
 const Onboarding: React.FC = () => {
     const { user, refreshUser } = useAuth();
     const navigate = useNavigate();
-    const [step, setStep] = useState(0);
+    const [step, setStep]     = useState(0);
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     // Step 1 — Restaurant info
     const [info, setInfo] = useState({
@@ -75,27 +76,23 @@ const Onboarding: React.FC = () => {
     // Step 4 — Email
     const [confirmationEmail, setConfirmationEmail] = useState('');
 
-    // Load existing data
     useEffect(() => {
         (async () => {
             try {
                 const res = await settingsAPI.get();
                 const s = res.data.settings;
                 setInfo({
-                    name: s.name || '',
-                    address: s.address || '',
-                    phone: s.phone || '',
+                    name:         s.name         || '',
+                    address:      s.address      || '',
+                    phone:        s.phone        || '',
                     cuisine_type: s.cuisine_type || '',
                 });
-                if (s.opening_hours && Object.keys(s.opening_hours).length > 0) {
-                    setHours(s.opening_hours);
-                }
-                if (s.services && Object.keys(s.services).length > 0) {
-                    setServices(s.services);
-                }
-                if (s.total_capacity) setTotalCapacity(s.total_capacity);
-                if (s.confirmation_email) setConfirmationEmail(s.confirmation_email);
-                else if (s.email) setConfirmationEmail(s.email);
+                if (s.opening_hours && Object.keys(s.opening_hours).length > 0) setHours(s.opening_hours);
+                if (s.services     && Object.keys(s.services).length     > 0) setServices(s.services);
+                // DB column is "capacity" (not total_capacity)
+                if (s.capacity)            setTotalCapacity(s.capacity);
+                if (s.confirmation_email)  setConfirmationEmail(s.confirmation_email);
+                else if (s.email)          setConfirmationEmail(s.email);
             } catch {}
             setLoading(false);
         })();
@@ -103,11 +100,13 @@ const Onboarding: React.FC = () => {
 
     async function saveStep(data: Record<string, any>) {
         setSaving(true);
+        setSaveError(null);
         try {
             await settingsAPI.update(data);
             await refreshUser();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Save error:', err);
+            setSaveError('Erreur lors de la sauvegarde. Veuillez réessayer.');
         }
         setSaving(false);
     }
@@ -118,7 +117,8 @@ const Onboarding: React.FC = () => {
         } else if (step === 1) {
             await saveStep({ opening_hours: hours });
         } else if (step === 2) {
-            await saveStep({ total_capacity: totalCapacity, services });
+            // FIX: DB column is "capacity", not "total_capacity"
+            await saveStep({ capacity: totalCapacity, services });
         } else if (step === 3) {
             await saveStep({ confirmation_email: confirmationEmail, setup_complete: true });
         }
@@ -145,42 +145,60 @@ const Onboarding: React.FC = () => {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="loading w-12 h-12"></div>
+                <div className="loading w-12 h-12" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="min-h-screen py-8 px-4" style={{ background: 'var(--bg-page)' }}>
             <div className="max-w-2xl mx-auto">
+
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold">TableNow</h1>
-                    <p className="text-gray-600 mt-1">Configuration de votre restaurant</p>
+                    <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>TableNow</h1>
+                    <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>Configuration de votre restaurant</p>
                 </div>
 
                 {/* Stepper */}
                 <div className="flex items-center justify-between mb-8">
                     {STEPS.map((s, i) => {
-                        const Icon = s.icon;
+                        const Icon   = s.icon;
                         const active = i === step;
-                        const done = i < step;
+                        const done   = i < step;
                         return (
                             <React.Fragment key={s.label}>
                                 <div className="flex flex-col items-center">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                                        done ? 'bg-green-500 text-white' :
-                                        active ? 'bg-black text-white' :
-                                        'bg-gray-200 text-gray-500'
-                                    }`}>
+                                    <div
+                                        className="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                                        style={{
+                                            background: done
+                                                ? '#22c55e'
+                                                : active
+                                                ? 'var(--btn-primary-bg)'
+                                                : 'rgba(255,255,255,0.08)',
+                                            color: done || active
+                                                ? 'var(--btn-primary-fg)'
+                                                : 'var(--text-secondary)',
+                                        }}
+                                    >
                                         {done ? <Check size={18} /> : <Icon size={18} />}
                                     </div>
-                                    <span className={`text-xs mt-1 ${active ? 'font-semibold text-black' : 'text-gray-500'}`}>
+                                    <span
+                                        className="text-xs mt-1"
+                                        style={{
+                                            color:      active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                            fontWeight: active ? 600 : 400,
+                                        }}
+                                    >
                                         {s.label}
                                     </span>
                                 </div>
                                 {i < STEPS.length - 1 && (
-                                    <div className={`flex-1 h-0.5 mx-2 ${i < step ? 'bg-green-500' : 'bg-gray-200'}`} />
+                                    <div
+                                        className="flex-1 h-0.5 mx-2"
+                                        style={{ background: i < step ? '#22c55e' : 'var(--progress-track)' }}
+                                    />
                                 )}
                             </React.Fragment>
                         );
@@ -188,49 +206,107 @@ const Onboarding: React.FC = () => {
                 </div>
 
                 {/* Card */}
-                <div className="bg-white border-2 border-gray-200 rounded-2xl p-8 shadow-lg">
+                <div
+                    className="rounded-2xl p-8"
+                    style={{
+                        background:   'var(--bg-card)',
+                        border:       '1px solid var(--border-card)',
+                        boxShadow:    '0 24px 48px rgba(0,0,0,0.4)',
+                    }}
+                >
+                    {/* Error banner */}
+                    {saveError && (
+                        <div
+                            className="mb-6 p-4 rounded-lg flex items-center gap-2 text-sm"
+                            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid #EF4444', color: '#FCA5A5' }}
+                        >
+                            <span>⚠</span> {saveError}
+                        </div>
+                    )}
 
-                    {/* Step 1 — Info */}
+                    {/* ── Step 1 — Restaurant info ── */}
                     {step === 0 && (
                         <div className="space-y-5">
-                            <h2 className="text-xl font-bold flex items-center gap-2"><Store size={22} /> Informations du restaurant</h2>
+                            <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                <Store size={22} /> Informations du restaurant
+                            </h2>
                             <div>
-                                <label className="block text-sm font-medium mb-1">Nom du restaurant *</label>
-                                <input className="input" value={info.name} onChange={(e) => setInfo({ ...info, name: e.target.value })} required />
+                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                                    Nom du restaurant *
+                                </label>
+                                <input
+                                    className="input w-full h-11"
+                                    value={info.name}
+                                    onChange={(e) => setInfo({ ...info, name: e.target.value })}
+                                    placeholder="Le Petit Bistrot"
+                                />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1">Adresse *</label>
-                                <input className="input" value={info.address} onChange={(e) => setInfo({ ...info, address: e.target.value })} placeholder="123 Rue Principale, 75001 Paris" />
+                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                                    Adresse *
+                                </label>
+                                <input
+                                    className="input w-full h-11"
+                                    value={info.address}
+                                    onChange={(e) => setInfo({ ...info, address: e.target.value })}
+                                    placeholder="123 Rue Principale, 75001 Paris"
+                                />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Téléphone</label>
-                                    <input className="input" type="tel" value={info.phone} onChange={(e) => setInfo({ ...info, phone: e.target.value })} placeholder="+33 1 23 45 67 89" />
+                                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                                        Téléphone
+                                    </label>
+                                    <input
+                                        className="input w-full h-11"
+                                        type="tel"
+                                        value={info.phone}
+                                        onChange={(e) => setInfo({ ...info, phone: e.target.value })}
+                                        placeholder="+33 1 23 45 67 89"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Type de cuisine</label>
-                                    <input className="input" value={info.cuisine_type} onChange={(e) => setInfo({ ...info, cuisine_type: e.target.value })} placeholder="Française, Italienne..." />
+                                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                                        Type de cuisine
+                                    </label>
+                                    <input
+                                        className="input w-full h-11"
+                                        value={info.cuisine_type}
+                                        onChange={(e) => setInfo({ ...info, cuisine_type: e.target.value })}
+                                        placeholder="Française, Italienne..."
+                                    />
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Step 2 — Hours */}
+                    {/* ── Step 2 — Horaires ── */}
                     {step === 1 && (
                         <div className="space-y-4">
-                            <h2 className="text-xl font-bold flex items-center gap-2"><Clock size={22} /> Horaires d'ouverture</h2>
-                            <p className="text-sm text-gray-500">Activez les jours d'ouverture et définissez les horaires.</p>
+                            <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                <Clock size={22} /> Horaires d'ouverture
+                            </h2>
+                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                Activez les jours d'ouverture et définissez les horaires.
+                            </p>
                             {DAYS.map(({ key, label }) => {
                                 const day = hours[key] || { open: false, from: '12:00', to: '22:00' };
                                 return (
                                     <div key={key} className="flex items-center gap-3">
-                                        <label className="w-24 text-sm font-medium">{label}</label>
+                                        <span className="w-24 text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                                            {label}
+                                        </span>
+                                        {/* Toggle */}
                                         <button
                                             type="button"
                                             onClick={() => setHours({ ...hours, [key]: { ...day, open: !day.open } })}
-                                            className={`w-12 h-6 rounded-full transition-colors relative ${day.open ? 'bg-green-500' : 'bg-gray-300'}`}
+                                            className="w-12 h-6 rounded-full transition-colors relative flex-shrink-0"
+                                            style={{ background: day.open ? '#22c55e' : 'rgba(255,255,255,0.15)' }}
                                         >
-                                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${day.open ? 'left-6' : 'left-0.5'}`} />
+                                            <span
+                                                className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
+                                                style={{ left: day.open ? '1.5rem' : '0.125rem' }}
+                                            />
                                         </button>
                                         {day.open ? (
                                             <div className="flex items-center gap-2 text-sm">
@@ -240,7 +316,7 @@ const Onboarding: React.FC = () => {
                                                     onChange={(e) => setHours({ ...hours, [key]: { ...day, from: e.target.value } })}
                                                     className="input !w-32 !py-1.5 text-center"
                                                 />
-                                                <span className="text-gray-400">→</span>
+                                                <span style={{ color: 'var(--text-secondary)' }}>→</span>
                                                 <input
                                                     type="time"
                                                     value={day.to}
@@ -249,7 +325,7 @@ const Onboarding: React.FC = () => {
                                                 />
                                             </div>
                                         ) : (
-                                            <span className="text-sm text-gray-400 italic">Fermé</span>
+                                            <span className="text-sm italic" style={{ color: 'var(--text-secondary)' }}>Fermé</span>
                                         )}
                                     </div>
                                 );
@@ -257,164 +333,173 @@ const Onboarding: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Step 3 — Services & capacity */}
+                    {/* ── Step 3 — Services & Capacité ── */}
                     {step === 2 && (
                         <div className="space-y-6">
-                            <h2 className="text-xl font-bold flex items-center gap-2"><Users size={22} /> Services & Capacité</h2>
+                            <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                <Users size={22} /> Services & Capacité
+                            </h2>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1">Capacité totale (couverts)</label>
+                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                                    Capacité totale (couverts)
+                                </label>
                                 <input
                                     type="number"
                                     min={1}
-                                    className="input !w-32"
+                                    className="input !w-32 h-11"
                                     value={totalCapacity}
                                     onChange={(e) => setTotalCapacity(parseInt(e.target.value) || 0)}
                                 />
                             </div>
 
                             {/* Lunch */}
-                            <div className="p-4 border-2 border-gray-200 rounded-xl space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setServices({ ...services, lunch: { ...services.lunch, active: !services.lunch.active } })}
-                                        className={`w-12 h-6 rounded-full transition-colors relative ${services.lunch.active ? 'bg-green-500' : 'bg-gray-300'}`}
-                                    >
-                                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${services.lunch.active ? 'left-6' : 'left-0.5'}`} />
-                                    </button>
-                                    <span className="font-semibold">Déjeuner</span>
-                                </div>
-                                {services.lunch.active && (
-                                    <div className="flex flex-wrap items-center gap-3 pl-15">
-                                        <div>
-                                            <label className="text-xs text-gray-500">De</label>
-                                            <input type="time" className="input !w-28 !py-1.5 text-center" value={services.lunch.from} onChange={(e) => setServices({ ...services, lunch: { ...services.lunch, from: e.target.value } })} />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-gray-500">À</label>
-                                            <input type="time" className="input !w-28 !py-1.5 text-center" value={services.lunch.to} onChange={(e) => setServices({ ...services, lunch: { ...services.lunch, to: e.target.value } })} />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-gray-500">Couverts max</label>
-                                            <input type="number" min={1} className="input !w-24 !py-1.5 text-center" value={services.lunch.capacity} onChange={(e) => setServices({ ...services, lunch: { ...services.lunch, capacity: parseInt(e.target.value) || 0 } })} />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            <ServiceCard
+                                label="Déjeuner"
+                                active={services.lunch.active}
+                                from={services.lunch.from}
+                                to={services.lunch.to}
+                                capacity={services.lunch.capacity}
+                                onToggle={() => setServices({ ...services, lunch: { ...services.lunch, active: !services.lunch.active } })}
+                                onFrom={(v) => setServices({ ...services, lunch: { ...services.lunch, from: v } })}
+                                onTo={(v) => setServices({ ...services, lunch: { ...services.lunch, to: v } })}
+                                onCapacity={(v) => setServices({ ...services, lunch: { ...services.lunch, capacity: v } })}
+                            />
 
                             {/* Dinner */}
-                            <div className="p-4 border-2 border-gray-200 rounded-xl space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setServices({ ...services, dinner: { ...services.dinner, active: !services.dinner.active } })}
-                                        className={`w-12 h-6 rounded-full transition-colors relative ${services.dinner.active ? 'bg-green-500' : 'bg-gray-300'}`}
-                                    >
-                                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${services.dinner.active ? 'left-6' : 'left-0.5'}`} />
-                                    </button>
-                                    <span className="font-semibold">Dîner</span>
-                                </div>
-                                {services.dinner.active && (
-                                    <div className="flex flex-wrap items-center gap-3 pl-15">
-                                        <div>
-                                            <label className="text-xs text-gray-500">De</label>
-                                            <input type="time" className="input !w-28 !py-1.5 text-center" value={services.dinner.from} onChange={(e) => setServices({ ...services, dinner: { ...services.dinner, from: e.target.value } })} />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-gray-500">À</label>
-                                            <input type="time" className="input !w-28 !py-1.5 text-center" value={services.dinner.to} onChange={(e) => setServices({ ...services, dinner: { ...services.dinner, to: e.target.value } })} />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-gray-500">Couverts max</label>
-                                            <input type="number" min={1} className="input !w-24 !py-1.5 text-center" value={services.dinner.capacity} onChange={(e) => setServices({ ...services, dinner: { ...services.dinner, capacity: parseInt(e.target.value) || 0 } })} />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            <ServiceCard
+                                label="Dîner"
+                                active={services.dinner.active}
+                                from={services.dinner.from}
+                                to={services.dinner.to}
+                                capacity={services.dinner.capacity}
+                                onToggle={() => setServices({ ...services, dinner: { ...services.dinner, active: !services.dinner.active } })}
+                                onFrom={(v) => setServices({ ...services, dinner: { ...services.dinner, from: v } })}
+                                onTo={(v) => setServices({ ...services, dinner: { ...services.dinner, to: v } })}
+                                onCapacity={(v) => setServices({ ...services, dinner: { ...services.dinner, capacity: v } })}
+                            />
                         </div>
                     )}
 
-                    {/* Step 4 — Email */}
+                    {/* ── Step 4 — Email ── */}
                     {step === 3 && (
                         <div className="space-y-5">
-                            <h2 className="text-xl font-bold flex items-center gap-2"><Mail size={22} /> Email de confirmation</h2>
-
+                            <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                <Mail size={22} /> Email de confirmation
+                            </h2>
                             <div>
-                                <label className="block text-sm font-medium mb-1">Email pour recevoir les réservations *</label>
+                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                                    Email pour recevoir les réservations *
+                                </label>
                                 <input
                                     type="email"
-                                    className="input"
+                                    className="input w-full h-11"
                                     value={confirmationEmail}
                                     onChange={(e) => setConfirmationEmail(e.target.value)}
                                     placeholder="reservations@votre-restaurant.fr"
                                 />
-                                <p className="text-xs text-gray-400 mt-1">Les confirmations et notifications de réservation seront envoyées à cette adresse.</p>
+                                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                                    Les confirmations et notifications de réservation seront envoyées à cette adresse.
+                                </p>
                             </div>
 
                             {user?.bcc_email && (
-                                <div className="p-4 bg-gray-50 border-2 border-gray-200 rounded-xl space-y-2">
-                                    <label className="block text-sm font-medium">Adresse BCC (lecture seule)</label>
+                                <div
+                                    className="p-4 rounded-xl space-y-2"
+                                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-card)' }}
+                                >
+                                    <label className="block text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                                        Adresse BCC (lecture seule)
+                                    </label>
                                     <div className="flex items-center gap-2">
-                                        <input type="text" className="input !bg-gray-100 font-mono text-sm" value={user.bcc_email} readOnly />
-                                        <button type="button" onClick={copyBcc} className="p-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
-                                            {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                                        <input
+                                            type="text"
+                                            className="input flex-1 h-10 font-mono text-sm"
+                                            value={user.bcc_email}
+                                            readOnly
+                                            style={{ opacity: 0.7 }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={copyBcc}
+                                            className="flex-shrink-0 p-2.5 rounded-lg transition-colors"
+                                            style={{ border: '1px solid var(--border-card)', background: 'transparent', color: 'var(--text-primary)' }}
+                                        >
+                                            {copied ? <Check size={18} style={{ color: '#22c55e' }} /> : <Copy size={18} />}
                                         </button>
                                     </div>
-                                    <p className="text-xs text-gray-400">Ajoutez cette adresse en BCC dans Zenchef / SevenRooms pour synchroniser les réservations.</p>
+                                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                        Ajoutez cette adresse en BCC dans Zenchef / SevenRooms pour synchroniser les réservations.
+                                    </p>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* Step 5 — Recap */}
+                    {/* ── Step 5 — Récapitulatif ── */}
                     {step === 4 && (
                         <div className="space-y-6">
-                            <h2 className="text-xl font-bold flex items-center gap-2"><ClipboardList size={22} /> Récapitulatif</h2>
-                            <p className="text-sm text-gray-500">Vérifiez vos informations. Tout a déjà été sauvegardé — vous pouvez modifier à tout moment dans les réglages.</p>
+                            <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                <ClipboardList size={22} /> Récapitulatif
+                            </h2>
+                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                Vérifiez vos informations. Tout a été sauvegardé — modifiez à tout moment dans les réglages.
+                            </p>
 
-                            {/* Info */}
-                            <div className="p-4 bg-gray-50 rounded-xl space-y-1">
-                                <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Restaurant</h3>
-                                <p><span className="font-medium">Nom :</span> {info.name || '—'}</p>
-                                <p><span className="font-medium">Adresse :</span> {info.address || '—'}</p>
-                                <p><span className="font-medium">Téléphone :</span> {info.phone || '—'}</p>
-                                <p><span className="font-medium">Cuisine :</span> {info.cuisine_type || '—'}</p>
-                            </div>
+                            <RecapBlock title="Restaurant">
+                                <RecapRow label="Nom"       value={info.name         || '—'} />
+                                <RecapRow label="Adresse"   value={info.address      || '—'} />
+                                <RecapRow label="Téléphone" value={info.phone        || '—'} />
+                                <RecapRow label="Cuisine"   value={info.cuisine_type || '—'} />
+                            </RecapBlock>
 
-                            {/* Hours */}
-                            <div className="p-4 bg-gray-50 rounded-xl space-y-1">
-                                <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Horaires</h3>
+                            <RecapBlock title="Horaires">
                                 {DAYS.map(({ key, label }) => {
                                     const day = hours[key];
                                     return (
-                                        <p key={key}>
-                                            <span className="font-medium w-24 inline-block">{label} :</span>{' '}
-                                            {day?.open ? `${day.from} → ${day.to}` : <span className="text-gray-400 italic">Fermé</span>}
-                                        </p>
+                                        <RecapRow
+                                            key={key}
+                                            label={label}
+                                            value={day?.open
+                                                ? `${day.from} → ${day.to}`
+                                                : <span className="italic" style={{ color: 'var(--text-secondary)' }}>Fermé</span>
+                                            }
+                                        />
                                     );
                                 })}
-                            </div>
+                            </RecapBlock>
 
-                            {/* Services */}
-                            <div className="p-4 bg-gray-50 rounded-xl space-y-1">
-                                <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Services & Capacité</h3>
-                                <p><span className="font-medium">Capacité totale :</span> {totalCapacity} couverts</p>
-                                {services.lunch.active && <p><span className="font-medium">Déjeuner :</span> {services.lunch.from} → {services.lunch.to} ({services.lunch.capacity} couverts)</p>}
-                                {!services.lunch.active && <p><span className="font-medium">Déjeuner :</span> <span className="text-gray-400 italic">Désactivé</span></p>}
-                                {services.dinner.active && <p><span className="font-medium">Dîner :</span> {services.dinner.from} → {services.dinner.to} ({services.dinner.capacity} couverts)</p>}
-                                {!services.dinner.active && <p><span className="font-medium">Dîner :</span> <span className="text-gray-400 italic">Désactivé</span></p>}
-                            </div>
+                            <RecapBlock title="Services & Capacité">
+                                <RecapRow label="Capacité totale" value={`${totalCapacity} couverts`} />
+                                <RecapRow
+                                    label="Déjeuner"
+                                    value={services.lunch.active
+                                        ? `${services.lunch.from} → ${services.lunch.to} (${services.lunch.capacity} couverts)`
+                                        : <span className="italic" style={{ color: 'var(--text-secondary)' }}>Désactivé</span>
+                                    }
+                                />
+                                <RecapRow
+                                    label="Dîner"
+                                    value={services.dinner.active
+                                        ? `${services.dinner.from} → ${services.dinner.to} (${services.dinner.capacity} couverts)`
+                                        : <span className="italic" style={{ color: 'var(--text-secondary)' }}>Désactivé</span>
+                                    }
+                                />
+                            </RecapBlock>
 
-                            {/* Email */}
-                            <div className="p-4 bg-gray-50 rounded-xl space-y-1">
-                                <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Notifications</h3>
-                                <p><span className="font-medium">Email de confirmation :</span> {confirmationEmail || '—'}</p>
-                                {user?.bcc_email && <p><span className="font-medium">Adresse BCC :</span> <span className="font-mono text-sm">{user.bcc_email}</span></p>}
-                            </div>
+                            <RecapBlock title="Notifications">
+                                <RecapRow label="Email de confirmation" value={confirmationEmail || '—'} />
+                                {user?.bcc_email && (
+                                    <RecapRow label="Adresse BCC" value={<span className="font-mono text-sm">{user.bcc_email}</span>} />
+                                )}
+                            </RecapBlock>
 
                             <div className="text-center pt-4">
-                                <button onClick={finish} className="btn btn-primary px-12 flex items-center justify-center gap-2 mx-auto">
+                                <button
+                                    onClick={finish}
+                                    className="btn-primary px-12 inline-flex items-center justify-center gap-2"
+                                    style={{ width: 'auto' }}
+                                >
                                     <Rocket size={20} /> Lancer mon assistant
                                 </button>
                             </div>
@@ -423,12 +508,15 @@ const Onboarding: React.FC = () => {
 
                     {/* Navigation */}
                     {step < 4 && (
-                        <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+                        <div
+                            className="flex justify-between mt-8 pt-6"
+                            style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
+                        >
                             <button
                                 type="button"
                                 onClick={prevStep}
                                 disabled={step === 0}
-                                className={`btn btn-secondary flex items-center gap-1 ${step === 0 ? 'invisible' : ''}`}
+                                className={`btn-secondary flex items-center gap-1 !w-auto px-5 ${step === 0 ? 'invisible' : ''}`}
                             >
                                 <ChevronLeft size={18} /> Précédent
                             </button>
@@ -436,10 +524,10 @@ const Onboarding: React.FC = () => {
                                 type="button"
                                 onClick={nextStep}
                                 disabled={saving}
-                                className="btn btn-primary flex items-center gap-1"
+                                className="btn-primary flex items-center gap-1 !w-auto px-8"
                             >
                                 {saving ? (
-                                    <><span className="loading mr-1"></span> Sauvegarde...</>
+                                    <><span className="loading mr-1" /> Sauvegarde...</>
                                 ) : step === 3 ? (
                                     <><Save size={18} /> Terminer</>
                                 ) : (
@@ -453,5 +541,73 @@ const Onboarding: React.FC = () => {
         </div>
     );
 };
+
+// ── Sub-components ──────────────────────────────────────────────────────────
+
+interface ServiceCardProps {
+    label:      string;
+    active:     boolean;
+    from:       string;
+    to:         string;
+    capacity:   number;
+    onToggle:   () => void;
+    onFrom:     (v: string) => void;
+    onTo:       (v: string) => void;
+    onCapacity: (v: number) => void;
+}
+
+const ServiceCard: React.FC<ServiceCardProps> = ({ label, active, from, to, capacity, onToggle, onFrom, onTo, onCapacity }) => (
+    <div
+        className="p-4 rounded-xl space-y-3"
+        style={{ border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.03)' }}
+    >
+        <div className="flex items-center gap-3">
+            <button
+                type="button"
+                onClick={onToggle}
+                className="w-12 h-6 rounded-full transition-colors relative flex-shrink-0"
+                style={{ background: active ? '#22c55e' : 'rgba(255,255,255,0.15)' }}
+            >
+                <span
+                    className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
+                    style={{ left: active ? '1.5rem' : '0.125rem' }}
+                />
+            </button>
+            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{label}</span>
+        </div>
+        {active && (
+            <div className="flex flex-wrap items-end gap-4 pt-1">
+                <div>
+                    <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>De</label>
+                    <input type="time" className="input !w-28 !py-1.5 text-center" value={from}     onChange={(e) => onFrom(e.target.value)} />
+                </div>
+                <div>
+                    <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>À</label>
+                    <input type="time" className="input !w-28 !py-1.5 text-center" value={to}       onChange={(e) => onTo(e.target.value)} />
+                </div>
+                <div>
+                    <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Couverts max</label>
+                    <input type="number" min={1} className="input !w-24 !py-1.5 text-center" value={capacity} onChange={(e) => onCapacity(parseInt(e.target.value) || 0)} />
+                </div>
+            </div>
+        )}
+    </div>
+);
+
+interface RecapBlockProps { title: string; children: React.ReactNode; }
+const RecapBlock: React.FC<RecapBlockProps> = ({ title, children }) => (
+    <div className="p-4 rounded-xl space-y-1.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <h3 className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+        {children}
+    </div>
+);
+
+interface RecapRowProps { label: string; value: React.ReactNode; }
+const RecapRow: React.FC<RecapRowProps> = ({ label, value }) => (
+    <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+        <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{label} : </span>
+        {value}
+    </p>
+);
 
 export default Onboarding;
