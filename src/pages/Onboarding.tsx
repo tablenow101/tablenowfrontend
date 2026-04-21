@@ -26,15 +26,14 @@ const STEPS = [
     { icon: ClipboardList, label: 'Récapitulatif' },
 ];
 
-// Each day now includes a capacity field
-const DEFAULT_HOURS: Record<string, { open: boolean; from: string; to: string; capacity: number }> = {
-    monday:    { open: true,  from: '12:00', to: '22:30', capacity: 40 },
-    tuesday:   { open: true,  from: '12:00', to: '22:30', capacity: 40 },
-    wednesday: { open: true,  from: '12:00', to: '22:30', capacity: 40 },
-    thursday:  { open: true,  from: '12:00', to: '22:30', capacity: 40 },
-    friday:    { open: true,  from: '12:00', to: '23:00', capacity: 40 },
-    saturday:  { open: true,  from: '12:00', to: '23:00', capacity: 40 },
-    sunday:    { open: false, from: '12:00', to: '22:00', capacity: 40 },
+const DEFAULT_HOURS: Record<string, { open: boolean; from: string; to: string }> = {
+    monday:    { open: true,  from: '12:00', to: '22:30' },
+    tuesday:   { open: true,  from: '12:00', to: '22:30' },
+    wednesday: { open: true,  from: '12:00', to: '22:30' },
+    thursday:  { open: true,  from: '12:00', to: '22:30' },
+    friday:    { open: true,  from: '12:00', to: '23:00' },
+    saturday:  { open: true,  from: '12:00', to: '23:00' },
+    sunday:    { open: false, from: '12:00', to: '22:00' },
 };
 
 const DEFAULT_SERVICES = {
@@ -42,23 +41,18 @@ const DEFAULT_SERVICES = {
     dinner: { active: true,  from: '19:00', to: '22:30', capacity: 20 },
 };
 
-// ─── Shared primitives ───────────────────────────────────────────────────────
+// ─── Primitives ───────────────────────────────────────────────────────────────
 
 const inputCls =
-    'w-full px-3.5 py-2.5 rounded-xl text-sm bg-[#0f0f0f] border border-[#2a2a2a] ' +
-    'text-white placeholder-[#555] focus:outline-none focus:border-green-500/50 ' +
-    'transition-colors hover:border-[#383838]';
+    'w-full px-3.5 py-2.5 rounded-xl text-sm bg-[#0d0d1a] border border-[#252535] ' +
+    'text-white placeholder-[#444] focus:outline-none focus:border-green-500/60 transition-colors';
 
-const timeInputCls =
-    'w-full h-10 px-3 rounded-xl text-sm bg-[#0f0f0f] border border-[#2a2a2a] ' +
-    'text-white focus:outline-none focus:border-green-500/50 transition-colors hover:border-[#383838]';
-
-const numInputCls =
-    'w-full h-10 px-3 rounded-xl text-sm text-center bg-[#0f0f0f] border border-[#2a2a2a] ' +
-    'text-white focus:outline-none focus:border-green-500/50 transition-colors hover:border-[#383838]';
+const timeCls =
+    'h-10 px-3 text-center rounded-xl text-sm bg-[#0d0d1a] border border-[#252535] ' +
+    'text-white focus:outline-none focus:border-green-500/60 transition-colors';
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
-    return <p className="text-[11px] font-medium text-[#777] mb-1">{children}</p>;
+    return <p className="text-[10px] font-semibold text-[#666] uppercase tracking-wider mb-1.5">{children}</p>;
 }
 
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
@@ -66,9 +60,9 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
         <button
             type="button"
             onClick={onToggle}
-            className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${on ? 'bg-green-500' : 'bg-[#2a2a2a]'}`}
+            className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-150 focus:outline-none ${on ? 'bg-green-500' : 'bg-[#2a2a3a]'}`}
         >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${on ? 'translate-x-5' : 'translate-x-0'}`} />
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-150 ${on ? 'translate-x-5' : 'translate-x-0'}`} />
         </button>
     );
 }
@@ -77,7 +71,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 
 const Onboarding: React.FC = () => {
     const { user, refreshUser } = useAuth();
-    const navigate = useNavigate();
+    const navigate   = useNavigate();
     const [step, setStep]       = useState(0);
     const [saving, setSaving]   = useState(false);
     const [loading, setLoading] = useState(true);
@@ -85,8 +79,8 @@ const Onboarding: React.FC = () => {
     const [saveError, setSaveError] = useState<string | null>(null);
 
     const [info, setInfo] = useState({ name: '', address: '', phone: '', cuisine_type: '' });
-    const [hours, setHours] = useState<Record<string, { open: boolean; from: string; to: string; capacity: number }>>(DEFAULT_HOURS);
-    const [totalCapacity, setTotalCapacity] = useState(40);
+    const [hours, setHours] = useState<Record<string, { open: boolean; from: string; to: string }>>(DEFAULT_HOURS);
+    const [totalCapacity, setTotalCapacity] = useState(50);
     const [services, setServices] = useState(DEFAULT_SERVICES);
     const [confirmationEmail, setConfirmationEmail] = useState('');
 
@@ -121,7 +115,7 @@ const Onboarding: React.FC = () => {
     async function nextStep() {
         if (step === 0) await saveStep(info);
         if (step === 1) await saveStep({ opening_hours: hours, capacity: totalCapacity, services });
-        if (step === 2) await saveStep({ confirmation_email: confirmationEmail, setup_complete: true });
+        if (step === 2) await saveStep({ confirmation_email: confirmationEmail });
         setStep(s => Math.min(s + 1, 3));
     }
 
@@ -133,20 +127,17 @@ const Onboarding: React.FC = () => {
         }
     }
 
-    const updateDay = (key: string, field: string, value: any) =>
-        setHours(h => ({ ...h, [key]: { ...h[key], [field]: value } }));
-
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#0A0F1C] flex items-center justify-center">
+            <div className="min-h-screen bg-[#080912] flex items-center justify-center">
                 <div className="w-8 h-8 border-2 border-white/10 border-t-white rounded-full animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#0A0F1C] py-8 px-4">
-            <div className="max-w-xl mx-auto">
+        <div className="min-h-screen bg-[#080912] flex flex-col items-center justify-center py-8 px-4">
+            <div className="w-full max-w-xl">
 
                 {/* Header */}
                 <div className="text-center mb-8">
@@ -155,7 +146,7 @@ const Onboarding: React.FC = () => {
                 </div>
 
                 {/* Stepper */}
-                <div className="flex items-start mb-8">
+                <div className="flex items-start mb-8 px-2">
                     {STEPS.map((s, i) => {
                         const Icon   = s.icon;
                         const active = i === step;
@@ -163,13 +154,15 @@ const Onboarding: React.FC = () => {
                         return (
                             <React.Fragment key={s.label}>
                                 <div className="flex flex-col items-center gap-1.5 min-w-0">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${done ? 'bg-green-500 text-black' : active ? 'bg-white text-black' : 'bg-[#1a1a2e] text-[#555]'}`}>
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${done ? 'bg-green-500 text-black' : active ? 'bg-white text-black' : 'bg-[#151525] text-[#444]'}`}>
                                         {done ? <Check size={16} strokeWidth={2.5} /> : <Icon size={16} />}
                                     </div>
-                                    <span className={`text-[11px] font-medium text-center ${active ? 'text-white' : 'text-[#555]'}`}>{s.label}</span>
+                                    <span className={`text-[10px] font-medium text-center leading-tight max-w-[60px] ${active ? 'text-white' : 'text-[#555]'}`}>
+                                        {s.label}
+                                    </span>
                                 </div>
                                 {i < STEPS.length - 1 && (
-                                    <div className={`flex-1 h-px mt-5 mx-2 ${i < step ? 'bg-green-500' : 'bg-[#1f1f2e]'}`} />
+                                    <div className={`flex-1 h-px mt-5 mx-2 ${i < step ? 'bg-green-500' : 'bg-[#1a1a2a]'}`} />
                                 )}
                             </React.Fragment>
                         );
@@ -177,7 +170,7 @@ const Onboarding: React.FC = () => {
                 </div>
 
                 {/* Card */}
-                <div className="bg-[#0F1626] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                <div className="bg-[#0d0d1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
 
                     {saveError && (
                         <div className="flex items-center gap-2 px-6 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-sm">
@@ -185,12 +178,12 @@ const Onboarding: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="px-5 py-6 sm:px-6 sm:py-7">
+                    <div className="px-6 py-7">
 
                         {/* ── Step 0: Restaurant ── */}
                         {step === 0 && (
                             <div className="space-y-4">
-                                <h2 className="flex items-center gap-2 text-base font-semibold text-white">
+                                <h2 className="flex items-center gap-2 text-base font-semibold text-white mb-5">
                                     <Store size={18} className="text-green-400 flex-shrink-0" />
                                     Informations du restaurant
                                 </h2>
@@ -218,59 +211,45 @@ const Onboarding: React.FC = () => {
                         {/* ── Step 1: Horaires & Services ── */}
                         {step === 1 && (
                             <div className="space-y-5">
-                                <h2 className="flex items-center gap-2 text-base font-semibold text-white">
-                                    <Clock size={18} className="text-green-400 flex-shrink-0" />
-                                    Horaires & Services
-                                </h2>
-
-                                {/* Capacité globale */}
-                                <div className="flex items-center gap-4 p-3 rounded-xl bg-[#0a0a14] border border-white/8">
-                                    <div className="flex-1">
-                                        <p className="text-xs font-semibold text-white">Capacité totale</p>
-                                        <p className="text-[11px] text-[#555] mt-0.5">Nombre total de couverts du restaurant</p>
+                                <div className="flex items-center justify-between">
+                                    <h2 className="flex items-center gap-2 text-base font-semibold text-white">
+                                        <Clock size={18} className="text-green-400 flex-shrink-0" />
+                                        Horaires & Services
+                                    </h2>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-[#666] text-xs">Capacité totale</span>
+                                        <input
+                                            type="number" min={1}
+                                            className="w-16 h-8 px-2 text-center rounded-lg text-sm bg-[#0d0d1a] border border-[#252535] text-white focus:outline-none focus:border-green-500/60"
+                                            value={totalCapacity}
+                                            onChange={e => setTotalCapacity(parseInt(e.target.value) || 0)}
+                                        />
+                                        <span className="text-[#666] text-xs">cvts</span>
                                     </div>
-                                    <input
-                                        type="number" min={1}
-                                        className="w-20 h-10 px-3 text-center rounded-xl text-sm bg-[#0f0f0f] border border-[#2a2a2a] text-white focus:outline-none focus:border-green-500/50"
-                                        value={totalCapacity}
-                                        onChange={e => setTotalCapacity(parseInt(e.target.value) || 0)}
-                                    />
                                 </div>
 
                                 {/* Jours d'ouverture */}
                                 <div>
-                                    <p className="text-[10px] font-bold text-[#555] uppercase tracking-widest mb-3">Jours d'ouverture & couverts par jour</p>
+                                    <p className="text-[10px] font-bold text-[#555] uppercase tracking-widest mb-3">Jours d'ouverture</p>
                                     <div className="space-y-2">
                                         {DAYS.map(({ key, label }) => {
-                                            const day = hours[key] || { open: false, from: '12:00', to: '22:00', capacity: 40 };
+                                            const day = hours[key] || { open: false, from: '12:00', to: '22:00' };
                                             return (
-                                                <div key={key} className={`rounded-xl border transition-colors ${day.open ? 'border-white/10 bg-[#0a0a14]' : 'border-transparent'}`}>
-                                                    <div className="flex items-center gap-3 px-3 py-2.5">
-                                                        <Toggle on={day.open} onToggle={() => updateDay(key, 'open', !day.open)} />
-                                                        <span className={`text-sm font-medium w-24 flex-shrink-0 ${day.open ? 'text-white' : 'text-[#555]'}`}>
-                                                            {label}
-                                                        </span>
-                                                        {day.open ? (
-                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                <input type="time" value={day.from}
-                                                                    onChange={e => updateDay(key, 'from', e.target.value)}
-                                                                    className={timeInputCls} />
-                                                                <span className="text-[#444] text-xs flex-shrink-0">→</span>
-                                                                <input type="time" value={day.to}
-                                                                    onChange={e => updateDay(key, 'to', e.target.value)}
-                                                                    className={timeInputCls} />
-                                                                <input type="number" min={1} value={day.capacity}
-                                                                    onChange={e => updateDay(key, 'capacity', parseInt(e.target.value) || 0)}
-                                                                    title="Couverts max ce jour"
-                                                                    className="w-16 h-10 px-2 text-center rounded-xl text-sm bg-[#0f0f0f] border border-[#2a2a2a] text-white focus:outline-none focus:border-green-500/50 flex-shrink-0"
-                                                                />
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-xs text-[#444] italic">Fermé</span>
-                                                        )}
-                                                    </div>
-                                                    {day.open && (
-                                                        <p className="text-[10px] text-[#444] px-3 pb-2 -mt-1">couverts max →</p>
+                                                <div key={key} className="flex items-center gap-3">
+                                                    <Toggle on={day.open} onToggle={() => setHours({ ...hours, [key]: { ...day, open: !day.open } })} />
+                                                    <span className={`text-sm font-medium w-24 flex-shrink-0 ${day.open ? 'text-white' : 'text-[#444]'}`}>
+                                                        {label}
+                                                    </span>
+                                                    {day.open ? (
+                                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                            <input type="time" className={`${timeCls} flex-1`} value={day.from}
+                                                                onChange={e => setHours({ ...hours, [key]: { ...day, from: e.target.value } })} />
+                                                            <span className="text-[#333] text-xs">→</span>
+                                                            <input type="time" className={`${timeCls} flex-1`} value={day.to}
+                                                                onChange={e => setHours({ ...hours, [key]: { ...day, to: e.target.value } })} />
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-[#444] italic">Fermé</span>
                                                     )}
                                                 </div>
                                             );
@@ -281,37 +260,63 @@ const Onboarding: React.FC = () => {
                                 <div className="border-t border-white/5" />
 
                                 {/* Services */}
-                                <div className="space-y-3">
-                                    <p className="text-[10px] font-bold text-[#555] uppercase tracking-widest">Services & couverts par service</p>
+                                <div>
+                                    <p className="text-[10px] font-bold text-[#555] uppercase tracking-widest mb-3">Services & couverts</p>
+                                    <div className="space-y-3">
 
-                                    {/* Déjeuner */}
-                                    <div className="rounded-xl bg-[#0a0a14] border border-white/8 p-4 space-y-3">
-                                        <div className="flex items-center gap-3">
-                                            <Toggle on={services.lunch.active} onToggle={() => setServices({ ...services, lunch: { ...services.lunch, active: !services.lunch.active } })} />
-                                            <span className="text-sm font-semibold text-white">Déjeuner</span>
-                                        </div>
-                                        {services.lunch.active && (
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div><FieldLabel>De</FieldLabel><input type="time" className={timeInputCls} value={services.lunch.from} onChange={e => setServices({ ...services, lunch: { ...services.lunch, from: e.target.value } })} /></div>
-                                                <div><FieldLabel>À</FieldLabel><input type="time" className={timeInputCls} value={services.lunch.to} onChange={e => setServices({ ...services, lunch: { ...services.lunch, to: e.target.value } })} /></div>
-                                                <div><FieldLabel>Couverts max</FieldLabel><input type="number" min={1} className={numInputCls} value={services.lunch.capacity} onChange={e => setServices({ ...services, lunch: { ...services.lunch, capacity: parseInt(e.target.value) || 0 } })} /></div>
+                                        {/* Déjeuner */}
+                                        <div className="rounded-xl bg-[#0a0a16] border border-white/8 p-4 space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <Toggle on={services.lunch.active} onToggle={() => setServices({ ...services, lunch: { ...services.lunch, active: !services.lunch.active } })} />
+                                                <span className="text-sm font-semibold text-white">Déjeuner</span>
                                             </div>
-                                        )}
-                                    </div>
+                                            {services.lunch.active && (
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div>
+                                                        <FieldLabel>De</FieldLabel>
+                                                        <input type="time" className={`${timeCls} w-full`} value={services.lunch.from}
+                                                            onChange={e => setServices({ ...services, lunch: { ...services.lunch, from: e.target.value } })} />
+                                                    </div>
+                                                    <div>
+                                                        <FieldLabel>À</FieldLabel>
+                                                        <input type="time" className={`${timeCls} w-full`} value={services.lunch.to}
+                                                            onChange={e => setServices({ ...services, lunch: { ...services.lunch, to: e.target.value } })} />
+                                                    </div>
+                                                    <div>
+                                                        <FieldLabel>Couverts max</FieldLabel>
+                                                        <input type="number" min={1} className={`${timeCls} w-full text-center`} value={services.lunch.capacity}
+                                                            onChange={e => setServices({ ...services, lunch: { ...services.lunch, capacity: parseInt(e.target.value) || 0 } })} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
 
-                                    {/* Dîner */}
-                                    <div className="rounded-xl bg-[#0a0a14] border border-white/8 p-4 space-y-3">
-                                        <div className="flex items-center gap-3">
-                                            <Toggle on={services.dinner.active} onToggle={() => setServices({ ...services, dinner: { ...services.dinner, active: !services.dinner.active } })} />
-                                            <span className="text-sm font-semibold text-white">Dîner</span>
-                                        </div>
-                                        {services.dinner.active && (
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div><FieldLabel>De</FieldLabel><input type="time" className={timeInputCls} value={services.dinner.from} onChange={e => setServices({ ...services, dinner: { ...services.dinner, from: e.target.value } })} /></div>
-                                                <div><FieldLabel>À</FieldLabel><input type="time" className={timeInputCls} value={services.dinner.to} onChange={e => setServices({ ...services, dinner: { ...services.dinner, to: e.target.value } })} /></div>
-                                                <div><FieldLabel>Couverts max</FieldLabel><input type="number" min={1} className={numInputCls} value={services.dinner.capacity} onChange={e => setServices({ ...services, dinner: { ...services.dinner, capacity: parseInt(e.target.value) || 0 } })} /></div>
+                                        {/* Dîner */}
+                                        <div className="rounded-xl bg-[#0a0a16] border border-white/8 p-4 space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <Toggle on={services.dinner.active} onToggle={() => setServices({ ...services, dinner: { ...services.dinner, active: !services.dinner.active } })} />
+                                                <span className="text-sm font-semibold text-white">Dîner</span>
                                             </div>
-                                        )}
+                                            {services.dinner.active && (
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div>
+                                                        <FieldLabel>De</FieldLabel>
+                                                        <input type="time" className={`${timeCls} w-full`} value={services.dinner.from}
+                                                            onChange={e => setServices({ ...services, dinner: { ...services.dinner, from: e.target.value } })} />
+                                                    </div>
+                                                    <div>
+                                                        <FieldLabel>À</FieldLabel>
+                                                        <input type="time" className={`${timeCls} w-full`} value={services.dinner.to}
+                                                            onChange={e => setServices({ ...services, dinner: { ...services.dinner, to: e.target.value } })} />
+                                                    </div>
+                                                    <div>
+                                                        <FieldLabel>Couverts max</FieldLabel>
+                                                        <input type="number" min={1} className={`${timeCls} w-full text-center`} value={services.dinner.capacity}
+                                                            onChange={e => setServices({ ...services, dinner: { ...services.dinner, capacity: parseInt(e.target.value) || 0 } })} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -320,7 +325,7 @@ const Onboarding: React.FC = () => {
                         {/* ── Step 2: Email ── */}
                         {step === 2 && (
                             <div className="space-y-5">
-                                <h2 className="flex items-center gap-2 text-base font-semibold text-white">
+                                <h2 className="flex items-center gap-2 text-base font-semibold text-white mb-5">
                                     <Mail size={18} className="text-green-400 flex-shrink-0" />
                                     Email de confirmation
                                 </h2>
@@ -332,13 +337,13 @@ const Onboarding: React.FC = () => {
                                     <p className="text-xs text-[#555] mt-1.5">Les confirmations seront envoyées à cette adresse.</p>
                                 </div>
                                 {user?.bcc_email && (
-                                    <div className="rounded-xl bg-[#0a0a14] border border-white/8 p-4 space-y-2">
+                                    <div className="rounded-xl bg-[#0a0a16] border border-white/8 p-4 space-y-2">
                                         <FieldLabel>Adresse BCC (lecture seule)</FieldLabel>
                                         <div className="flex items-center gap-2">
                                             <input type="text" readOnly value={user.bcc_email}
-                                                className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl text-xs bg-[#0f0f0f] border border-[#1a1a1a] text-[#888] font-mono focus:outline-none truncate" />
+                                                className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl text-xs bg-[#080912] border border-[#1a1a2a] text-[#888] font-mono focus:outline-none truncate" />
                                             <button type="button" onClick={copyBcc}
-                                                className="flex-shrink-0 p-2.5 rounded-xl bg-[#1a1a1a] hover:bg-[#222] border border-[#252525] transition-colors">
+                                                className="flex-shrink-0 p-2.5 rounded-xl bg-[#151525] hover:bg-[#1a1a2a] border border-[#252535] transition-colors">
                                                 {copied ? <Check size={15} className="text-green-400" /> : <Copy size={15} className="text-[#888]" />}
                                             </button>
                                         </div>
@@ -351,7 +356,7 @@ const Onboarding: React.FC = () => {
                         {/* ── Step 3: Récapitulatif ── */}
                         {step === 3 && (
                             <div className="space-y-4">
-                                <h2 className="flex items-center gap-2 text-base font-semibold text-white">
+                                <h2 className="flex items-center gap-2 text-base font-semibold text-white mb-1">
                                     <ClipboardList size={18} className="text-green-400 flex-shrink-0" />
                                     Récapitulatif
                                 </h2>
@@ -365,21 +370,17 @@ const Onboarding: React.FC = () => {
                                         <RecapRow label="Cuisine"   value={info.cuisine_type || '—'} />
                                     </RecapBlock>
 
-                                    <RecapBlock title="Horaires">
+                                    <RecapBlock title={`Horaires — ${totalCapacity} couverts total`}>
                                         {DAYS.map(({ key, label }) => {
                                             const day = hours[key];
                                             return (
                                                 <RecapRow key={key} label={label}
                                                     value={day?.open
-                                                        ? `${day.from} → ${day.to} · ${day.capacity} cvts`
+                                                        ? `${day.from} → ${day.to}`
                                                         : <span className="italic text-[#555]">Fermé</span>}
                                                 />
                                             );
                                         })}
-                                    </RecapBlock>
-
-                                    <RecapBlock title="Capacité globale">
-                                        <RecapRow label="Total" value={`${totalCapacity} couverts`} />
                                     </RecapBlock>
 
                                     <RecapBlock title="Services">
@@ -401,9 +402,9 @@ const Onboarding: React.FC = () => {
 
                                 <button
                                     onClick={() => navigate(`/r/${user?.slug || user?.id}/dashboard`)}
-                                    className="w-full h-12 mt-2 rounded-xl bg-white text-black font-semibold text-sm flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
+                                    className="w-full h-14 mt-2 rounded-xl bg-white text-black font-semibold text-base flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
                                 >
-                                    <Rocket size={18} /> Lancer mon assistant
+                                    <Rocket size={20} /> Lancer mon assistant
                                 </button>
                             </div>
                         )}
@@ -411,11 +412,11 @@ const Onboarding: React.FC = () => {
 
                     {/* Navigation */}
                     {step < 3 && (
-                        <div className="flex items-center justify-between px-5 py-4 border-t border-white/5">
+                        <div className="flex items-center justify-between px-6 py-4 border-t border-white/5">
                             <button
                                 type="button"
                                 onClick={() => setStep(s => s - 1)}
-                                className={`h-10 px-5 rounded-xl border border-white/10 text-sm font-medium text-white flex items-center gap-1 hover:bg-white/5 transition-colors ${step === 0 ? 'invisible pointer-events-none' : ''}`}
+                                className={`h-11 px-5 rounded-xl border border-white/10 text-sm font-medium text-white flex items-center gap-1.5 hover:bg-white/5 transition-colors ${step === 0 ? 'invisible pointer-events-none' : ''}`}
                             >
                                 <ChevronLeft size={16} /> Précédent
                             </button>
@@ -423,7 +424,7 @@ const Onboarding: React.FC = () => {
                                 type="button"
                                 onClick={nextStep}
                                 disabled={saving}
-                                className="h-10 px-6 rounded-xl bg-white text-black text-sm font-semibold flex items-center gap-1.5 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                                className="h-11 px-8 rounded-xl bg-white text-black text-sm font-semibold flex items-center gap-2 hover:bg-gray-100 disabled:opacity-50 transition-colors"
                             >
                                 {saving ? (
                                     <><span className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin inline-block" /> Sauvegarde...</>
@@ -441,10 +442,8 @@ const Onboarding: React.FC = () => {
     );
 };
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
 const RecapBlock: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="rounded-xl bg-[#0a0a14] border border-white/8 px-4 py-3.5 space-y-1.5">
+    <div className="rounded-xl bg-[#0a0a16] border border-white/8 px-4 py-3.5 space-y-1.5">
         <p className="text-[10px] font-bold text-[#555] uppercase tracking-widest mb-2">{title}</p>
         {children}
     </div>

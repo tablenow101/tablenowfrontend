@@ -1,197 +1,167 @@
 import React, { useEffect, useState } from 'react';
 import { dashboardAPI } from '../lib/api';
-import { Phone, Clock, Calendar, X, Download } from 'lucide-react';
+import { Phone, Clock, Calendar, X, Download, Mic } from 'lucide-react';
+
+function formatDuration(seconds: number): string {
+    if (!seconds) return '0s';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}m${s.toString().padStart(2, '0')}s` : `${s}s`;
+}
+
+const statusConfig: Record<string, { label: string; cls: string }> = {
+    completed:   { label: 'Terminé',   cls: 'bg-green-500/10 text-green-400 border-green-500/20'  },
+    in_progress: { label: 'En cours',  cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20'     },
+    failed:      { label: 'Échoué',    cls: 'bg-red-500/10 text-red-400 border-red-500/20'        },
+    missed:      { label: 'Manqué',    cls: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
+};
 
 const CallLogs: React.FC = () => {
-    const [calls, setCalls] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [calls, setCalls]             = useState<any[]>([]);
+    const [loading, setLoading]         = useState(true);
     const [selectedCall, setSelectedCall] = useState<any>(null);
 
     useEffect(() => {
-        fetchCalls();
+        (async () => {
+            try {
+                const res = await dashboardAPI.getCalls();
+                setCalls(res.data.calls || []);
+            } catch (err) {
+                console.error('Erreur lors du chargement des appels:', err);
+            } finally {
+                setLoading(false);
+            }
+        })();
     }, []);
 
-    const fetchCalls = async () => {
-        try {
-            const response = await dashboardAPI.getCalls();
-            setCalls(response.data.calls || []);
-        } catch (error) {
-            console.error('Failed to fetch calls:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const formatDuration = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'completed': return 'bg-green-500/10 text-green-400 border-green-500/20';
-            case 'in_progress': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-            case 'failed': return 'bg-red-500/10 text-red-400 border-red-500/20';
-            default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-        }
-    };
-
-    const downloadTranscript = (call: any) => {
+    function downloadTranscript(call: any) {
         if (!call.transcript) return;
-
-        const fileName = `transcript_${call.caller_number || 'unknown'}_${new Date(call.created_at).toISOString().split('T')[0]}.txt`;
-        const content = `TRANSCRIPTION D'APPEL TÉLÉPHONIQUE
-=====================================
-
-Numéro: ${call.caller_number || 'Inconnu'}
-Date: ${new Date(call.created_at).toLocaleString('fr-FR')}
-Durée: ${formatDuration(call.duration || 0)}
-Statut: ${call.status}
-
-TRANSCRIPTION:
---------------
-
-${call.transcript}`;
-
-        const element = document.createElement('a');
-        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-        element.setAttribute('download', fileName);
-        element.style.display = 'none';
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
-    };
+        const content = `TRANSCRIPTION D'APPEL\n${'='.repeat(40)}\n\nNuméro : ${call.caller_number || 'Inconnu'}\nDate : ${new Date(call.created_at).toLocaleString('fr-FR')}\nDurée : ${formatDuration(call.duration || 0)}\nStatut : ${call.status}\n\nTRANSCRIPTION :\n${'-'.repeat(40)}\n\n${call.transcript}`;
+        const a = document.createElement('a');
+        a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+        a.download = `transcription_${call.caller_number || 'inconnu'}_${new Date(call.created_at).toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
 
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="loading w-12 h-12"></div>
+                <div className="loading w-12 h-12" />
             </div>
         );
     }
 
     const completedCount = calls.filter(c => c.status === 'completed').length;
-    const avgDuration = calls.length > 0
-        ? Math.floor(calls.reduce((sum, c) => sum + (c.duration || 0), 0) / calls.length)
-        : 0;
-    const totalDuration = calls.reduce((sum, c) => sum + (c.duration || 0), 0);
+    const avgDuration    = calls.length > 0 ? Math.floor(calls.reduce((s, c) => s + (c.duration || 0), 0) / calls.length) : 0;
+    const totalDuration  = calls.reduce((s, c) => s + (c.duration || 0), 0);
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6">
+
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-white">Call Logs</h1>
-                <p className="text-sm text-gray-500 mt-0.5">View all AI assistant call history</p>
+                <h1 className="text-2xl font-bold text-white">Journal des appels</h1>
+                <p className="text-sm text-gray-500 mt-0.5">Historique complet des appels de votre assistant IA</p>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-5 h-28 flex flex-col justify-between">
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Total Calls</p>
-                    <p className="text-3xl font-bold text-white">{calls.length}</p>
-                </div>
-                <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-5 h-28 flex flex-col justify-between">
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Completed</p>
-                    <p className="text-3xl font-bold text-green-400">{completedCount}</p>
-                </div>
-                <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-5 h-28 flex flex-col justify-between">
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Avg Duration</p>
-                    <p className="text-3xl font-bold text-white">{formatDuration(avgDuration)}</p>
-                </div>
-                <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-5 h-28 flex flex-col justify-between">
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Total Duration</p>
-                    <p className="text-3xl font-bold text-white">{formatDuration(totalDuration)}</p>
-                </div>
+                {[
+                    { label: 'Total',          value: calls.length,           color: 'text-white'     },
+                    { label: 'Terminés',        value: completedCount,          color: 'text-green-400' },
+                    { label: 'Durée moyenne',   value: formatDuration(avgDuration),  color: 'text-white' },
+                    { label: 'Durée totale',    value: formatDuration(totalDuration), color: 'text-white' },
+                ].map(({ label, value, color }) => (
+                    <div key={label} className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-5 h-28 flex flex-col justify-between">
+                        <p className="text-xs text-gray-500 uppercase tracking-wider">{label}</p>
+                        <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                    </div>
+                ))}
             </div>
 
-            {/* Call List */}
+            {/* List */}
             <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-6">
-                <h2 className="text-sm font-semibold text-white mb-4">Call History</h2>
+                <h2 className="text-sm font-semibold text-white mb-4">Historique</h2>
 
                 {calls.length === 0 ? (
                     <div className="text-center py-12">
                         <Phone size={32} className="mx-auto text-gray-700 mb-3" />
-                        <p className="text-sm text-gray-500">No calls yet</p>
+                        <p className="text-sm text-gray-500">Aucun appel pour l'instant</p>
+                        <p className="text-xs text-gray-700 mt-1">Les appels apparaîtront ici une fois votre assistant configuré</p>
                     </div>
                 ) : (
                     <div className="space-y-2">
-                        {calls.map((call) => (
-                            <div
-                                key={call.id}
-                                className="rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] p-4 hover:border-[#2a2a2a] transition-colors cursor-pointer"
-                                onClick={() => setSelectedCall(call)}
-                            >
-                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-8 h-8 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-                                                <Phone size={14} className="text-gray-400" />
-                                            </div>
-                                            <h3 className="text-sm font-semibold text-white">{call.caller_number || 'Unknown Number'}</h3>
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(call.status)}`}>
-                                                {call.status}
-                                            </span>
+                        {calls.map((call) => {
+                            const st = statusConfig[call.status] || statusConfig.completed;
+                            return (
+                                <div
+                                    key={call.id}
+                                    onClick={() => setSelectedCall(call)}
+                                    className="rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] p-4 hover:border-[#2a2a2a] transition-colors cursor-pointer"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
+                                            <Phone size={14} className="text-gray-400" />
                                         </div>
-
-                                        <div className="flex flex-wrap gap-4 text-xs text-gray-400 ml-10">
-                                            <div className="flex items-center gap-1.5">
-                                                <Calendar size={13} />
-                                                <span>{new Date(call.created_at).toLocaleDateString('fr-FR')}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                <p className="text-sm font-semibold text-white">{call.caller_number || 'Numéro inconnu'}</p>
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${st.cls}`}>{st.label}</span>
+                                                {call.reservation_booked && (
+                                                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30">
+                                                        ✓ Réservation créée
+                                                    </span>
+                                                )}
                                             </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <Clock size={13} />
-                                                <span>{new Date(call.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                            <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+                                                <span className="flex items-center gap-1.5">
+                                                    <Calendar size={12} />
+                                                    {new Date(call.created_at).toLocaleDateString('fr-FR')}
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <Clock size={12} />
+                                                    {new Date(call.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <Mic size={12} />
+                                                    {formatDuration(call.duration || 0)}
+                                                </span>
                                             </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <Clock size={13} />
-                                                <span>{formatDuration(call.duration || 0)}</span>
-                                            </div>
+                                            {call.call_summary && (
+                                                <p className="mt-1.5 text-xs text-gray-500 line-clamp-1">{call.call_summary}</p>
+                                            )}
                                         </div>
-
-                                        {call.transcript && (
-                                            <div className="mt-2 ml-10 p-2 rounded-lg bg-[#0A0A0A] border border-[#1f1f1f] text-xs text-gray-400">
-                                                <p className="line-clamp-2">{call.transcript}</p>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex-shrink-0">
                                         {call.recording_url && (
                                             <a
                                                 href={call.recording_url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="px-3 py-1.5 rounded-xl text-xs text-white border border-[#1f1f1f] hover:bg-[#111] transition-colors bg-transparent"
-                                                onClick={(e) => e.stopPropagation()}
+                                                onClick={e => e.stopPropagation()}
+                                                className="flex-shrink-0 px-3 py-1.5 rounded-xl text-xs text-white border border-[#1f1f1f] hover:bg-[#1a1a1a] transition-colors"
                                             >
-                                                Listen
+                                                Écouter
                                             </a>
                                         )}
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
 
-            {/* Call Detail Modal */}
+            {/* Detail Modal */}
             {selectedCall && (
-                <div
-                    className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
-                    onClick={() => setSelectedCall(null)}
-                >
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={() => setSelectedCall(null)}>
                     <div
                         className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={e => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-lg font-bold text-white">Call Details</h2>
-                            <button
-                                onClick={() => setSelectedCall(null)}
-                                className="text-gray-500 hover:text-white transition-colors"
-                            >
+                            <h2 className="text-lg font-bold text-white">Détails de l'appel</h2>
+                            <button onClick={() => setSelectedCall(null)} className="text-gray-500 hover:text-white transition-colors">
                                 <X size={18} />
                             </button>
                         </div>
@@ -199,38 +169,60 @@ ${call.transcript}`;
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-xs text-gray-500 mb-1">Caller Number</p>
-                                    <p className="text-sm font-semibold text-white">{selectedCall.caller_number || 'Unknown'}</p>
+                                    <p className="text-xs text-gray-500 mb-1">Numéro appelant</p>
+                                    <p className="text-sm font-semibold text-white font-mono">{selectedCall.caller_number || 'Inconnu'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 mb-1">Status</p>
-                                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(selectedCall.status)}`}>
-                                        {selectedCall.status}
+                                    <p className="text-xs text-gray-500 mb-1">Statut</p>
+                                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium border ${(statusConfig[selectedCall.status] || statusConfig.completed).cls}`}>
+                                        {(statusConfig[selectedCall.status] || statusConfig.completed).label}
                                     </span>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 mb-1">Date</p>
+                                    <p className="text-xs text-gray-500 mb-1">Date & heure</p>
                                     <p className="text-sm font-semibold text-white">{new Date(selectedCall.created_at).toLocaleString('fr-FR')}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 mb-1">Duration</p>
+                                    <p className="text-xs text-gray-500 mb-1">Durée</p>
                                     <p className="text-sm font-semibold text-white">{formatDuration(selectedCall.duration || 0)}</p>
                                 </div>
+                                {selectedCall.reservation_booked !== null && selectedCall.reservation_booked !== undefined && (
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">Réservation créée</p>
+                                        <p className={`text-sm font-semibold ${selectedCall.reservation_booked ? 'text-green-400' : 'text-gray-400'}`}>
+                                            {selectedCall.reservation_booked ? '✓ Oui' : '✗ Non'}
+                                        </p>
+                                    </div>
+                                )}
+                                {selectedCall.customer_sentiment && (
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">Sentiment client</p>
+                                        <p className="text-sm font-semibold text-white capitalize">{selectedCall.customer_sentiment}</p>
+                                    </div>
+                                )}
                             </div>
+
+                            {selectedCall.call_summary && (
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-2">Résumé</p>
+                                    <div className="p-3 rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] text-sm text-gray-300">
+                                        {selectedCall.call_summary}
+                                    </div>
+                                </div>
+                            )}
 
                             {selectedCall.transcript && (
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <p className="text-xs text-gray-500">Transcript</p>
+                                        <p className="text-xs text-gray-500">Transcription</p>
                                         <button
                                             onClick={() => downloadTranscript(selectedCall)}
                                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-400 hover:text-green-300 border border-green-500/30 rounded-lg hover:bg-green-500/10 transition-colors"
                                         >
-                                            <Download size={14} />
-                                            Télécharger
+                                            <Download size={14} /> Télécharger
                                         </button>
                                     </div>
-                                    <div className="p-4 rounded-xl bg-[#0f0f0f] border border-[#1f1f1f]">
+                                    <div className="p-4 rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] max-h-64 overflow-y-auto">
                                         <p className="text-sm text-gray-300 whitespace-pre-wrap">{selectedCall.transcript}</p>
                                     </div>
                                 </div>
@@ -238,7 +230,7 @@ ${call.transcript}`;
 
                             {selectedCall.recording_url && (
                                 <div>
-                                    <p className="text-xs text-gray-500 mb-2">Recording</p>
+                                    <p className="text-xs text-gray-500 mb-2">Enregistrement</p>
                                     <audio controls className="w-full">
                                         <source src={selectedCall.recording_url} type="audio/mpeg" />
                                     </audio>
