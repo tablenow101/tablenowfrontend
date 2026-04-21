@@ -6,7 +6,7 @@ import { LogIn, AlertCircle, Sun, Moon } from 'lucide-react';
 const t = {
     fr: {
         tagline: 'Votre Hôtesse de Restaurant 24/7',
-        welcomeBack: 'Bon retour',
+        welcomeBack: 'Ravi de vous revoir',
         email: 'Email',
         password: 'Mot de passe',
         loggingIn: 'Connexion...',
@@ -17,7 +17,7 @@ const t = {
     },
     en: {
         tagline: 'Your Restaurant Hostess 24/7',
-        welcomeBack: 'Welcome Back',
+        welcomeBack: 'Welcome back',
         email: 'Email',
         password: 'Password',
         loggingIn: 'Logging in...',
@@ -79,7 +79,7 @@ const Login: React.FC = () => {
         <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8"
             style={{ background: 'var(--bg-page)' }}>
 
-            <div className="w-full max-w-sm">
+            <div className="w-full max-w-md">
 
                 {/* Toggles */}
                 <div className="flex justify-end gap-2 mb-6">
@@ -101,22 +101,22 @@ const Login: React.FC = () => {
 
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold" style={{ color: 'var(--text-primary)' }}>TableNow</h1>
+                    <h1 className="text-5xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>TableNow</h1>
                     <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>{s.tagline}</p>
                 </div>
 
                 {/* Card */}
-                <div className="rounded-2xl p-6 sm:p-8"
+                <div className="rounded-3xl p-8 sm:p-10"
                     style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: '0 24px 48px rgba(0,0,0,0.4)' }}>
 
                     {/* Icon */}
                     <div className="flex justify-center mb-5">
-                        <div className="p-4 rounded-full" style={{ background: 'var(--icon-circle-bg)', color: 'var(--icon-circle-fg)' }}>
-                            <LogIn size={28} />
+                        <div className="p-5 rounded-full" style={{ background: 'var(--icon-circle-bg)', color: 'var(--icon-circle-fg)' }}>
+                            <LogIn size={32} />
                         </div>
                     </div>
 
-                    <h2 className="text-2xl font-bold text-center mb-6" style={{ color: 'var(--text-primary)' }}>
+                    <h2 className="text-3xl font-bold text-center mb-8" style={{ color: 'var(--text-primary)' }}>
                         {s.welcomeBack}
                     </h2>
 
@@ -140,7 +140,7 @@ const Login: React.FC = () => {
                                 onChange={e => setEmail(e.target.value)}
                                 placeholder="your@email.com"
                                 required
-                                className="w-full h-12 px-4 rounded-xl text-sm"
+                                className="w-full h-14 px-4 rounded-xl text-sm"
                                 style={{
                                     background: 'var(--bg-input)',
                                     border: '1px solid var(--border-input)',
@@ -163,7 +163,7 @@ const Login: React.FC = () => {
                                 onChange={e => setPassword(e.target.value)}
                                 placeholder="••••••••"
                                 required
-                                className="w-full h-12 px-4 rounded-xl text-sm"
+                                className="w-full h-14 px-4 rounded-xl text-sm"
                                 style={{
                                     background: 'var(--bg-input)',
                                     border: '1px solid var(--border-input)',
@@ -179,7 +179,7 @@ const Login: React.FC = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full h-12 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+                            className="w-full h-14 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
                             style={{
                                 background: 'var(--btn-primary-bg)',
                                 color: 'var(--btn-primary-fg)',
