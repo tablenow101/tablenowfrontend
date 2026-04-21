@@ -13,7 +13,7 @@ const t = {
         loginBtn: 'Se connecter',
         noAccount: "Vous n'avez pas de compte ?",
         registerHere: "S'inscrire ici",
-        loginFailed: 'Connexion echouee. Veuillez reessayer.',
+        loginFailed: 'Connexion échouée. Veuillez réessayer.',
     },
     en: {
         tagline: 'Your Restaurant Hostess 24/7',
@@ -41,14 +41,14 @@ function getInitialTheme(): 'light' | 'dark' {
 }
 
 const Login: React.FC = () => {
-    const [email, setEmail] = useState('');
+    const [email, setEmail]       = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [error, setError]       = useState('');
+    const [loading, setLoading]   = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const [lang, setLang] = useState<'fr' | 'en'>(getInitialLang);
+    const [lang, setLang]   = useState<'fr' | 'en'>(getInitialLang);
     const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme);
     const s = t[lang];
 
@@ -61,14 +61,10 @@ const Login: React.FC = () => {
         localStorage.setItem('tn_lang', lang);
     }, [lang]);
 
-    const toggleLang = () => setLang((l) => (l === 'fr' ? 'en' : 'fr'));
-    const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
-
         try {
             await login(email, password);
             navigate('/');
@@ -80,94 +76,132 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center px-4">
-            <div className="max-w-md w-full">
+        <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8"
+            style={{ background: 'var(--bg-page)' }}>
+
+            <div className="w-full max-w-sm">
+
                 {/* Toggles */}
-                <div className="flex justify-end gap-2 mb-4">
+                <div className="flex justify-end gap-2 mb-6">
                     <button
-                        onClick={toggleLang}
-                        className="px-3 py-1.5 text-xs font-semibold border-2 border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-black dark:text-white transition-colors"
+                        onClick={() => setLang(l => l === 'fr' ? 'en' : 'fr')}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors"
+                        style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'var(--text-primary)', background: 'transparent' }}
                     >
                         {lang === 'fr' ? 'EN' : 'FR'}
                     </button>
                     <button
-                        onClick={toggleTheme}
-                        className="p-1.5 border-2 border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-black dark:text-white transition-colors"
+                        onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+                        className="p-1.5 rounded-full border transition-colors"
+                        style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'var(--text-primary)', background: 'transparent' }}
                     >
                         {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                     </button>
                 </div>
 
+                {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold mb-2 text-black dark:text-white">TableNow</h1>
-                    <p className="text-gray-600 dark:text-gray-400">{s.tagline}</p>
+                    <h1 className="text-4xl font-bold" style={{ color: 'var(--text-primary)' }}>TableNow</h1>
+                    <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>{s.tagline}</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 border-4 border-black dark:border-white rounded-2xl p-8 shadow-2xl">
-                    <div className="flex items-center justify-center mb-6">
-                        <div className="bg-black dark:bg-white text-white dark:text-black p-4 rounded-full">
-                            <LogIn size={32} />
+                {/* Card */}
+                <div className="rounded-2xl p-6 sm:p-8"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: '0 24px 48px rgba(0,0,0,0.4)' }}>
+
+                    {/* Icon */}
+                    <div className="flex justify-center mb-5">
+                        <div className="p-4 rounded-full" style={{ background: 'var(--icon-circle-bg)', color: 'var(--icon-circle-fg)' }}>
+                            <LogIn size={28} />
                         </div>
                     </div>
 
-                    <h2 className="text-2xl font-bold text-center mb-6 text-black dark:text-white">{s.welcomeBack}</h2>
+                    <h2 className="text-2xl font-bold text-center mb-6" style={{ color: 'var(--text-primary)' }}>
+                        {s.welcomeBack}
+                    </h2>
 
+                    {/* Error */}
                     {error && (
-                        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border-2 border-red-500 rounded-lg flex items-start space-x-2">
-                            <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
-                            <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
+                        <div className="mb-5 p-3.5 rounded-lg flex items-start gap-2.5 text-sm"
+                            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid #EF4444', color: 'var(--text-error)' }}>
+                            <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
+                            <span>{error}</span>
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium mb-2 text-black dark:text-white">{s.email}</label>
+                            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
+                                {s.email}
+                            </label>
                             <input
                                 type="email"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="input h-11"
+                                onChange={e => setEmail(e.target.value)}
                                 placeholder="your@email.com"
                                 required
+                                className="w-full h-12 px-4 rounded-xl text-sm"
+                                style={{
+                                    background: 'var(--bg-input)',
+                                    border: '1px solid var(--border-input)',
+                                    color: 'var(--text-primary)',
+                                    outline: 'none',
+                                    boxSizing: 'border-box',
+                                }}
+                                onFocus={e => e.currentTarget.style.borderColor = 'var(--border-input-focus)'}
+                                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-input)'}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-2 text-black dark:text-white">{s.password}</label>
+                            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
+                                {s.password}
+                            </label>
                             <input
                                 type="password"
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="input h-11"
+                                onChange={e => setPassword(e.target.value)}
                                 placeholder="••••••••"
                                 required
+                                className="w-full h-12 px-4 rounded-xl text-sm"
+                                style={{
+                                    background: 'var(--bg-input)',
+                                    border: '1px solid var(--border-input)',
+                                    color: 'var(--text-primary)',
+                                    outline: 'none',
+                                    boxSizing: 'border-box',
+                                }}
+                                onFocus={e => e.currentTarget.style.borderColor = 'var(--border-input-focus)'}
+                                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-input)'}
                             />
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn btn-primary w-full h-12"
+                            className="w-full h-12 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+                            style={{
+                                background: 'var(--btn-primary-bg)',
+                                color: 'var(--btn-primary-fg)',
+                                opacity: loading ? 0.6 : 1,
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                            }}
                         >
                             {loading ? (
-                                <span className="flex items-center justify-center">
-                                    <span className="loading mr-2"></span>
+                                <>
+                                    <span className="w-4 h-4 border-2 border-current/20 border-t-current rounded-full animate-spin" />
                                     {s.loggingIn}
-                                </span>
-                            ) : (
-                                s.loginBtn
-                            )}
+                                </>
+                            ) : s.loginBtn}
                         </button>
                     </form>
 
-                    <div className="mt-6 text-center">
-                        <p className="text-gray-600 dark:text-gray-400">
-                            {s.noAccount}{' '}
-                            <Link to="/register" className="text-black dark:text-white font-semibold hover:underline">
-                                {s.registerHere}
-                            </Link>
-                        </p>
-                    </div>
+                    <p className="mt-6 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        {s.noAccount}{' '}
+                        <Link to="/register" className="font-semibold hover:underline" style={{ color: 'var(--text-primary)' }}>
+                            {s.registerHere}
+                        </Link>
+                    </p>
                 </div>
             </div>
         </div>
