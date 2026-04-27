@@ -67,3 +67,13 @@ Routing is split by host in `src/App.tsx`: the marketing domain only exposes lan
 ## Deployment
 
 The frontend is deployed on Vercel (`vercel.json` at the repo root). Pushes to `main` trigger a production deploy; pull requests get preview deploys automatically.
+
+## Security
+
+This is a production codebase. A few rules to keep secrets out of the repo:
+
+- **Never commit `.env`.** Only `.env.example` (with placeholder values) is tracked. `.gitignore` already blocks every `.env*` file except `.env.example`.
+- Local secrets live in `.env` (gitignored). Production secrets live in Vercel's environment variables UI — set them under *Project → Settings → Environment Variables*, not in the repo.
+- This frontend is a Vite app, so any `VITE_*` variable is **bundled into the client JavaScript** and visible to anyone in the browser. Treat `VITE_*` values as public. Real secrets (API keys for paid services, DB credentials, signing keys, etc.) belong on the backend, never in `VITE_*`.
+- If a secret was ever committed by mistake: rotate it immediately at the provider, then ask a maintainer to scrub git history (`git filter-repo` or BFG). Rotating is non-negotiable — a leaked secret in git history must be assumed compromised even after deletion.
+- Report suspected leaks privately to the project owner — do not open a public issue.
