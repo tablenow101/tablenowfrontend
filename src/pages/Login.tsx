@@ -1,172 +1,130 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import LanguageToggle from '../components/LanguageToggle';
-import { LogIn, AlertCircle, Sun, Moon } from 'lucide-react';
-
-function getInitialTheme(): 'light' | 'dark' {
-    const stored = localStorage.getItem('tn_theme');
-    if (stored === 'dark' || stored === 'light') return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
+import { AlertCircle } from 'lucide-react';
 
 const Login: React.FC = () => {
-    const [email, setEmail]       = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError]       = useState('');
-    const [loading, setLoading]   = useState(false);
-    const { login } = useAuth();
-    const { t } = useTranslation();
-    const navigate = useNavigate();
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-    const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Identifiants incorrects. Vérifiez votre e-mail et mot de passe.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-        localStorage.setItem('tn_theme', theme);
-    }, [theme]);
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-        try {
-            await login(email, password);
-            navigate('/');
-        } catch (err: any) {
-            setError(err.response?.data?.error || t('auth.login.failed'));
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8"
-            style={{ background: 'var(--bg-page)' }}>
-
-            <div className="w-full max-w-md">
-
-                {/* Toggles */}
-                <div className="flex justify-end gap-2 mb-6">
-                    <LanguageToggle variant="light" />
-                    <button
-                        onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-                        className="p-1.5 rounded-full border transition-colors"
-                        style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'var(--text-primary)', background: 'transparent' }}
-                        aria-label="Toggle theme"
-                    >
-                        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                    </button>
-                </div>
-
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-5xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>{t('common.appName')}</h1>
-                    <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>{t('common.tagline')}</p>
-                </div>
-
-                {/* Card */}
-                <div className="rounded-3xl p-8 sm:p-10"
-                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: '0 24px 48px rgba(0,0,0,0.4)' }}>
-
-                    {/* Icon */}
-                    <div className="flex justify-center mb-5">
-                        <div className="p-5 rounded-full" style={{ background: 'var(--icon-circle-bg)', color: 'var(--icon-circle-fg)' }}>
-                            <LogIn size={32} />
-                        </div>
-                    </div>
-
-                    <h2 className="text-3xl font-bold text-center mb-8" style={{ color: 'var(--text-primary)' }}>
-                        {t('auth.login.welcomeBack')}
-                    </h2>
-
-                    {/* Error */}
-                    {error && (
-                        <div className="mb-5 p-3.5 rounded-lg flex items-start gap-2.5 text-sm"
-                            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid #EF4444', color: 'var(--text-error)' }}>
-                            <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
-                            <span>{error}</span>
-                        </div>
-                    )}
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
-                                {t('auth.login.email')}
-                            </label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                placeholder="your@email.com"
-                                required
-                                className="w-full h-14 px-4 rounded-xl text-sm"
-                                style={{
-                                    background: 'var(--bg-input)',
-                                    border: '1px solid var(--border-input)',
-                                    color: 'var(--text-primary)',
-                                    outline: 'none',
-                                    boxSizing: 'border-box',
-                                }}
-                                onFocus={e => e.currentTarget.style.borderColor = 'var(--border-input-focus)'}
-                                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-input)'}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
-                                {t('auth.login.password')}
-                            </label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                required
-                                className="w-full h-14 px-4 rounded-xl text-sm"
-                                style={{
-                                    background: 'var(--bg-input)',
-                                    border: '1px solid var(--border-input)',
-                                    color: 'var(--text-primary)',
-                                    outline: 'none',
-                                    boxSizing: 'border-box',
-                                }}
-                                onFocus={e => e.currentTarget.style.borderColor = 'var(--border-input-focus)'}
-                                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-input)'}
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full h-14 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
-                            style={{
-                                background: 'var(--btn-primary-bg)',
-                                color: 'var(--btn-primary-fg)',
-                                opacity: loading ? 0.6 : 1,
-                                cursor: loading ? 'not-allowed' : 'pointer',
-                            }}
-                        >
-                            {loading ? (
-                                <>
-                                    <span className="w-4 h-4 border-2 border-current/20 border-t-current rounded-full animate-spin" />
-                                    {t('auth.login.submitting')}
-                                </>
-                            ) : t('auth.login.submit')}
-                        </button>
-                    </form>
-
-                    <p className="mt-6 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        {t('auth.login.noAccount')}{' '}
-                        <Link to="/register" className="font-semibold hover:underline" style={{ color: 'var(--text-primary)' }}>
-                            {t('auth.login.registerHere')}
-                        </Link>
-                    </p>
-                </div>
-            </div>
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <span className="text-2xl font-bold text-white tracking-tight">
+            Table<span className="text-[#b8f000]">Now</span>
+          </span>
         </div>
-    );
+
+        {/* Card */}
+        <div
+          className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-8"
+          style={{ borderTop: '2px solid #b8f000' }}
+        >
+          <h1 className="text-2xl font-bold text-white mb-1">Connexion</h1>
+          <p className="text-sm text-[#888] mb-8">Accédez à votre espace TableNow</p>
+
+          {/* Error */}
+          {error && (
+            <div className="mb-5 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400">
+              <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider text-[#888] mb-2">
+                E-mail
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="vous@restaurant.fr"
+                required
+                className="w-full h-12 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#b8f000] transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider text-[#888] mb-2">
+                Mot de passe
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full h-12 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#b8f000] transition-colors"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 bg-[#b8f000] text-black font-bold rounded-xl text-sm transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {loading && (
+                <span className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+              )}
+              Se connecter
+            </button>
+          </form>
+
+          {/* Separator */}
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 h-px bg-[#2a2a2a]" />
+            <span className="text-[11px] text-[#555] uppercase tracking-wider">ou</span>
+            <div className="flex-1 h-px bg-[#2a2a2a]" />
+          </div>
+
+          {/* Google button */}
+          <button
+            type="button"
+            className="w-full h-12 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M17.64 9.2045c0-.638-.0573-1.252-.164-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9087C16.6582 14.0109 17.64 11.7836 17.64 9.2045z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.4673-.806 5.9564-2.1805l-2.9087-2.2581c-.806.54-1.8368.859-3.0477.859-2.344 0-4.3282-1.5836-5.036-3.7109H.9574v2.3318C2.4382 15.9832 5.4818 18 9 18z" fill="#34A853"/>
+              <path d="M3.964 10.71c-.18-.54-.2827-1.1168-.2827-1.71s.1023-1.17.2827-1.71V4.9582H.9573C.3477 6.1732 0 7.548 0 9s.3477 2.8268.9573 4.0418L3.964 10.71z" fill="#FBBC05"/>
+              <path d="M9 3.5795c1.3214 0 2.5077.4541 3.4405 1.346l2.5813-2.5814C13.4627.8918 11.4255 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.964 7.29C4.6718 5.1627 6.656 3.5795 9 3.5795z" fill="#EA4335"/>
+            </svg>
+            Continuer avec Google
+          </button>
+
+          <p className="mt-6 text-center text-sm text-[#555]">
+            Pas encore de compte ?{' '}
+            <Link to="/register" className="text-[#b8f000] hover:underline">
+              Créer un accès
+            </Link>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  );
 };
 
 export default Login;
