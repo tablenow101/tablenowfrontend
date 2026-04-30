@@ -1,7 +1,3 @@
-Parfait — déjà absent.Le revert est effectif.Settings.tsx maintenant:
-
-```bash
-cat > src/pages/Settings.tsx << 'ENDOFFILE'
 import React, { useState } from 'react';
 import { User, Clock, Utensils, Calendar, Bell, Phone, Key, Gift } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -9,14 +5,14 @@ import { useAuth } from '../context/AuthContext';
 type SectionId = 'general' | 'hours' | 'services' | 'calendar' | 'notifications' | 'assistant' | 'identifiers' | 'referral';
 
 const SIDEBAR_ITEMS: { id: SectionId; label: string; icon: React.ElementType; group: string }[] = [
-  { id: 'general',       label: 'Général',        icon: User,     group: 'Restaurant'   },
-  { id: 'hours',         label: 'Horaires',        icon: Clock,    group: 'Restaurant'   },
-  { id: 'services',      label: 'Services',        icon: Utensils, group: 'Restaurant'   },
-  { id: 'calendar',      label: 'Google Agenda',   icon: Calendar, group: 'Intégrations' },
-  { id: 'notifications', label: 'Notifications',   icon: Bell,     group: 'Intégrations' },
-  { id: 'assistant',     label: 'Assistant vocal', icon: Phone,    group: 'Intégrations' },
-  { id: 'identifiers',   label: 'Identifiants',    icon: Key,      group: 'Système'      },
-  { id: 'referral',      label: 'Parrainage',      icon: Gift,     group: 'Système'      },
+  { id: 'general', label: 'Général', icon: User, group: 'Restaurant' },
+  { id: 'hours', label: 'Horaires', icon: Clock, group: 'Restaurant' },
+  { id: 'services', label: 'Services', icon: Utensils, group: 'Restaurant' },
+  { id: 'calendar', label: 'Google Agenda', icon: Calendar, group: 'Intégrations' },
+  { id: 'notifications', label: 'Notifications', icon: Bell, group: 'Intégrations' },
+  { id: 'assistant', label: 'Assistant vocal', icon: Phone, group: 'Intégrations' },
+  { id: 'identifiers', label: 'Identifiants', icon: Key, group: 'Système' },
+  { id: 'referral', label: 'Parrainage', icon: Gift, group: 'Système' },
 ];
 
 const GROUPS = ['Restaurant', 'Intégrations', 'Système'] as const;
@@ -46,17 +42,17 @@ function TnArea({ value, onChange, placeholder }: { value: string; onChange: (v:
 const Settings: React.FC = () => {
   const { user } = useAuth();
   const [activeSection, setActiveSection] = useState<SectionId>('general');
-  const [activeTab, setActiveTab]         = useState<string>('Informations');
+  const [activeTab, setActiveTab] = useState<string>('Informations');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [gen, setGen] = useState({
-    name:                user?.name                ?? '',
-    owner_name:          user?.owner_name          ?? '',
-    phone:               user?.phone               ?? '',
-    cuisine_type:        user?.cuisine_type        ?? '',
-    address:             user?.address             ?? '',
-    confirmation_email:  user?.confirmation_email  ?? '',
+    name: user?.name ?? '',
+    owner_name: user?.owner_name ?? '',
+    phone: user?.phone ?? '',
+    cuisine_type: user?.cuisine_type ?? '',
+    address: user?.address ?? '',
+    confirmation_email: user?.confirmation_email ?? '',
     cancellation_policy: user?.cancellation_policy ?? '',
-    special_features:    user?.special_features    ?? '',
+    special_features: user?.special_features ?? '',
   });
 
   const dirty = () => setHasUnsavedChanges(true);
@@ -147,5 +143,3 @@ const Settings: React.FC = () => {
 };
 
 export default Settings;
-ENDOFFILE
-```
