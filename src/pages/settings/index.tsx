@@ -9,6 +9,10 @@ import {
   Key,
   Gift,
 } from 'lucide-react';
+import GeneralSettings    from './GeneralSettings';
+import HoraireSettings    from './HoraireSettings';
+import AssistantSettings  from './AssistantSettings';
+import ParrainageSettings from './ParrainageSettings';
 
 type SectionId =
   | 'general'
@@ -37,6 +41,14 @@ const SIDEBAR_ITEMS: {
 ];
 
 const GROUPS = ['RESTAURANT', 'INTÉGRATIONS', 'SYSTÈME'] as const;
+
+function Placeholder({ title }: { title: string }) {
+  return (
+    <div className="max-w-2xl">
+      <p className="text-sm text-[#555]">Configuration {title} à venir.</p>
+    </div>
+  );
+}
 
 const SettingsPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<SectionId>('general');
@@ -72,11 +84,16 @@ const SettingsPage: React.FC = () => {
         ))}
       </nav>
 
-      {/* ── Content area — sub-components wired in next commits ── */}
+      {/* ── Content area ── */}
       <main className="ml-[220px] flex-1 p-8">
-        <p className="text-sm text-[#555]">
-          {activeSection}
-        </p>
+        {activeSection === 'general'       && <GeneralSettings />}
+        {activeSection === 'hours'         && <HoraireSettings />}
+        {activeSection === 'assistant'     && <AssistantSettings />}
+        {activeSection === 'referral'      && <ParrainageSettings />}
+        {activeSection === 'services'      && <Placeholder title="Services" />}
+        {activeSection === 'calendar'      && <Placeholder title="Google Agenda" />}
+        {activeSection === 'notifications' && <Placeholder title="Notifications" />}
+        {activeSection === 'identifiers'   && <Placeholder title="Identifiants" />}
       </main>
     </div>
   );
