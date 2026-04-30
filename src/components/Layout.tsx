@@ -3,129 +3,177 @@ import { Outlet, Link, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import LanguageToggle from './LanguageToggle';
-import {
-    LayoutDashboard,
-    Calendar,
-    Phone,
-    Settings,
-    LogOut,
-    Menu,
-    X
-} from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
 
 const Layout: React.FC = () => {
     const { user, logout } = useAuth();
     const { t } = useTranslation();
     const location = useLocation();
     const { restaurantSlug } = useParams();
-    const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+    const [mobileOpen, setMobileOpen] = React.useState(false);
 
     const base = `/r/${restaurantSlug}`;
 
     const navigation = [
-        { name: t('nav.dashboard'), href: `${base}/dashboard`, icon: LayoutDashboard },
-        { name: t('nav.bookings'),  href: `${base}/bookings`,  icon: Calendar },
-        { name: t('nav.calls'),     href: `${base}/calls`,     icon: Phone },
-        { name: t('nav.settings'),  href: `${base}/settings`,  icon: Settings },
+        { name: t('nav.dashboard'), href: `${base}/dashboard` },
+        { name: t('nav.bookings'),  href: `${base}/bookings` },
+        { name: t('nav.calls'),     href: `${base}/calls` },
+        { name: t('nav.settings'),  href: `${base}/settings` },
     ];
 
     const isActive = (path: string) => location.pathname === path;
+    const restaurantName = (user?.name || '').toUpperCase();
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A]">
-            {/* Top Navigation */}
-            <nav className="bg-[#111] border-b border-[#1f1f1f]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-14">
-                        <div className="flex items-center gap-4">
-                            <Link to={`${base}/dashboard`} className="text-lg font-bold text-white hover:text-green-400 transition-colors">
-                                TableNow
+        <div style={{ minHeight: '100vh', background: 'var(--bg0)' }}>
+            {/* ── Navbar ────────────────────────────────────────────────────── */}
+            <nav style={{
+                height: '46px',
+                background: 'var(--bg1)',
+                borderBottom: '1px solid var(--line)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 200,
+            }}>
+                <div style={{
+                    maxWidth: '1280px',
+                    margin: '0 auto',
+                    padding: '0 20px',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                }}>
+                    {/* Logo */}
+                    <Link to={`${base}/dashboard`} style={{ textDecoration: 'none', flexShrink: 0 }}>
+                        <span style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '-0.3px', color: 'var(--t1)' }}>
+                            Table<span style={{ color: 'var(--acc)' }}>Now</span>
+                        </span>
+                    </Link>
+
+                    {/* Restaurant tag */}
+                    {restaurantName && (
+                        <span style={{
+                            fontSize: '9px',
+                            color: 'var(--t4)',
+                            border: '1px solid var(--line3)',
+                            borderRadius: '3px',
+                            padding: '2px 7px',
+                            marginLeft: '8px',
+                            marginRight: '14px',
+                            flexShrink: 0,
+                            letterSpacing: '0.05em',
+                        }}>
+                            {restaurantName}
+                        </span>
+                    )}
+
+                    {/* Vertical divider */}
+                    <div style={{ width: '1px', height: '16px', background: 'var(--line3)', marginRight: '16px', flexShrink: 0 }} />
+
+                    {/* Desktop nav links */}
+                    <div className="hidden md:flex" style={{ alignItems: 'center', flex: 1, height: '100%' }}>
+                        {navigation.map(item => (
+                            <Link
+                                key={item.href}
+                                to={item.href}
+                                style={{
+                                    fontSize: '11px',
+                                    color: isActive(item.href) ? 'var(--t1)' : 'var(--t3)',
+                                    textDecoration: 'none',
+                                    padding: '0 10px',
+                                    height: '46px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    borderBottom: isActive(item.href) ? '2px solid var(--acc)' : '2px solid transparent',
+                                    whiteSpace: 'nowrap',
+                                    transition: 'color 120ms',
+                                }}
+                            >
+                                {item.name}
                             </Link>
-                            {user && (
-                                <span className="hidden sm:block text-xs text-gray-500 truncate max-w-[160px]">
-                                    {user.name}
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Desktop Navigation */}
-                        <div className="hidden md:flex items-center space-x-1">
-                            {navigation.map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                    <Link
-                                        key={item.name}
-                                        to={item.href}
-                                        className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-sm transition-all duration-200 ${
-                                            isActive(item.href)
-                                                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                                                : 'text-gray-400 hover:text-white hover:bg-[#1a1a1a]'
-                                        }`}
-                                    >
-                                        <Icon size={16} />
-                                        <span>{item.name}</span>
-                                    </Link>
-                                );
-                            })}
-                            <div className="ml-2"><LanguageToggle /></div>
-                            <button
-                                onClick={logout}
-                                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 ml-2"
-                            >
-                                <LogOut size={16} />
-                                <span>{t('common.logout')}</span>
-                            </button>
-                        </div>
-
-                        {/* Mobile menu button */}
-                        <div className="md:hidden flex items-center gap-2">
-                            <LanguageToggle />
-                            <button
-                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                                className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-[#1a1a1a]"
-                            >
-                                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-                            </button>
-                        </div>
+                        ))}
                     </div>
+
+                    {/* Right controls – desktop */}
+                    <div className="hidden md:flex" style={{ alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
+                        {user?.vapi_assistant_id && (
+                            <span className="badge badge-acc">IA active</span>
+                        )}
+                        <LanguageToggle />
+                        <button
+                            onClick={logout}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                fontSize: '11px',
+                                color: 'var(--t3)',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                            }}
+                        >
+                            <LogOut size={13} />
+                            <span>{t('common.logout')}</span>
+                        </button>
+                    </div>
+
+                    {/* Mobile toggle */}
+                    <button
+                        className="flex md:hidden"
+                        onClick={() => setMobileOpen(!mobileOpen)}
+                        style={{ background: 'none', border: 'none', color: 'var(--t2)', padding: '4px', marginLeft: 'auto' }}
+                    >
+                        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
                 </div>
-
-                {/* Mobile Navigation */}
-                {mobileMenuOpen && (
-                    <div className="md:hidden border-t border-[#1f1f1f]">
-                        <div className="px-3 pt-2 pb-3 space-y-1">
-                            {navigation.map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                    <Link
-                                        key={item.name}
-                                        to={item.href}
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl text-sm ${
-                                            isActive(item.href)
-                                                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                                                : 'text-gray-400 hover:text-white hover:bg-[#1a1a1a]'
-                                        }`}
-                                    >
-                                        <Icon size={16} />
-                                        <span>{item.name}</span>
-                                    </Link>
-                                );
-                            })}
-                            <button
-                                onClick={() => { logout(); setMobileMenuOpen(false); }}
-                                className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-red-400 hover:bg-red-500/10"
-                            >
-                                <LogOut size={16} />
-                                <span>{t('common.logout')}</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
             </nav>
 
-            {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* ── Mobile nav ────────────────────────────────────────────────── */}
+            {mobileOpen && (
+                <div
+                    className="md:hidden"
+                    style={{ background: 'var(--bg1)', borderBottom: '1px solid var(--line)', padding: '8px 16px 12px' }}
+                >
+                    {navigation.map(item => (
+                        <Link
+                            key={item.href}
+                            to={item.href}
+                            onClick={() => setMobileOpen(false)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '9px 10px',
+                                fontSize: '12px',
+                                color: isActive(item.href) ? 'var(--t1)' : 'var(--t2)',
+                                textDecoration: 'none',
+                                borderRadius: 'var(--r6)',
+                                background: isActive(item.href) ? 'var(--bg2)' : 'transparent',
+                                marginBottom: '2px',
+                                borderLeft: isActive(item.href) ? '2px solid var(--acc)' : '2px solid transparent',
+                            }}
+                        >
+                            {item.name}
+                        </Link>
+                    ))}
+                    <button
+                        onClick={() => { logout(); setMobileOpen(false); }}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '9px 10px', fontSize: '12px', color: 'var(--red)',
+                            background: 'none', border: 'none', cursor: 'pointer', width: '100%',
+                            marginTop: '4px',
+                        }}
+                    >
+                        <LogOut size={14} />
+                        {t('common.logout')}
+                    </button>
+                </div>
+            )}
+
+            {/* ── Page content ──────────────────────────────────────────────── */}
+            <main>
                 <Outlet />
             </main>
         </div>

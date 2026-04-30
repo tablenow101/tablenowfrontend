@@ -1,0 +1,40 @@
+/* TableNow Design Tokens */
+:root {
+  /* Fonds */
+  --bg0: #0c0c0c;
+  --bg1: #141414;
+  --bg2: #1a1a1a;
+  --bg3: #222222;
+  --bg4: #2a2a2a;
+  --bg5: #333333;
+
+  /* Bordures */
+  --line:  #222222;
+  --line2: #2a2a2a;
+  --line3: #333333;
+
+  /* Texte */
+  --t1: #f0ede6;
+  --t2: #999999;
+  --t3: #555555;
+  --t4: #333333;
+
+  /* Couleur principale */
+  --acc:  #b8e04a;
+  --acc2: rgba(184, 224, 74, 0.13);
+  --acc3: rgba(184, 224, 74, 0.06);
+
+  /* Sémantiques */
+  --red:    #e05a5a;
+  --red2:   rgba(224, 90, 90, 0.12);
+  --blue:   #5b9cf6;
+  --blue2:  rgba(91, 156, 246, 0.12);
+  --amber:  #e8a44a;
+  --amber2: rgba(232, 164, 74, 0.12);
+
+  /* Rayons */
+  --r4:  4px;
+  --r6:  6px;
+  --r8:  8px;
+  --r10: 10px;
+}

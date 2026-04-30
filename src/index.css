@@ -1,150 +1,140 @@
-@import '@fontsource/inter/400.css';
-@import '@fontsource/inter/500.css';
-@import '@fontsource/inter/600.css';
-@import '@fontsource/inter/700.css';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
 :root {
-  /* Colors */
-  --bg-page: #0A0F1C;
-  --bg-card: #0F1626;
-  --bg-input: rgba(255, 255, 255, 0.04);
-  --bg-toggle: rgba(255, 255, 255, 0.05);
-  --border-card: rgba(255, 255, 255, 0.15);
-  --border-input: rgba(255, 255, 255, 0.10);
-  --border-input-focus: rgba(255, 255, 255, 0.40);
-  --border-input-error: #EF4444;
-  --text-primary: #FFFFFF;
-  --text-secondary: #8B95A7;
-  --text-tertiary: #D1D5DB;
-  --text-error: #FCA5A5;
-  --text-success: #86EFAC;
-  --btn-primary-bg: #FFFFFF;
-  --btn-primary-fg: #0A0F1C;
-  --btn-primary-hover: #E5E7EB;
-  --btn-secondary-bg: transparent;
-  --btn-secondary-border: rgba(255, 255, 255, 0.20);
-  --icon-circle-bg: #FFFFFF;
-  --icon-circle-fg: #0A0F1C;
-  --progress-track: rgba(255, 255, 255, 0.10);
-  --progress-fill: #FFFFFF;
+  --bg0: #0c0c0c;
+  --bg1: #141414;
+  --bg2: #1a1a1a;
+  --bg3: #222222;
+  --bg4: #2a2a2a;
+  --bg5: #333333;
+  --line:  #222222;
+  --line2: #2a2a2a;
+  --line3: #333333;
+  --t1: #f0ede6;
+  --t2: #999999;
+  --t3: #555555;
+  --t4: #333333;
+  --acc:  #b8e04a;
+  --acc2: rgba(184, 224, 74, 0.13);
+  --acc3: rgba(184, 224, 74, 0.06);
+  --red:    #e05a5a;
+  --red2:   rgba(224, 90, 90, 0.12);
+  --blue:   #5b9cf6;
+  --blue2:  rgba(91, 156, 246, 0.12);
+  --amber:  #e8a44a;
+  --amber2: rgba(232, 164, 74, 0.12);
+  --r4:  4px;
+  --r6:  6px;
+  --r8:  8px;
+  --r10: 10px;
+
+  /* Legacy aliases for components not yet migrated */
+  --bg-page: var(--bg0);
+  --bg-card: var(--bg1);
+  --bg-input: var(--bg3);
+  --border-card: var(--line);
+  --border-input: var(--line2);
+  --border-input-focus: var(--acc);
+  --text-primary: var(--t1);
+  --text-secondary: var(--t2);
+  --text-tertiary: var(--t3);
+  --text-error: var(--red);
+  --btn-primary-bg: var(--acc);
+  --btn-primary-fg: #0c0c0c;
 }
 
 @layer base {
   html {
-    background-color: var(--bg-page);
-    color: var(--text-primary);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg0);
+    color: var(--t1);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    background-color: var(--bg-page);
-    color: var(--text-primary);
+    background-color: var(--bg0);
+    color: var(--t1);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+
+  *, *::before, *::after {
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+
+  button {
+    text-align: center;
+    cursor: pointer;
   }
 
   input, textarea, select {
-    background-color: var(--bg-input);
-    border: 1px solid var(--border-input);
-    border-radius: 8px;
-    color: var(--text-primary);
-    padding: 0 12px;
-    transition: background-color 150ms ease-out, border-color 150ms ease-out;
+    font-family: inherit;
+    background-color: var(--bg3);
+    border: 1px solid var(--line2);
+    border-radius: var(--r6);
+    color: var(--t1);
+    padding: 7px 10px;
+    font-size: 12px;
+    transition: border-color 150ms ease;
+    width: 100%;
   }
 
   input::placeholder, textarea::placeholder {
-    color: var(--text-secondary);
+    color: var(--t3);
   }
 
   input:focus, textarea:focus, select:focus {
     outline: none;
-    border-color: var(--border-input-focus);
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.10);
-  }
-
-  input:disabled, textarea:disabled, select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  input[aria-invalid="true"], textarea[aria-invalid="true"] {
-    border-color: var(--border-input-error);
+    border-color: var(--acc);
   }
 }
 
-@layer components {
-  .btn-primary {
-    @apply h-12 w-full px-4 rounded-lg font-semibold text-sm transition-all duration-150 ease-out;
-    background-color: var(--btn-primary-bg);
-    color: var(--btn-primary-fg);
-  }
+/* ─── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg0); }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--bg5); }
 
-  .btn-primary:hover:not(:disabled) {
-    background-color: var(--btn-primary-hover);
-  }
-
-  .btn-primary:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-
-  .btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .btn-secondary {
-    @apply h-11 w-full px-4 rounded-lg font-medium text-sm transition-all duration-150 ease-out;
-    background-color: var(--btn-secondary-bg);
-    color: var(--text-primary);
-    border: 1px solid var(--btn-secondary-border);
-  }
-
-  .btn-secondary:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.04);
-  }
-
-  .btn-secondary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  /* Focus ring for accessibility */
-  .focus-ring:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.40);
-    outline-offset: 2px;
-  }
-}
-
-/* Custom scrollbar — dark */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-page);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.10);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.20);
-}
-
-/* Loading spinner */
+/* ─── Loading spinner ─────────────────────────────────────────────────────── */
 .loading {
-  @apply inline-block w-5 h-5 border-2 border-[rgba(255,255,255,0.1)] border-t-white rounded-full animate-spin;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(184, 224, 74, 0.15);
+  border-top-color: var(--acc);
+  border-radius: 50%;
+  animation: tn-spin 0.7s linear infinite;
 }
+
+@keyframes tn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Badge utility ───────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: 3px;
+  padding: 2px 7px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.badge-acc   { background: var(--acc2);   color: var(--acc);   border-color: rgba(184,224,74,0.15);  }
+.badge-red   { background: var(--red2);   color: var(--red);   border-color: rgba(224,90,90,0.15);   }
+.badge-blue  { background: var(--blue2);  color: var(--blue);  border-color: rgba(91,156,246,0.15);  }
+.badge-amber { background: var(--amber2); color: var(--amber); border-color: rgba(232,164,74,0.15);  }
+
+/* ─── Pulse animation ─────────────────────────────────────────────────────── */
+@keyframes tn-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+.tn-pulse { animation: tn-pulse 2s ease-in-out infinite; }
