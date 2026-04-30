@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SidebarProvider } from './context/SidebarContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
@@ -55,20 +56,17 @@ const AppRoutes = () => {
   const isMarketing = isDomainMarketingSite();
 
   if (isMarketing) {
-    // Marketing site routes
     return (
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-        {/* Redirect all other routes to landing on marketing domain */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }
 
-  // App domain routes (app.tablenow.io)
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
@@ -108,7 +106,9 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <SidebarProvider>
+          <AppRoutes />
+        </SidebarProvider>
       </AuthProvider>
     </BrowserRouter>
   );
