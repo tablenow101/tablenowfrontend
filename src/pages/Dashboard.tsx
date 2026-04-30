@@ -3,451 +3,420 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { dashboardAPI } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import {
-  Phone, Calendar, Users, Clock, TrendingUp, TrendingDown,
-  ChevronRight, Copy, ArrowUpRight, Zap, Star
-} from 'lucide-react';
+import { Phone, Calendar, Users, Clock, Copy, Check, TrendingUp, Play } from 'lucide-react';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatDuration(seconds: number): string {
-  if (!seconds) return '0s';
-  if (seconds < 60) return `${seconds}s`;
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return s > 0 ? `${m}m${s.toString().padStart(2, '0')}s` : `${m}m`;
+// ─── Helpers ───────────────────────────────────────────────────────────────
+function fmt(s: number): string {
+    if (!s) return '0s';
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60), r = s % 60;
+    return r > 0 ? `${m}m${String(r).padStart(2, '0')}s` : `${m}m`;
+}
+function fmtDate(ts: string, locale: string): string {
+    return new Date(ts).toLocaleString(locale, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+function fmtPhone(n: string): string {
+    if (!n) return '—';
+    const d = n.replace(/\D/g, '');
+    if (d.startsWith('33') && d.length === 11)
+        return `+33 ${d[2]} ${d.slice(3,5)} ${d.slice(5,7)} ${d.slice(7,9)} ${d.slice(9,11)}`;
+    return n;
 }
 
-function formatTimestamp(ts: string, localeTag: string): string {
-  const d = new Date(ts);
-  return d.toLocaleString(localeTag, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function StatCard({
-  label, value, sub, change, icon: Icon, href, accent = false,
-}: {
-  label: string; value: string | number; sub?: string; change?: number;
-  icon: React.ElementType; href: string; accent?: boolean;
-}) {
-  const positive = change !== undefined && change >= 0;
-  return (
-    <Link to={href} className="group block">
-      <div className={`
-        relative overflow-hidden rounded-2xl border p-5 h-28 transition-all duration-200
-        hover:border-green-500/40 hover:shadow-[0_0_24px_rgba(34,197,94,0.08)]
-        ${accent ? 'bg-green-500/10 border-green-500/20' : 'bg-[#111] border-[#1f1f1f]'}
-      `}>
-        <div className="flex items-start justify-between mb-4">
-          <div className={`p-2 rounded-xl ${accent ? 'bg-green-500/20' : 'bg-[#1a1a1a]'}`}>
-            <Icon size={18} className={accent ? 'text-green-400' : 'text-gray-400'} />
-          </div>
-          <ChevronRight size={14} className="text-gray-600 group-hover:text-green-500 group-hover:translate-x-0.5 transition-all" />
-        </div>
-        <div className="space-y-1">
-          <p className="text-3xl font-bold text-white tracking-tight">{value}</p>
-          {sub && <p className="text-xs text-green-400 font-medium">{sub}</p>}
-        </div>
-        <div className="flex items-center justify-between mt-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">{label}</p>
-          {change !== undefined && change !== 0 && (
-            <div className={`flex items-center gap-1 text-xs font-medium ${positive ? 'text-green-400' : 'text-red-400'}`}>
-              {positive ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-              {Math.abs(change)}%
-            </div>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function BookingCard({ booking }: { booking: any }) {
-  const { t } = useTranslation();
-  const statusKey = (['confirmed', 'pending', 'cancelled'] as const).includes(booking.status as any)
-    ? booking.status as 'confirmed' | 'pending' | 'cancelled'
-    : 'pending';
-  const statusLabel = statusKey === 'confirmed'
-    ? t('bookings.status.confirmed')
-    : statusKey === 'cancelled'
-      ? t('bookings.status.cancelled')
-      : t('common.loading'); // 'pending' fallback to "..." indicator
-  const dotCls = statusKey === 'confirmed' ? 'bg-green-400' : statusKey === 'cancelled' ? 'bg-red-400' : 'bg-yellow-400';
-  const colorCls = statusKey === 'confirmed' ? 'text-green-400' : statusKey === 'cancelled' ? 'text-red-400' : 'text-yellow-400';
-
-  return (
-    <div className="flex items-center gap-4 p-4 rounded-xl bg-[#0f0f0f] border border-[#1a1a1a] hover:border-[#2a2a2a] transition-colors">
-      <div className="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-        <Users size={16} className="text-gray-400" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white truncate">{booking.guest_name || t('dashboard.guest')}</p>
-        <p className="text-xs text-gray-500">
-          {booking.booking_time || '—'} · {booking.party_size || booking.covers || 0} {t('dashboard.coversShort')}
-          {booking.occasion && ` · ${booking.occasion}`}
-          {booking.table && ` · ${t('dashboard.table')} ${booking.table}`}
-        </p>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className={`w-1.5 h-1.5 rounded-full ${dotCls}`} />
-        <span className={`text-xs font-medium ${colorCls}`}>{statusLabel}</span>
-      </div>
-    </div>
-  );
-}
-
-function CallCard({ call, localeTag }: { call: any; localeTag: string }) {
-  const { t } = useTranslation();
-  const statusKey = (['completed', 'in_progress', 'failed', 'missed'] as const).includes(call.status as any)
-    ? call.status as 'completed' | 'in_progress' | 'failed' | 'missed'
-    : 'completed';
-  const cls = {
-    completed:   'bg-green-500/10 text-green-400 border-green-500/20',
-    in_progress: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    failed:      'bg-red-500/10 text-red-400 border-red-500/20',
-    missed:      'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  }[statusKey];
-
-  return (
-    <div className="flex items-center gap-4 p-4 rounded-xl bg-[#0f0f0f] border border-[#1a1a1a] hover:border-[#2a2a2a] transition-colors">
-      <div className="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-        <Phone size={15} className="text-gray-400" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white truncate">
-          {call.caller_number || t('common.unknown')}
-        </p>
-        <p className="text-xs text-gray-500">
-          {formatTimestamp(call.created_at || call.started_at, localeTag)} · {formatDuration(call.duration || 0)}
-        </p>
-      </div>
-      <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${cls}`}>
-        {t(`calls.statuses.${statusKey}`)}
-      </span>
-    </div>
-  );
-}
-
-function SetupBanner({ slug }: { slug: string }) {
-  const { t } = useTranslation();
-  return (
-    <div className="flex items-center gap-4 p-4 rounded-2xl bg-yellow-500/5 border border-yellow-500/20 mb-6">
-      <div className="p-2 rounded-xl bg-yellow-500/10">
-        <Zap size={16} className="text-yellow-400" />
-      </div>
-      <div className="flex-1">
-        <p className="text-sm font-semibold text-yellow-300">{t('dashboard.setupBanner.title')}</p>
-        <p className="text-xs text-yellow-500/80">{t('dashboard.setupBanner.subtitle')}</p>
-      </div>
-      <Link
-        to={`/r/${slug}/settings`}
-        className="text-xs font-semibold text-yellow-400 hover:text-yellow-300 flex items-center gap-1 whitespace-nowrap"
-      >
-        {t('dashboard.setupBanner.cta')} <ArrowUpRight size={12} />
-      </Link>
-    </div>
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-const Dashboard: React.FC = () => {
-  const { user } = useAuth();
-  const { t, i18n } = useTranslation();
-  const localeTag = i18n.resolvedLanguage === 'en' ? 'en-GB' : 'fr-FR';
-  const { restaurantSlug } = useParams();
-  const slug = restaurantSlug || user?.slug || '';
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'all'>('all');
-
-  useEffect(() => {
-    fetchStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange]);
-
-  const fetchStats = async () => {
-    try {
-      const today = new Date();
-      let params: any = { dateRange };
-      if (dateRange === 'today') {
-        params.startDate = today.toISOString().split('T')[0];
-        params.endDate = today.toISOString().split('T')[0];
-      } else if (dateRange !== 'all') {
-        const days = dateRange === '7d' ? 7 : 30;
-        const start = new Date();
-        start.setDate(start.getDate() - days);
-        params.startDate = start.toISOString().split('T')[0];
-        params.endDate = today.toISOString().split('T')[0];
-      }
-      const response = await dashboardAPI.getStats(params);
-      setStats(response.data);
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+// ─── CopyButton ────────────────────────────────────────────────────────
+function CopyBtn({ value }: { value: string }) {
+    const [copied, setCopied] = useState(false);
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="loading w-12 h-12"></div>
-      </div>
+        <button
+            onClick={() => { navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+            style={{
+                background: 'var(--bg3)', border: '1px solid var(--line2)',
+                borderRadius: 'var(--r4)', padding: '3px 8px',
+                fontSize: '9px', color: copied ? 'var(--acc)' : 'var(--t3)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                flexShrink: 0, whiteSpace: 'nowrap',
+            }}
+        >
+            {copied ? <Check size={10} /> : <Copy size={10} />}
+            {copied ? 'Copié' : 'Copier'}
+        </button>
     );
-  }
+}
 
-  const totalBookings = stats?.bookings?.total || 0;
-  const confirmedBookings = stats?.bookings?.confirmed || 0;
-  const cancelledBookings = stats?.bookings?.cancelled || 0;
-  const totalCalls = stats?.calls?.total || 0;
-  const totalGuests = stats?.bookings?.totalGuests || 0;
-  const avgCallDuration = stats?.calls?.avgDuration || 0;
-  const successRate = totalBookings > 0 ? Math.round((confirmedBookings / totalBookings) * 100) : 0;
-  const recentBookings = stats?.recent?.bookings || [];
-  const recentCalls = stats?.recent?.calls || [];
-  const isSetupIncomplete = !user?.vapi_assistant_id || (totalCalls === 0 && totalBookings === 0);
-
-  return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white overflow-y-auto">
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white">{t('dashboard.title')}</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{t('dashboard.welcome')} {user?.owner_name || user?.name}</p>
-          </div>
-          <div className="flex gap-1 p-1 rounded-xl bg-[#111] border border-[#1f1f1f]">
-            {(['today', '7d', '30d', 'all'] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => setDateRange(r)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  dateRange === r ? 'bg-green-500 text-black' : 'text-gray-500 hover:text-gray-300'
-                }`}
-              >
-                {t(`dashboard.ranges.${r}`)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Setup banner */}
-        {isSetupIncomplete && <SetupBanner slug={slug} />}
-
-        {/* Identity cards */}
-        {user?.vapi_phone_number && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-center gap-4 p-5 rounded-2xl bg-[#111] border border-[#1f1f1f]">
-              <div className="p-2.5 rounded-xl bg-[#1a1a1a]">
-                <Phone size={18} className="text-green-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-gray-500 mb-1">{t('dashboard.iaPhone')}</p>
-                <p className="text-base font-bold text-white font-mono">{user.vapi_phone_number}</p>
-              </div>
+// ─── MetricCard ───────────────────────────────────────────────────────
+function MetricCard({ label, value, delta, href, positive }: {
+    label: string; value: string | number; delta?: number; href: string; positive?: boolean;
+}) {
+    return (
+        <Link to={href} style={{ textDecoration: 'none' }}>
+            <div style={{
+                position: 'relative',
+                background: 'var(--bg2)',
+                border: '1px solid var(--line)',
+                borderTop: `2px solid ${positive ? 'var(--acc)' : 'var(--line2)'}`,
+                borderRadius: 'var(--r8)',
+                padding: '16px 18px 14px',
+                cursor: 'pointer',
+                transition: 'border-color 120ms',
+            }}>
+                {delta !== undefined && delta !== 0 && (
+                    <span style={{
+                        position: 'absolute', top: '10px', right: '10px',
+                        background: delta > 0 ? 'var(--acc2)' : 'var(--red2)',
+                        color: delta > 0 ? 'var(--acc)' : 'var(--red)',
+                        border: `1px solid ${delta > 0 ? 'rgba(184,224,74,0.15)' : 'rgba(224,90,90,0.15)'}`,
+                        borderRadius: '3px', padding: '1px 5px',
+                        fontSize: '8px', fontWeight: 600,
+                    }}>
+                        {delta > 0 ? '+' : ''}{delta}%
+                    </span>
+                )}
+                <p style={{
+                    fontSize: '28px', fontWeight: 300, letterSpacing: '-1px',
+                    color: positive ? 'var(--acc)' : 'var(--t1)',
+                    margin: '0 0 6px',
+                }}>
+                    {value}
+                </p>
+                <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--t3)', margin: 0 }}>
+                    {label}
+                </p>
             </div>
-            <div className="flex items-center gap-4 p-5 rounded-2xl bg-[#111] border border-[#1f1f1f]">
-              <div className="p-2.5 rounded-xl bg-[#1a1a1a]">
-                <Calendar size={18} className="text-blue-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-gray-500 mb-1">{t('dashboard.bccEmail')}</p>
-                <p className="text-xs text-white font-mono truncate">{user.bcc_email || '—'}</p>
-              </div>
-              {user.bcc_email && (
-                <button
-                  onClick={() => navigator.clipboard.writeText(user.bcc_email)}
-                  className="p-1.5 rounded-lg hover:bg-[#1a1a1a] transition-colors flex-shrink-0"
-                >
-                  <Copy size={13} className="text-gray-500 hover:text-white" />
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+        </Link>
+    );
+}
 
-        {/* Stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label={t('dashboard.stats.bookings')}
-            value={totalBookings}
-            sub={t('dashboard.stats.bookingsConfirmed', { count: confirmedBookings })}
-            change={stats?.bookings?.change}
-            icon={Calendar}
-            href={`/r/${slug}/bookings`}
-            accent={totalBookings > 0}
-          />
-          <StatCard
-            label={t('dashboard.stats.calls')}
-            value={totalCalls}
-            sub={t('dashboard.stats.callsHandled', { count: stats?.calls?.successful || totalCalls })}
-            change={stats?.calls?.change}
-            icon={Phone}
-            href={`/r/${slug}/calls`}
-          />
-          <StatCard
-            label={t('dashboard.stats.guests')}
-            value={totalGuests}
-            sub={totalGuests > 0 ? t('dashboard.stats.avgPerBooking', { count: Math.round(totalGuests / Math.max(totalBookings, 1)) }) : undefined}
-            change={stats?.bookings?.guestsChange}
-            icon={Users}
-            href={`/r/${slug}/bookings`}
-          />
-          <StatCard
-            label={t('dashboard.stats.avgDuration')}
-            value={formatDuration(avgCallDuration)}
-            sub={t('dashboard.stats.perCall')}
-            change={stats?.calls?.durationChange}
-            icon={Clock}
-            href={`/r/${slug}/calls`}
-          />
-        </div>
+// ─── StatusBadge ──────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
+    const map: Record<string, { label: string; cls: string }> = {
+        completed:   { label: 'Terminé',    cls: 'badge-acc'   },
+        confirmed:   { label: 'Confirmé',   cls: 'badge-acc'   },
+        in_progress: { label: 'En cours',   cls: 'badge-blue'  },
+        failed:      { label: 'Échoué',     cls: 'badge-red'   },
+        missed:      { label: 'Manqué',     cls: 'badge-amber' },
+        cancelled:   { label: 'Annulé',    cls: 'badge-red'   },
+        pending:     { label: 'En attente', cls: 'badge-blue'  },
+    };
+    const s = map[status] || { label: status, cls: 'badge-blue' };
+    return <span className={`badge ${s.cls}`}>{s.label}</span>;
+}
 
-        {/* Booking status + Operational metrics */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Booking Status */}
-          <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-white">{t('dashboard.bookingStatus')}</h2>
-              <Link to={`/r/${slug}/bookings`} className="text-xs text-green-500 hover:text-green-400 flex items-center gap-1">
-                {t('common.viewAll')} <ArrowUpRight size={11} />
-              </Link>
-            </div>
-            <div className="space-y-3">
-              {[
-                { label: t('dashboard.confirmed'), value: confirmedBookings, total: Math.max(totalBookings, 1), color: 'bg-green-500' },
-                { label: t('dashboard.cancelled'), value: cancelledBookings, total: Math.max(totalBookings, 1), color: 'bg-red-500' },
-              ].map(({ label, value, total, color }) => (
-                <div key={label}>
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-gray-400">{label}</span>
-                    <span className="text-white font-medium">{value}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-[#1a1a1a] overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${color} transition-all duration-700`}
-                      style={{ width: `${Math.round((value / total) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-              <div className="flex items-center justify-between pt-2 border-t border-[#1a1a1a]">
-                <span className="text-xs text-gray-500">{t('dashboard.successRate')}</span>
-                <div className="flex items-center gap-1.5">
-                  <TrendingUp size={12} className="text-green-400" />
-                  <span className="text-sm font-bold text-green-400">{successRate}%</span>
-                </div>
-              </div>
-            </div>
-          </div>
+// ─── Dashboard ──────────────────────────────────────────────────────────────
+const Dashboard: React.FC = () => {
+    const { user } = useAuth();
+    const { t, i18n } = useTranslation();
+    const locale = i18n.resolvedLanguage === 'en' ? 'en-GB' : 'fr-FR';
+    const { restaurantSlug } = useParams();
+    const slug = restaurantSlug || user?.slug || '';
 
-          {/* Operational metrics */}
-          <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-white">{t('dashboard.operationalMetrics')}</h2>
-            <div className="space-y-4">
-              {stats?.pacing !== undefined && (
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-gray-400">{t('dashboard.pacingTonight')}</span>
-                    <div className="flex items-center gap-1.5">
-                      <div className={`w-1.5 h-1.5 rounded-full ${stats.pacing >= 85 ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'}`} />
-                      <span className="text-sm font-bold text-white">{stats.pacing}%</span>
+    const [stats, setStats]       = useState<any>(null);
+    const [loading, setLoading]   = useState(true);
+    const [dateRange, setDateRange] = useState<'today'|'7d'|'30d'|'all'>('all');
+
+    useEffect(() => { fetchStats(); }, [dateRange]); // eslint-disable-line
+
+    const fetchStats = async () => {
+        try {
+            const today = new Date();
+            const params: any = { dateRange };
+            if (dateRange === 'today') {
+                params.startDate = params.endDate = today.toISOString().split('T')[0];
+            } else if (dateRange !== 'all') {
+                const days = dateRange === '7d' ? 7 : 30;
+                const start = new Date(); start.setDate(start.getDate() - days);
+                params.startDate = start.toISOString().split('T')[0];
+                params.endDate = today.toISOString().split('T')[0];
+            }
+            const r = await dashboardAPI.getStats(params);
+            setStats(r.data);
+        } catch (e) {
+            console.error('Failed to fetch stats:', e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
+                <span className="loading" />
+            </div>
+        );
+    }
+
+    const totalBookings   = stats?.bookings?.total      || 0;
+    const confirmed       = stats?.bookings?.confirmed  || 0;
+    const cancelled       = stats?.bookings?.cancelled  || 0;
+    const totalCalls      = stats?.calls?.total         || 0;
+    const totalGuests     = stats?.bookings?.totalGuests || 0;
+    const avgDuration     = stats?.calls?.avgDuration   || 0;
+    const successRate     = totalBookings > 0 ? Math.round((confirmed / totalBookings) * 100) : 0;
+    const recentBookings  = stats?.recent?.bookings     || [];
+    const recentCalls     = stats?.recent?.calls        || [];
+
+    const rangeLabels: Record<string, string> = { today: 'Auj.', '7d': '7j', '30d': '30j', all: 'Tout' };
+
+    return (
+        <div style={{ background: 'var(--bg0)', minHeight: 'calc(100vh - 46px)', padding: '28px 24px' }}>
+            <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+
+                {/* ── Header row ──────────────────────────────────────────── */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                        <h1 style={{ fontSize: '18px', fontWeight: 500, color: 'var(--t1)', margin: 0 }}>
+                            {t('dashboard.title')}
+                        </h1>
+                        <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: '3px' }}>
+                            {t('dashboard.welcome')} {user?.owner_name || user?.name}
+                        </p>
                     </div>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-[#1a1a1a] overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-green-500 transition-all duration-700"
-                      style={{ width: `${stats.pacing}%` }}
+                    {/* Period selector */}
+                    <div style={{
+                        display: 'flex', gap: '2px',
+                        background: 'var(--bg2)', border: '1px solid var(--line2)',
+                        borderRadius: 'var(--r6)', padding: '3px',
+                    }}>
+                        {(['today','7d','30d','all'] as const).map(r => (
+                            <button
+                                key={r}
+                                onClick={() => setDateRange(r)}
+                                style={{
+                                    padding: '4px 10px',
+                                    fontSize: '10px',
+                                    fontWeight: dateRange === r ? 600 : 400,
+                                    color: dateRange === r ? 'var(--t1)' : 'var(--t3)',
+                                    background: dateRange === r ? 'var(--bg4)' : 'transparent',
+                                    border: 'none',
+                                    borderRadius: 'var(--r4)',
+                                    cursor: 'pointer',
+                                    transition: 'all 120ms',
+                                }}
+                            >
+                                {rangeLabels[r]}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* ── Info band: Numéro IA + BCC ────────────────────── */}
+                {(user?.vapi_phone_number || user?.bcc_email) && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+                        {user?.vapi_phone_number && (
+                            <div style={{
+                                background: 'var(--bg2)', border: '1px solid var(--line)',
+                                borderRadius: 'var(--r8)', padding: '14px 16px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                                    <Phone size={14} style={{ color: 'var(--acc)', flexShrink: 0 }} />
+                                    <div style={{ minWidth: 0 }}>
+                                        <p style={{ fontSize: '9px', color: 'var(--t3)', margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Numéro IA</p>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1)', fontFamily: 'monospace', margin: 0 }}>{user.vapi_phone_number}</p>
+                                    </div>
+                                </div>
+                                <CopyBtn value={user.vapi_phone_number} />
+                            </div>
+                        )}
+                        {user?.bcc_email && (
+                            <div style={{
+                                background: 'var(--bg2)', border: '1px solid var(--line)',
+                                borderRadius: 'var(--r8)', padding: '14px 16px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                                    <Calendar size={14} style={{ color: 'var(--blue)', flexShrink: 0 }} />
+                                    <div style={{ minWidth: 0 }}>
+                                        <p style={{ fontSize: '9px', color: 'var(--t3)', margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Adresse BCC</p>
+                                        <p style={{ fontSize: '11px', color: 'var(--t1)', fontFamily: 'monospace', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.bcc_email}</p>
+                                    </div>
+                                </div>
+                                <CopyBtn value={user.bcc_email} />
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── 4 Metrics ──────────────────────────────────────────── */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+                    <MetricCard
+                        label={t('dashboard.stats.bookings')}
+                        value={totalBookings}
+                        delta={stats?.bookings?.change}
+                        href={`/r/${slug}/bookings`}
+                        positive={totalBookings > 0}
                     />
-                  </div>
-                  {stats.pacing >= 85 && (
-                    <p className="text-xs text-green-500 mt-1">{t('dashboard.highDemand')}</p>
-                  )}
+                    <MetricCard
+                        label={t('dashboard.stats.calls')}
+                        value={totalCalls}
+                        delta={stats?.calls?.change}
+                        href={`/r/${slug}/calls`}
+                        positive={totalCalls > 0}
+                    />
+                    <MetricCard
+                        label={t('dashboard.stats.guests')}
+                        value={totalGuests}
+                        delta={stats?.bookings?.guestsChange}
+                        href={`/r/${slug}/bookings`}
+                        positive={totalGuests > 0}
+                    />
+                    <MetricCard
+                        label={t('dashboard.stats.avgDuration')}
+                        value={fmt(avgDuration)}
+                        delta={stats?.calls?.durationChange}
+                        href={`/r/${slug}/calls`}
+                        positive={avgDuration > 0}
+                    />
                 </div>
-              )}
-              {stats?.turnoverRate !== undefined && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">{t('dashboard.turnoverRate')}</span>
-                  <div className="text-right">
-                    <span className="text-sm font-bold text-white">{stats.turnoverRate.toFixed(1)}</span>
-                    <span className="text-xs text-gray-600 ml-1">/ 2.1</span>
-                  </div>
+
+                {/* ── 2-column grid ───────────────────────────────────────── */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+
+                    {/* Booking status */}
+                    <div style={{ background: 'var(--bg2)', border: '1px solid var(--line)', borderRadius: 'var(--r8)', padding: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                            <h2 style={{ fontSize: '12px', fontWeight: 500, color: 'var(--t1)', margin: 0 }}>
+                                {t('dashboard.bookingStatus')}
+                            </h2>
+                            <Link to={`/r/${slug}/bookings`} style={{ fontSize: '10px', color: 'var(--acc)', textDecoration: 'none' }}>
+                                Voir tout →
+                            </Link>
+                        </div>
+
+                        {totalBookings === 0 ? (
+                            <p style={{ fontSize: '11px', color: 'var(--t3)', fontStyle: 'italic' }}>Données à venir</p>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {[{ label: t('dashboard.confirmed'), value: confirmed, color: 'var(--acc)' },
+                                  { label: t('dashboard.cancelled'), value: cancelled, color: 'var(--red)'  }]
+                                  .map(({ label, value, color }) => (
+                                    <div key={label}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                            <span style={{ fontSize: '11px', color: 'var(--t2)' }}>{label}</span>
+                                            <span style={{ fontSize: '11px', color: 'var(--t1)', fontWeight: 500 }}>{value}</span>
+                                        </div>
+                                        <div style={{ height: '3px', background: 'var(--bg4)', borderRadius: '2px', overflow: 'hidden' }}>
+                                            <div style={{
+                                                height: '100%', borderRadius: '2px',
+                                                background: color,
+                                                width: `${Math.round((value / Math.max(totalBookings, 1)) * 100)}%`,
+                                                transition: 'width 600ms ease',
+                                            }} />
+                                        </div>
+                                    </div>
+                                ))}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid var(--line)' }}>
+                                    <span style={{ fontSize: '10px', color: 'var(--t3)' }}>{t('dashboard.successRate')}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <TrendingUp size={11} style={{ color: 'var(--acc)' }} />
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--acc)' }}>{successRate}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Recent bookings */}
+                        {recentBookings.length > 0 && (
+                            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
+                                <p style={{ fontSize: '10px', color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>
+                                    {t('dashboard.recentBookings')}
+                                </p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {recentBookings.slice(0, 3).map((b: any) => (
+                                        <div key={b.id} style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            padding: '8px 10px', background: 'var(--bg1)',
+                                            border: '1px solid var(--line)', borderRadius: 'var(--r6)',
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                                                <Users size={12} style={{ color: 'var(--t3)', flexShrink: 0 }} />
+                                                <div style={{ minWidth: 0 }}>
+                                                    <p style={{ fontSize: '11px', fontWeight: 500, color: 'var(--t1)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.guest_name || 'Client'}</p>
+                                                    <p style={{ fontSize: '10px', color: 'var(--t3)', margin: 0 }}>{b.booking_time} · {b.party_size || b.covers || 0} cvts</p>
+                                                </div>
+                                            </div>
+                                            <StatusBadge status={b.status} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Recent calls */}
+                    <div style={{ background: 'var(--bg2)', border: '1px solid var(--line)', borderRadius: 'var(--r8)', padding: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                            <h2 style={{ fontSize: '12px', fontWeight: 500, color: 'var(--t1)', margin: 0 }}>
+                                {t('dashboard.recentCalls')}
+                            </h2>
+                            <Link to={`/r/${slug}/calls`} style={{ fontSize: '10px', color: 'var(--acc)', textDecoration: 'none' }}>
+                                Voir tout →
+                            </Link>
+                        </div>
+
+                        {recentCalls.length === 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '80px' }}>
+                                <Phone size={22} style={{ color: 'var(--bg5)', marginBottom: '8px' }} />
+                                <p style={{ fontSize: '11px', color: 'var(--t3)', textAlign: 'center' }}>{t('dashboard.noCalls1')}</p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {recentCalls.slice(0, 5).map((c: any) => (
+                                    <div
+                                        key={c.id}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '10px',
+                                            padding: '9px 10px',
+                                            background: 'var(--bg1)', border: '1px solid var(--line)',
+                                            borderRadius: 'var(--r6)', cursor: 'default',
+                                            transition: 'background 120ms',
+                                        }}
+                                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg3)')}
+                                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg1)')}
+                                    >
+                                        {/* Green dot */}
+                                        <span style={{
+                                            width: '6px', height: '6px', borderRadius: '50%',
+                                            background: 'var(--acc)', flexShrink: 0,
+                                        }} />
+                                        {/* Number + date */}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <p style={{ fontSize: '11px', fontWeight: 500, color: 'var(--t1)', margin: 0, fontFamily: 'monospace' }}>
+                                                {fmtPhone(c.caller_number || '')}
+                                            </p>
+                                            <p style={{ fontSize: '10px', color: 'var(--t3)', margin: 0 }}>
+                                                {fmtDate(c.created_at || c.started_at, locale)} · {fmt(c.duration || 0)}
+                                            </p>
+                                        </div>
+                                        <StatusBadge status={c.status || 'completed'} />
+                                        {/* Play button */}
+                                        {c.recording_url && (
+                                            <a
+                                                href={c.recording_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                                    background: 'var(--acc2)', color: 'var(--acc)',
+                                                    border: '1px solid rgba(184,224,74,0.15)',
+                                                    borderRadius: '3px', padding: '2px 7px',
+                                                    fontSize: '9px', fontWeight: 600,
+                                                    textDecoration: 'none', flexShrink: 0,
+                                                }}
+                                            >
+                                                <Play size={9} />
+                                                Écouter
+                                            </a>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                 </div>
-              )}
-              {stats?.vipsTonight !== undefined && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Star size={13} className="text-yellow-400" />
-                    <span className="text-xs text-gray-400">{t('dashboard.vipsTonight')}</span>
-                  </div>
-                  <span className="text-sm font-bold text-white">{String(stats.vipsTonight).padStart(2, '0')}</span>
-                </div>
-              )}
-              {stats?.pacing === undefined && stats?.turnoverRate === undefined && stats?.vipsTonight === undefined && (
-                <div className="flex flex-col items-center justify-center h-24 text-center">
-                  <p className="text-xs text-gray-600">{t('dashboard.noDataYet1')}</p>
-                  <p className="text-xs text-gray-600">{t('dashboard.noDataYet2')}</p>
-                </div>
-              )}
             </div>
-          </div>
         </div>
-
-        {/* Recent Bookings + Recent Calls */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Recent Bookings */}
-          <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-semibold text-white">{t('dashboard.recentBookings')}</h2>
-              <Link to={`/r/${slug}/bookings`} className="text-xs text-green-500 hover:text-green-400 flex items-center gap-1">
-                {t('common.viewAll')} <ArrowUpRight size={11} />
-              </Link>
-            </div>
-            {recentBookings.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-32 text-center">
-                <Calendar size={24} className="text-gray-700 mb-3" />
-                <p className="text-xs text-gray-600">{t('dashboard.noBookings1')}</p>
-                <p className="text-xs text-gray-700 mt-1">{t('dashboard.noBookings2')}</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {recentBookings.slice(0, 4).map((b: any) => (
-                  <BookingCard key={b.id} booking={b} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Recent Calls */}
-          <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-semibold text-white">{t('dashboard.recentCalls')}</h2>
-              <Link to={`/r/${slug}/calls`} className="text-xs text-green-500 hover:text-green-400 flex items-center gap-1">
-                {t('common.viewAll')} <ArrowUpRight size={11} />
-              </Link>
-            </div>
-            {recentCalls.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-32 text-center">
-                <Phone size={24} className="text-gray-700 mb-3" />
-                <p className="text-xs text-gray-600">{t('dashboard.noCalls1')}</p>
-                <p className="text-xs text-gray-700 mt-1">{t('dashboard.noCalls2')}</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {recentCalls.slice(0, 4).map((c: any) => (
-                  <CallCard key={c.id} call={c} localeTag={localeTag} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Dashboard;
