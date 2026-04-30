@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { settingsAPI } from '../../lib/api';
 
 const TABS = ['Jours & heures', 'Capacité', 'Jours fermés'];
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -47,6 +48,23 @@ const HoraireSettings: React.FC = () => {
   const [tab, setTab] = useState('Jours & heures');
   const [hours, setHours] = useState<DaySchedule[]>(DEFAULT_HOURS);
   const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const originalRef = useRef<DaySchedule[]>(DEFAULT_HOURS.map(h => ({ ...h })));
+
+  useEffect(() => {
+    settingsAPI.get()
+      .then(res => {
+        const d = res.data?.restaurant ?? res.data ?? {};
+        const loaded: DaySchedule[] =
+          Array.isArray(d.opening_hours) && d.opening_hours.length === 7
+            ? d.opening_hours
+            : DEFAULT_HOURS;
+        originalRef.current = loaded.map(h => ({ ...h }));
+        setHours(loaded);
+      })
+      .catch(() => {});
+  }, []);
 
   const toggle = (i: number) => {
     setHours(h => h.map((d, idx) => idx === i ? { ...d, enabled: !d.enabled } : d));
@@ -58,9 +76,24 @@ const HoraireSettings: React.FC = () => {
     setDirty(true);
   };
 
-  const reset = () => {
-    setHours(DEFAULT_HOURS);
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await settingsAPI.update({ opening_hours: hours });
+      originalRef.current = hours.map(h => ({ ...h }));
+      setDirty(false);
+    } catch {
+      setError("Erreur lors de l'enregistrement.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const cancel = () => {
+    setHours(originalRef.current.map(h => ({ ...h })));
     setDirty(false);
+    setError(null);
   };
 
   return (
@@ -70,7 +103,7 @@ const HoraireSettings: React.FC = () => {
       {tab === 'Jours & heures' && (
         <>
           <p className="text-[10px] uppercase tracking-wider text-[#555] mb-4">
-            Jours d’ouverture
+            Jours d'ouverture
           </p>
 
           <div className="bg-[#111] border border-[#2a2a2a] rounded-xl overflow-hidden">
@@ -83,7 +116,6 @@ const HoraireSettings: React.FC = () => {
                     i < DAYS.length - 1 ? 'border-b border-[#1a1a1a]' : ''
                   }`}
                 >
-                  {/* Toggle pill */}
                   <button
                     onClick={() => toggle(i)}
                     className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
@@ -97,7 +129,6 @@ const HoraireSettings: React.FC = () => {
                     />
                   </button>
 
-                  {/* Day label */}
                   <span
                     className={`text-sm w-24 ${
                       d.enabled ? 'text-white' : 'text-[#555]'
@@ -106,7 +137,6 @@ const HoraireSettings: React.FC = () => {
                     {day}
                   </span>
 
-                  {/* Times or Fermé */}
                   {d.enabled ? (
                     <div className="flex items-center gap-2 ml-auto">
                       <input
@@ -131,13 +161,19 @@ const HoraireSettings: React.FC = () => {
             })}
           </div>
 
+          {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+
           {dirty && (
             <div className="flex gap-3 mt-6">
-              <button className="h-11 px-6 bg-[#b8f000] text-black font-bold rounded-xl text-sm">
-                Enregistrer
+              <button
+                onClick={save}
+                disabled={saving}
+                className="h-11 px-6 bg-[#b8f000] text-black font-bold rounded-xl text-sm disabled:opacity-50"
+              >
+                {saving ? 'Enregistrement…' : 'Enregistrer'}
               </button>
               <button
-                onClick={reset}
+                onClick={cancel}
                 className="h-11 px-6 bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl text-sm hover:border-[#444] transition-colors"
               >
                 Annuler
