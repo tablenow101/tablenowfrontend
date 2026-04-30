@@ -9,10 +9,14 @@ import {
   Key,
   Gift,
 } from 'lucide-react';
-import GeneralSettings    from './GeneralSettings';
-import HoraireSettings    from './HoraireSettings';
-import AssistantSettings  from './AssistantSettings';
-import ParrainageSettings from './ParrainageSettings';
+import GeneralSettings       from './GeneralSettings';
+import HoraireSettings       from './HoraireSettings';
+import AssistantSettings     from './AssistantSettings';
+import ParrainageSettings    from './ParrainageSettings';
+import CalendarSettings      from './CalendarSettings';
+import NotificationsSettings from './NotificationsSettings';
+import IdentifiantsSettings  from './IdentifiantsSettings';
+import ServicesSettings      from './ServicesSettings';
 
 type SectionId =
   | 'general'
@@ -41,14 +45,6 @@ const SIDEBAR_ITEMS: {
 ];
 
 const GROUPS = ['RESTAURANT', 'INTÉGRATIONS', 'SYSTÈME'] as const;
-
-function Placeholder({ title }: { title: string }) {
-  return (
-    <div className="max-w-2xl">
-      <p className="text-sm text-[#555]">Configuration {title} à venir.</p>
-    </div>
-  );
-}
 
 const SettingsPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<SectionId>('general');
@@ -90,10 +86,10 @@ const SettingsPage: React.FC = () => {
         {activeSection === 'hours'         && <HoraireSettings />}
         {activeSection === 'assistant'     && <AssistantSettings />}
         {activeSection === 'referral'      && <ParrainageSettings />}
-        {activeSection === 'services'      && <Placeholder title="Services" />}
-        {activeSection === 'calendar'      && <Placeholder title="Google Agenda" />}
-        {activeSection === 'notifications' && <Placeholder title="Notifications" />}
-        {activeSection === 'identifiers'   && <Placeholder title="Identifiants" />}
+        {activeSection === 'services'      && <ServicesSettings />}
+        {activeSection === 'calendar'      && <CalendarSettings />}
+        {activeSection === 'notifications' && <NotificationsSettings />}
+        {activeSection === 'identifiers'   && <IdentifiantsSettings />}
       </main>
     </div>
   );
