@@ -36,6 +36,7 @@ const ParrainageSettings: React.FC = () => {
   const { user } = useAuth();
   const [tab, setTab] = useState('Mon programme');
   const [copied, setCopied] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
 
   const referralCode =
     (user as any)?.referral_code ??
@@ -45,6 +46,12 @@ const ParrainageSettings: React.FC = () => {
     navigator.clipboard.writeText(referralCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareLink = () => {
+    navigator.clipboard.writeText(`https://app.tablenow.io/register?ref=${referralCode}`);
+    setCopiedShare(true);
+    setTimeout(() => setCopiedShare(false), 2000);
   };
 
   return (
@@ -96,8 +103,11 @@ const ParrainageSettings: React.FC = () => {
               </div>
 
               {/* Share button */}
-              <button className="px-5 bg-[#b8f000] text-black font-bold rounded-xl text-sm whitespace-nowrap">
-                Partager le lien →
+              <button
+                onClick={shareLink}
+                className="px-5 bg-[#b8f000] text-black font-bold rounded-xl text-sm whitespace-nowrap"
+              >
+                {copiedShare ? 'Lien copié ✓' : 'Partager le lien →'}
               </button>
             </div>
           </div>
@@ -134,7 +144,7 @@ const ParrainageSettings: React.FC = () => {
               <div className="flex items-center gap-4">
                 <Step n={2} />
                 <span className="text-sm text-white flex-1">
-                  Il s’inscrit et active son essai gratuit avec votre code
+                  Il s'inscrit et active son essai gratuit avec votre code
                 </span>
                 <span className="text-[#555] flex-shrink-0">—</span>
               </div>
