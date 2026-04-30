@@ -1,135 +1,107 @@
 import React from 'react';
 import { Outlet, Link, useLocation, useParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import LanguageToggle from './LanguageToggle';
-import {
-    LayoutDashboard,
-    Calendar,
-    Phone,
-    Settings,
-    LogOut,
-    Menu,
-    X
-} from 'lucide-react';
+
+const ROUTE_META: Record<string, { index: string; label: string }> = {
+  dashboard: { index: '01', label: 'DASHBOARD' },
+  bookings:  { index: '02', label: 'RÉSERVATIONS' },
+  calls:     { index: '03', label: 'APPELS' },
+  settings:  { index: '04', label: 'PARAMÈTRES' },
+};
+
+const NAV = [
+  { key: 'dashboard', label: 'Dashboard' },
+  { key: 'bookings',  label: 'Réservations' },
+  { key: 'calls',     label: 'Appels' },
+  { key: 'settings',  label: 'Paramètres' },
+];
 
 const Layout: React.FC = () => {
-    const { user, logout } = useAuth();
-    const { t } = useTranslation();
-    const location = useLocation();
-    const { restaurantSlug } = useParams();
-    const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const { user, logout } = useAuth();
+  const location = useLocation();
+  const { restaurantSlug } = useParams();
+  const base = `/r/${restaurantSlug}`;
 
-    const base = `/r/${restaurantSlug}`;
+  const segments = location.pathname.split('/');
+  const currentKey = segments[segments.length - 1] || 'dashboard';
+  const meta = ROUTE_META[currentKey] ?? { index: '—', label: currentKey.toUpperCase() };
 
-    const navigation = [
-        { name: t('nav.dashboard'), href: `${base}/dashboard`, icon: LayoutDashboard },
-        { name: t('nav.bookings'),  href: `${base}/bookings`,  icon: Calendar },
-        { name: t('nav.calls'),     href: `${base}/calls`,     icon: Phone },
-        { name: t('nav.settings'),  href: `${base}/settings`,  icon: Settings },
-    ];
+  const isActive = (key: string) => location.pathname.endsWith(`/${key}`);
 
-    const isActive = (path: string) => location.pathname === path;
+  const iaActive = !!(user as any)?.vapi_assistant_id;
 
-    return (
-        <div className="min-h-screen bg-[#0A0A0A]">
-            {/* Top Navigation */}
-            <nav className="bg-[#111] border-b border-[#1f1f1f]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-14">
-                        <div className="flex items-center gap-4">
-                            <Link to={`${base}/dashboard`} className="text-lg font-bold text-white hover:text-green-400 transition-colors">
-                                TableNow
-                            </Link>
-                            {user && (
-                                <span className="hidden sm:block text-xs text-gray-500 truncate max-w-[160px]">
-                                    {user.name}
-                                </span>
-                            )}
-                        </div>
+  return (
+    <div className="min-h-screen bg-[#0a0a0a]">
+      {/* Breadcrumb strip */}
+      <div className="fixed top-0 left-0 right-0 h-8 bg-[#0a0a0a] border-b border-[#1a1a1a] flex items-center px-6 z-50">
+        <span className="text-[10px] tracking-[0.15em] uppercase text-[#555]">
+          {meta.index} — {meta.label}
+        </span>
+      </div>
 
-                        {/* Desktop Navigation */}
-                        <div className="hidden md:flex items-center space-x-1">
-                            {navigation.map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                    <Link
-                                        key={item.name}
-                                        to={item.href}
-                                        className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-sm transition-all duration-200 ${
-                                            isActive(item.href)
-                                                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                                                : 'text-gray-400 hover:text-white hover:bg-[#1a1a1a]'
-                                        }`}
-                                    >
-                                        <Icon size={16} />
-                                        <span>{item.name}</span>
-                                    </Link>
-                                );
-                            })}
-                            <div className="ml-2"><LanguageToggle /></div>
-                            <button
-                                onClick={logout}
-                                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 ml-2"
-                            >
-                                <LogOut size={16} />
-                                <span>{t('common.logout')}</span>
-                            </button>
-                        </div>
-
-                        {/* Mobile menu button */}
-                        <div className="md:hidden flex items-center gap-2">
-                            <LanguageToggle />
-                            <button
-                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                                className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-[#1a1a1a]"
-                            >
-                                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Mobile Navigation */}
-                {mobileMenuOpen && (
-                    <div className="md:hidden border-t border-[#1f1f1f]">
-                        <div className="px-3 pt-2 pb-3 space-y-1">
-                            {navigation.map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                    <Link
-                                        key={item.name}
-                                        to={item.href}
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl text-sm ${
-                                            isActive(item.href)
-                                                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                                                : 'text-gray-400 hover:text-white hover:bg-[#1a1a1a]'
-                                        }`}
-                                    >
-                                        <Icon size={16} />
-                                        <span>{item.name}</span>
-                                    </Link>
-                                );
-                            })}
-                            <button
-                                onClick={() => { logout(); setMobileMenuOpen(false); }}
-                                className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-red-400 hover:bg-red-500/10"
-                            >
-                                <LogOut size={16} />
-                                <span>{t('common.logout')}</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </nav>
-
-            {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <Outlet />
-            </main>
+      {/* Navbar */}
+      <nav className="fixed top-8 left-0 right-0 h-[52px] bg-[#111] border-b border-[#2a2a2a] flex items-center px-6 z-40">
+        {/* Left: Logo + restaurant badge */}
+        <div className="flex items-center gap-3 w-[200px]">
+          <Link
+            to={`${base}/dashboard`}
+            className="text-base font-bold text-white leading-none"
+          >
+            Table<span className="text-[#b8f000]">Now</span>
+          </Link>
+          {user && (
+            <span className="border border-[#2a2a2a] rounded px-2 py-0.5 text-[11px] text-[#888] truncate max-w-[100px]">
+              {user.name}
+            </span>
+          )}
         </div>
-    );
+
+        {/* Centre: nav links */}
+        <div className="flex-1 flex items-center justify-center gap-8">
+          {NAV.map(({ key, label }) => {
+            const active = isActive(key);
+            return (
+              <Link
+                key={key}
+                to={`${base}/${key}`}
+                className={`text-sm pb-px transition-colors border-b-2 ${
+                  active
+                    ? 'text-white border-[#b8f000]'
+                    : 'text-[#888] border-transparent hover:text-white'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Right: IA badge + logout */}
+        <div className="flex items-center gap-4 w-[200px] justify-end">
+          <span
+            className={`text-[11px] font-semibold tracking-wide px-3 py-1 rounded border ${
+              iaActive
+                ? 'border-[#b8f000] text-[#b8f000]'
+                : 'border-[#2a2a2a] text-[#555]'
+            }`}
+          >
+            {iaActive ? 'IA ACTIVE' : 'IA INACTIVE'}
+          </span>
+          <button
+            onClick={logout}
+            className="text-[#555] text-xs hover:text-white transition-colors"
+          >
+            Log out
+          </button>
+        </div>
+      </nav>
+
+      {/* Page content — top padding = breadcrumb (32px) + navbar (52px) */}
+      <main className="pt-[84px]">
+        <Outlet />
+      </main>
+    </div>
+  );
 };
 
 export default Layout;
