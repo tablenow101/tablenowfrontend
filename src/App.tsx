@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import ResetPassword from './pages/ResetPassword';
+import Pricing from './pages/Pricing';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
@@ -65,6 +66,7 @@ const AppRoutes = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -76,6 +78,7 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/pricing" element={<Pricing />} />
 
       <Route path="/onboarding" element={
         <PrivateRoute>

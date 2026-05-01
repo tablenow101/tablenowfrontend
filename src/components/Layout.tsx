@@ -116,6 +116,18 @@ const Layout: React.FC = () => {
               </Link>
             );
           })}
+          {!user && (
+            <Link
+              to="/pricing"
+              className={`text-sm px-3 py-1 transition ${
+                location.pathname === '/pricing'
+                  ? 'text-white border-b-2 border-[#b8f000]'
+                  : 'text-[#888] hover:text-white'
+              }`}
+            >
+              Tarifs
+            </Link>
+          )}
         </div>
 
         {/* Right: IA badge + logout (desktop) */}
@@ -183,6 +195,19 @@ const Layout: React.FC = () => {
               </Link>
             );
           })}
+          {!user && (
+            <Link
+              to="/pricing"
+              onClick={() => setDrawerOpen(false)}
+              className={`flex items-center px-5 py-3 text-sm transition-colors border-l-2 ${
+                location.pathname === '/pricing'
+                  ? 'text-white border-[#b8f000] pl-[18px]'
+                  : 'text-[#888] border-transparent hover:text-white'
+              }`}
+            >
+              Tarifs
+            </Link>
+          )}
         </div>
         <div className="px-5 py-4 border-t border-[#2a2a2a]">
           <button
