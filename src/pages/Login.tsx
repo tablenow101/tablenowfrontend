@@ -28,7 +28,7 @@ const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, rememberMe);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Identifiants incorrects.');
@@ -89,7 +89,7 @@ const Login: React.FC = () => {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={e => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 accent-[#b8f000]"
+                  className="w-4 h-4 accent-[#b8f000] cursor-pointer"
                 />
                 <span className="text-sm text-[#888]">Se souvenir de moi</span>
               </label>
@@ -127,7 +127,7 @@ const Login: React.FC = () => {
           <p className="mt-6 text-center text-sm text-[#555]">
             Pas encore de compte ?{' '}
             <Link to="/register" className="text-[#b8f000] hover:underline">
-              Créer un accès
+              Créer votre compte
             </Link>
           </p>
         </div>
