@@ -38,20 +38,13 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      {/* Breadcrumb */}
-      <div className="p-6">
-        <span className="text-[10px] uppercase tracking-[0.15em] text-[#555] font-medium">
-          06 — LOGIN
-        </span>
-      </div>
-
-      <div className="max-w-[480px] mx-auto mt-16 px-4 pb-16">
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4 py-16">
+      <div className="w-full max-w-lg">
         <div
-          className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-8"
+          className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-10"
           style={{ borderTop: '4px solid #b8f000' }}
         >
-          <h1 className="text-2xl font-bold text-white mb-1">Connexion</h1>
+          <h1 className="text-3xl font-bold text-white mb-1">Connexion</h1>
           <p className="text-sm text-[#888] mb-6">Accédez à votre espace TableNow</p>
 
           {error && (
@@ -72,7 +65,7 @@ const Login: React.FC = () => {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="vous@restaurant.fr"
                 required
-                className="w-full h-12 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#b8f000] transition-colors"
+                className="w-full h-14 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#b8f000] transition-colors"
               />
             </div>
 
@@ -86,7 +79,7 @@ const Login: React.FC = () => {
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full h-12 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#b8f000] transition-colors"
+                className="w-full h-14 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#b8f000] transition-colors"
               />
             </div>
 
@@ -104,14 +97,14 @@ const Login: React.FC = () => {
                 type="button"
                 className="text-sm text-[#b8f000] hover:underline cursor-pointer"
               >
-                Mot de passe oublié ?
+                Mot de passe oublié ?
               </button>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-12 bg-[#b8f000] text-black font-bold rounded-xl text-sm transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+              className="w-full h-14 bg-[#b8f000] text-black font-bold rounded-xl text-sm transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {loading && (
                 <span className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
@@ -126,13 +119,13 @@ const Login: React.FC = () => {
             <div className="flex-1 h-px bg-[#2a2a2a]" />
           </div>
 
-          <button className="w-full h-12 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors">
+          <button className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors">
             <GoogleIcon />
             Continuer avec Google
           </button>
 
           <p className="mt-6 text-center text-sm text-[#555]">
-            Pas encore de compte ?{' '}
+            Pas encore de compte ?{' '}
             <Link to="/register" className="text-[#b8f000] hover:underline">
               Créer un accès
             </Link>
