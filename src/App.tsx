@@ -8,6 +8,7 @@ import ChatWidget from './components/ChatWidget';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
+import ResetPassword from './pages/ResetPassword';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
@@ -32,7 +33,6 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   return user ? <>{children}</> : <Navigate to="/login" />;
 };
 
-/** Redirects authenticated user to onboarding or their restaurant dashboard */
 const RedirectToDashboard: React.FC = () => {
   const { user, loading } = useAuth();
 
@@ -64,6 +64,7 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -74,6 +75,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       <Route path="/onboarding" element={
         <PrivateRoute>
@@ -81,14 +83,12 @@ const AppRoutes = () => {
         </PrivateRoute>
       } />
 
-      {/* Redirect legacy routes */}
       <Route path="/" element={<RedirectToDashboard />} />
       <Route path="/dashboard" element={<RedirectToDashboard />} />
       <Route path="/bookings" element={<RedirectToDashboard />} />
       <Route path="/calls" element={<RedirectToDashboard />} />
       <Route path="/settings" element={<RedirectToDashboard />} />
 
-      {/* Restaurant-scoped routes */}
       <Route path="/r/:restaurantSlug" element={
         <PrivateRoute>
           <Layout />

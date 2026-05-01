@@ -66,8 +66,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const token = response.data.token;
         if (rememberMe) {
             localStorage.setItem('token', token);
+            sessionStorage.removeItem('token');
         } else {
             sessionStorage.setItem('token', token);
+            localStorage.removeItem('token');
         }
         const u = response.data.restaurant;
         setUser(u);
