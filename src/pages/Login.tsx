@@ -13,17 +13,17 @@ const T = {
     emailPlaceholder: 'vous@restaurant.fr',
     passwordLabel: 'MOT DE PASSE',
     passwordPlaceholder: '••••••••',
-    forgotLink: 'Mot de passe oublié ?',
+    forgotLink: 'Mot de passe oublié ?',
     submit: 'Se connecter',
     or: 'OU',
     google: 'Continuer avec Google',
-    noAccount: 'Pas encore de compte ?',
+    noAccount: 'Pas encore de compte ?',
     createAccount: 'Créer votre compte',
     errorDefault: 'Identifiants incorrects.',
     forgotTitle: 'Mot de passe oublié',
     forgotSubtitle: 'Entrez votre email, nous vous envoyons un lien de réinitialisation.',
     forgotSubmit: 'Envoyer le lien',
-    forgotSuccess: 'Email envoyé ! Vérifiez votre boîte mail.',
+    forgotSuccess: 'Email envoyé ! Vérifiez votre boîte mail.',
     forgotError: 'Une erreur est survenue. Réessayez.',
     back: 'Retour',
   },
@@ -114,7 +114,7 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-lg">
         {/* Logo + tagline */}
-        <div className="flex flex-col items-center mb-8 gap-2">
+        <div className="flex flex-col items-center mb-10 gap-3">
           <span className="text-4xl font-black tracking-tight text-white">
             Table<span className="text-[#b8f000]">Now</span>
           </span>
@@ -221,20 +221,22 @@ const Login: React.FC = () => {
                 </div>
 
                 <div className="flex justify-between items-center">
-                  {/* Custom visible checkbox */}
                   <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <div
-                      className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors cursor-pointer ${
-                        rememberMe ? 'bg-[#b8f000] border-[#b8f000]' : 'border-[#444] bg-transparent'
+                    <button
+                      type="button"
+                      onClick={() => setRememberMe(!rememberMe)}
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                        rememberMe
+                          ? 'bg-[#b8f000] border-[#b8f000]'
+                          : 'bg-transparent border-[#555] hover:border-[#888]'
                       }`}
-                      onClick={() => setRememberMe(v => !v)}
                     >
                       {rememberMe && (
-                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                          <path d="M1 4L3.5 6.5L9 1" stroke="black" strokeWidth="2" strokeLinecap="round"/>
+                        <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+                          <path d="M1 4.5L3.8 7.5L10 1" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       )}
-                    </div>
+                    </button>
                     <span className="text-sm text-[#888]">
                       {lang === 'fr' ? 'Se souvenir de moi' : 'Remember me'}
                     </span>

@@ -16,26 +16,24 @@ type Step = 'idle' | 'email' | 'done';
 
 const SCRIPTS = {
   fr: {
-    greeting: 'Bonjour ! 👋 Je suis le concierge TableNow. Comment puis-je vous aider ?',
-    quickReplies: ['Voir une démo', 'Voir les tarifs', 'Comment ça marche ?', 'Parler à un humain'],
-    demoIntro: 'Parfait ! Réservez un créneau de 30 minutes avec notre équipe 👇',
-    demoCalendly: '📅 Réserver sur Calendly',
-    pricing: 'TableNow commence à partir de 49€/mois. L’IA répond à vos clients 24h/24, gère les réservations et les annulations automatiquement.',
+    greeting: 'Bonjour ! 👋 Je suis le concierge TableNow. Comment puis-je vous aider ?',
+    quickReplies: ['Voir une démo', 'Voir les tarifs', 'Comment ça marche ?', 'Parler à un humain'],
+    demoIntro: 'Parfait ! Réservez un créneau de 30 minutes avec notre équipe 👇',
+    pricing: 'TableNow commence à partir de 49€/mois. L\'IA répond à vos clients 24h/24, gère les réservations et les annulations automatiquement.',
     how: 'TableNow est un assistant IA qui décroche votre téléphone, parle avec vos clients en français ou en anglais, et gère vos réservations. Zéro effort de votre côté.',
-    human: 'Bien sûr ! Laissez-moi votre email et un expert vous rappelle dans les 24h.',
-    followUp: 'Autre chose que je peux faire pour vous ?',
-    genericReply: 'Bonne question ! Je peux vous aider avec une démo, les tarifs ou une mise en contact avec notre équipe.',
-    emailPrompt: 'Entrez une adresse email valide :',
+    human: 'Bien sûr ! Laissez-moi votre email et un expert vous rappelle dans les 24h.',
+    followUp: 'Autre chose que je peux faire pour vous ?',
+    genericReply: 'Bonne question ! Je peux vous aider avec une démo, les tarifs ou une mise en contact avec notre équipe.',
+    emailPrompt: 'Entrez une adresse email valide :',
     emailPlaceholder: 'vous@restaurant.fr',
-    emailThanks: 'Merci ! On vous contacte très vite 🎉',
+    emailThanks: 'Merci ! On vous contacte très vite 🎉',
     inputPlaceholder: 'Votre message...',
     headerOnline: 'En ligne',
   },
   en: {
-    greeting: 'Hi! 👋 I’m the TableNow Concierge. How can I help you?',
+    greeting: 'Hi! 👋 I\'m the TableNow Concierge. How can I help you?',
     quickReplies: ['Book a demo', 'See pricing', 'How does it work?', 'Talk to a human'],
     demoIntro: 'Great! Book a 30-minute slot with our team 👇',
-    demoCalendly: '📅 Book on Calendly',
     pricing: 'TableNow starts at €49/month. The AI answers your customers 24/7, handles reservations and cancellations automatically.',
     how: 'TableNow is an AI assistant that answers your phone, speaks with customers in French or English, and manages your reservations. Zero effort on your end.',
     human: 'Of course! Leave your email and an expert will call you within 24 hours.',
@@ -43,7 +41,7 @@ const SCRIPTS = {
     genericReply: 'Good question! I can help you with a demo, pricing, or connecting you with our team.',
     emailPrompt: 'Please enter a valid email:',
     emailPlaceholder: 'you@restaurant.com',
-    emailThanks: 'Thank you! We’ll be in touch very soon 🎉',
+    emailThanks: 'Thank you! We\'ll be in touch very soon 🎉',
     inputPlaceholder: 'Your message...',
     headerOnline: 'Online now',
   },
@@ -128,13 +126,13 @@ const ChatWidget: React.FC = () => {
       const l = langRef.current;
       const cur = SCRIPTS[l];
       if (index === 0) {
-        // Demo → Calendly CTA + follow-up
+        // Demo → inline Calendly iframe; follow-up after 2000ms
         setMessages(prev => [
           ...prev,
           { id: nextId.current++, from: 'bot', text: cur.demoIntro },
-          { id: nextId.current++, from: 'bot', text: cur.demoCalendly, isCalendly: true },
+          { id: nextId.current++, from: 'bot', text: '', isCalendly: true },
         ]);
-        showFollowUp();
+        setTimeout(() => showFollowUp(), 2000);
       } else if (index === 1) {
         // Pricing
         addMsg('bot', cur.pricing);
@@ -147,7 +145,6 @@ const ChatWidget: React.FC = () => {
         // Human → ask for email
         addMsg('bot', cur.human);
         setStep('email');
-        // showFollowUp is called after email is submitted
       }
     }, 400);
   };
@@ -205,12 +202,18 @@ const ChatWidget: React.FC = () => {
                 className={`flex flex-col ${msg.from === 'user' ? 'items-end' : 'items-start'}`}
               >
                 {msg.isCalendly ? (
-                  <button
-                    onClick={() => window.open('https://calendly.com/tablenow101/30min', '_blank')}
-                    className="w-full bg-[#b8f000] text-black font-bold text-sm px-4 py-3 rounded-xl cursor-pointer hover:opacity-90 transition text-center mt-1"
+                  <div
+                    className="w-full mt-2 rounded-xl overflow-hidden border border-[#2a2a2a]"
+                    style={{ height: '320px' }}
                   >
-                    {msg.text}
-                  </button>
+                    <iframe
+                      src="https://calendly.com/tablenow101/30min?embed_type=inline&hide_gdpr_banner=1&background_color=111111&text_color=ffffff&primary_color=b8f000"
+                      width="100%"
+                      height="100%"
+                      frameBorder="0"
+                      title="Calendly"
+                    />
+                  </div>
                 ) : (
                   <div
                     className={`max-w-[80%] px-4 py-3 text-sm break-words ${
