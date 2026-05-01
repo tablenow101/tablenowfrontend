@@ -14,7 +14,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
     register: (data: any) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const checkAuth = async () => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         if (!token) {
             setLoading(false);
             return;
@@ -55,14 +55,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             syncLanguageFromUser(u);
         } catch (error) {
             localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
         } finally {
             setLoading(false);
         }
     };
 
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, password: string, rememberMe = false) => {
         const response = await authAPI.login({ email, password });
-        localStorage.setItem('token', response.data.token);
+        const token = response.data.token;
+        if (rememberMe) {
+            localStorage.setItem('token', token);
+        } else {
+            sessionStorage.setItem('token', token);
+        }
         const u = response.data.restaurant;
         setUser(u);
         syncLanguageFromUser(u);
@@ -74,6 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const logout = () => {
         localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         setUser(null);
         window.location.href = '/login';
     };
@@ -86,15 +93,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const setLanguage = async (lang: SupportedLanguage) => {
-        // Met à jour i18n immédiatement pour un feedback instantané.
         await i18n.changeLanguage(lang);
         if (user) {
             try {
                 await restaurantsAPI.setLanguage(lang);
                 setUser({ ...user, language: lang });
             } catch (err) {
-                // Échec backend : on garde le changement côté UI (localStorage déjà persisté
-                // par i18next-browser-languagedetector). Logger pour diagnostic.
                 console.warn('Failed to sync language with backend:', err);
             }
         }
