@@ -163,7 +163,8 @@ const Register: React.FC = () => {
             return;
           }
         }
-        navigate('/pricing');
+        // No plan or Stripe failed → go to dashboard
+        navigate(`/r/${data.slug}/dashboard`);
       }
     } catch {
       setGlobalError(lang === 'fr' ? 'Une erreur est survenue.' : 'Something went wrong.');
