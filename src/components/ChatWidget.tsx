@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { MessageSquare, X, Send } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 import api from '../lib/api';
 
@@ -24,7 +24,7 @@ const SCRIPTS = {
     emailPlaceholder: 'vous@restaurant.fr',
     emailThanks: 'Merci ! On vous contacte très vite 🎉',
     inputPlaceholder: 'Votre message...',
-    headerSub: 'Répondez instantanément',
+    headerOnline: 'En ligne',
   },
   en: {
     greeting: "Hello! I'm the TableNow Concierge 👋",
@@ -37,9 +37,11 @@ const SCRIPTS = {
     emailPlaceholder: 'you@restaurant.com',
     emailThanks: "Thank you! We'll be in touch very soon 🎉",
     inputPlaceholder: 'Your message...',
-    headerSub: 'Instant responses',
+    headerOnline: 'Online now',
   },
 };
+
+const CHAT_SHOWN_KEY = 'tablenow_chat_shown';
 
 const ChatWidget: React.FC = () => {
   const { lang } = useLang();
@@ -49,7 +51,6 @@ const ChatWidget: React.FC = () => {
   const [step, setStep] = useState<Step>('welcome');
   const [input, setInput] = useState('');
   const [showQuick, setShowQuick] = useState(false);
-  const welcomeShown = useRef(false);
   const nextId = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scriptsRef = useRef(SCRIPTS[lang]);
@@ -76,10 +77,11 @@ const ChatWidget: React.FC = () => {
 
   useEffect(() => {
     if (!isPublic) return;
+    if (sessionStorage.getItem(CHAT_SHOWN_KEY)) return;
     const delay = pathname === '/login' ? 3000 : 5000;
     const t = setTimeout(() => {
-      if (!welcomeShown.current) {
-        welcomeShown.current = true;
+      if (!sessionStorage.getItem(CHAT_SHOWN_KEY)) {
+        sessionStorage.setItem(CHAT_SHOWN_KEY, '1');
         setOpen(true);
         showWelcome();
       }
@@ -92,8 +94,8 @@ const ChatWidget: React.FC = () => {
       setOpen(false);
     } else {
       setOpen(true);
-      if (!welcomeShown.current) {
-        welcomeShown.current = true;
+      if (!sessionStorage.getItem(CHAT_SHOWN_KEY)) {
+        sessionStorage.setItem(CHAT_SHOWN_KEY, '1');
         showWelcome();
       }
     }
@@ -148,40 +150,48 @@ const ChatWidget: React.FC = () => {
   return (
     <>
       {open && (
-        <div className="fixed bottom-20 right-4 z-50 w-80 h-[480px] bg-[#111] border border-[#2a2a2a] rounded-2xl flex flex-col shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 bg-[#b8f000]">
-            <div>
+        <div className="fixed bottom-24 right-6 z-50 w-[340px] h-[480px] bg-[#111] border border-[#2a2a2a] rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-[#b8f000] flex-shrink-0">
+            <div className="min-w-0">
               <p className="text-black font-bold text-sm">TableNow Concierge</p>
-              <p className="text-black/60 text-xs">{s.headerSub}</p>
+              <p className="text-black/70 text-xs">{s.headerOnline}</p>
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="p-1 rounded-full hover:bg-black/10 transition-colors"
+              className="ml-3 flex-shrink-0 p-1 rounded-full hover:bg-black/10 transition-colors"
             >
               <X size={16} className="text-black" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
             {messages.map(msg => (
-              <div key={msg.id} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${
-                  msg.from === 'user'
-                    ? 'bg-[#b8f000] text-black font-medium'
-                    : 'bg-[#1a1a1a] text-white'
-                }`}>
+              <div
+                key={msg.id}
+                className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] px-4 py-3 text-sm break-words ${
+                    msg.from === 'user'
+                      ? 'bg-[#b8f000] text-black font-medium rounded-2xl rounded-tr-sm'
+                      : 'bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-2xl rounded-tl-sm'
+                  }`}
+                  style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                >
                   {msg.text}
                 </div>
               </div>
             ))}
 
             {showQuick && (
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-2">
                 {s.quickReplies.map(r => (
                   <button
                     key={r}
                     onClick={() => handleQuickReply(r)}
-                    className="px-3 py-1.5 text-xs bg-[#1a1a1a] border border-[#2a2a2a] rounded-full text-[#b8f000] hover:border-[#b8f000] transition-colors"
+                    className="border border-[#2a2a2a] text-[#888] text-xs px-3 py-1.5 rounded-full hover:border-[#b8f000] hover:text-white transition cursor-pointer whitespace-nowrap"
                   >
                     {r}
                   </button>
@@ -191,34 +201,36 @@ const ChatWidget: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Input */}
           {step !== 'done' && (
-            <div className="px-3 py-2 border-t border-[#2a2a2a] flex gap-2">
+            <div className="border-t border-[#2a2a2a] p-3 flex gap-2 items-center flex-shrink-0">
               <input
                 type={step === 'email' ? 'email' : 'text'}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
                 placeholder={step === 'email' ? s.emailPlaceholder : s.inputPlaceholder}
-                className="flex-1 h-9 px-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#b8f000] transition-colors"
+                className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-3 py-2.5 text-white text-sm placeholder-[#555] focus:outline-none focus:border-[#b8f000] transition-colors"
               />
               <button
                 onClick={handleSend}
-                className="w-9 h-9 bg-[#b8f000] rounded-xl flex items-center justify-center hover:bg-[#a0d800] transition-colors flex-shrink-0"
+                className="bg-[#b8f000] p-2.5 rounded-xl hover:opacity-90 transition flex-shrink-0"
               >
-                <Send size={14} className="text-black" />
+                <Send size={16} className="text-black" />
               </button>
             </div>
           )}
         </div>
       )}
 
+      {/* Trigger bubble */}
       <button
         onClick={handleToggle}
-        className="fixed bottom-4 right-4 z-50 w-12 h-12 bg-[#b8f000] rounded-full flex items-center justify-center shadow-lg hover:bg-[#a0d800] transition-colors"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-[#b8f000] rounded-full shadow-xl flex items-center justify-center cursor-pointer hover:opacity-90 transition z-50"
       >
         {open
-          ? <X size={20} className="text-black" />
-          : <MessageCircle size={20} className="text-black" />
+          ? <X className="text-black w-6 h-6" />
+          : <MessageSquare className="text-black w-6 h-6" />
         }
       </button>
     </>
