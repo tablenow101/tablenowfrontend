@@ -17,6 +17,12 @@ const fieldCls = (hasError: boolean) =>
 
 const labelCls = 'text-[10px] uppercase tracking-wider text-[#555] mb-2 block';
 
+const planPrices: Record<string, string> = {
+  en_cas: '79€/mois',
+  miam: '249€/mois',
+  fin_gourmet: '399€/mois',
+};
+
 const Register: React.FC = () => {
   const { lang } = useLang();
   const navigate = useNavigate();
@@ -50,6 +56,10 @@ const Register: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const subtitle = selectedPlan
+    ? `Essai 7 jours gratuits · Puis ${planPrices[selectedPlan] ?? selectedPlan} · Résiliable à tout moment`
+    : 'Essai 7 jours gratuits · Résiliable à tout moment';
 
   useEffect(() => {
     if (searchInput.length < 2) { setSuggestions([]); return; }
@@ -91,7 +101,8 @@ const Register: React.FC = () => {
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!name.trim()) errs.name = lang === 'fr' ? 'Champ requis' : 'Required';
+    if (!googlePlaceId)
+      errs.place = 'Recherchez et sélectionnez votre restaurant pour continuer';
     if (!ownerName.trim()) errs.ownerName = lang === 'fr' ? 'Champ requis' : 'Required';
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       errs.email = lang === 'fr' ? 'Email invalide' : 'Invalid email';
@@ -163,8 +174,18 @@ const Register: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] px-4">
+      {/* Logo */}
+      <div className="flex flex-col items-center mb-10 gap-3 pt-12">
+        <span className="text-4xl font-black tracking-tight text-white">
+          Table<span className="text-[#b8f000]">Now</span>
+        </span>
+        <span className="text-sm text-[#555] tracking-wide">
+          Your Restaurant Host(ess) 24/7
+        </span>
+      </div>
+
       <div
-        className="w-full max-w-2xl mx-auto mt-12 mb-12 bg-[#111] border border-[#2a2a2a] rounded-2xl p-12"
+        className="w-full max-w-2xl mx-auto mb-12 bg-[#111] border border-[#2a2a2a] rounded-2xl p-12"
         style={{ borderTop: '4px solid #b8f000' }}
       >
         {/* Header */}
@@ -172,11 +193,7 @@ const Register: React.FC = () => {
           <h1 className="text-3xl font-black text-white mb-2">
             {lang === 'fr' ? 'Créer votre compte' : 'Create your account'}
           </h1>
-          <p className="text-[#555] text-sm">
-            {lang === 'fr'
-              ? '7 jours gratuits · Sans carte bancaire · Sans engagement'
-              : '7 days free · No credit card · No commitment'}
-          </p>
+          <p className="text-[#555] text-sm">{subtitle}</p>
           {selectedPlan && (
             <div className="flex items-center gap-2 mt-4 bg-[#1a1a1a] border border-[#b8f000]/30 rounded-xl px-4 py-3">
               <div className="w-2 h-2 bg-[#b8f000] rounded-full flex-shrink-0" />
@@ -199,9 +216,7 @@ const Register: React.FC = () => {
         <form onSubmit={handleSubmit} noValidate>
           {/* Google Places search */}
           <div className="mb-8">
-            <label className={labelCls}>
-              {lang === 'fr' ? 'Votre restaurant' : 'Your restaurant'}
-            </label>
+            <label className={labelCls}>RESTAURANT *</label>
             <p className="text-xs text-[#555] mb-3">
               {lang === 'fr'
                 ? 'Tapez le nom — nous remplissons tout automatiquement'
@@ -216,7 +231,9 @@ const Register: React.FC = () => {
                   onChange={e => setSearchInput(e.target.value)}
                   placeholder={lang === 'fr' ? 'Ex: ANDIA, Le Cinq, Septime...' : 'Ex: The Fat Duck, Nobu...'}
                   autoComplete="off"
-                  className="w-full bg-[#1a1a1a] border border-[#b8f000]/40 rounded-xl h-14 pl-11 pr-4 text-white text-sm focus:border-[#b8f000] outline-none transition"
+                  className={`w-full bg-[#1a1a1a] border rounded-xl h-14 pl-11 pr-4 text-white text-sm focus:outline-none outline-none transition ${
+                    errors.place ? 'border-red-500 focus:border-red-500' : 'border-[#b8f000]/40 focus:border-[#b8f000]'
+                  }`}
                 />
                 {searching && (
                   <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 text-[#555] animate-spin" size={16} />
@@ -248,6 +265,7 @@ const Register: React.FC = () => {
                 </div>
               )}
             </div>
+            {errors.place && <p className="text-red-400 text-xs mt-2">{errors.place}</p>}
           </div>
 
           {/* Divider */}
@@ -260,34 +278,19 @@ const Register: React.FC = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Row 1: Restaurant name + Owner */}
-            <div className="grid grid-cols-2 gap-5">
-              <div>
-                <label className={labelCls}>
-                  {lang === 'fr' ? 'NOM DU RESTAURANT' : 'RESTAURANT NAME'} *
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder={lang === 'fr' ? 'Le Petit Bistro' : 'The Little Bistro'}
-                  className={fieldCls(!!errors.name)}
-                />
-                {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
-              </div>
-              <div>
-                <label className={labelCls}>
-                  {lang === 'fr' ? 'RESPONSABLE' : 'OWNER NAME'} *
-                </label>
-                <input
-                  type="text"
-                  value={ownerName}
-                  onChange={e => setOwnerName(e.target.value)}
-                  placeholder={lang === 'fr' ? 'Jean Dupont' : 'John Smith'}
-                  className={fieldCls(!!errors.ownerName)}
-                />
-                {errors.ownerName && <p className="text-red-400 text-xs mt-1">{errors.ownerName}</p>}
-              </div>
+            {/* Row 1: Owner name */}
+            <div>
+              <label className={labelCls}>
+                {lang === 'fr' ? 'RESPONSABLE' : 'OWNER NAME'} *
+              </label>
+              <input
+                type="text"
+                value={ownerName}
+                onChange={e => setOwnerName(e.target.value)}
+                placeholder={lang === 'fr' ? 'Jean Dupont' : 'John Smith'}
+                className={fieldCls(!!errors.ownerName)}
+              />
+              {errors.ownerName && <p className="text-red-400 text-xs mt-1">{errors.ownerName}</p>}
             </div>
 
             {/* Row 2: Email */}
