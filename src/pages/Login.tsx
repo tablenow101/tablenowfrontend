@@ -13,7 +13,6 @@ const T = {
     emailPlaceholder: 'vous@restaurant.fr',
     passwordLabel: 'MOT DE PASSE',
     passwordPlaceholder: '••••••••',
-    rememberMe: 'Se souvenir de moi',
     forgotLink: 'Mot de passe oublié ?',
     submit: 'Se connecter',
     or: 'OU',
@@ -35,7 +34,6 @@ const T = {
     emailPlaceholder: 'you@restaurant.com',
     passwordLabel: 'PASSWORD',
     passwordPlaceholder: '••••••••',
-    rememberMe: 'Remember me',
     forgotLink: 'Forgot password?',
     submit: 'Sign in',
     or: 'OR',
@@ -69,16 +67,14 @@ const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Login state
   const [email, setEmail]           = useState('');
   const [password, setPassword]     = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError]           = useState('');
   const [loading, setLoading]       = useState(false);
 
-  // Forgot password state
-  const [view, setView]               = useState<'login' | 'forgot'>('login');
-  const [forgotEmail, setForgotEmail] = useState('');
+  const [view, setView]                   = useState<'login' | 'forgot'>('login');
+  const [forgotEmail, setForgotEmail]     = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError]     = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
@@ -117,10 +113,13 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-lg">
-        {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <span className="text-3xl font-bold tracking-tight text-white">
+        {/* Logo + tagline */}
+        <div className="flex flex-col items-center mb-8 gap-2">
+          <span className="text-4xl font-black tracking-tight text-white">
             Table<span className="text-[#b8f000]">Now</span>
+          </span>
+          <span className="text-sm text-[#555] tracking-wide">
+            Your Restaurant Host(ess) 24/7
           </span>
         </div>
 
@@ -129,7 +128,6 @@ const Login: React.FC = () => {
           style={{ borderTop: '4px solid #b8f000' }}
         >
           {view === 'forgot' ? (
-            /* ── Forgot password view ── */
             <>
               <button
                 onClick={goToLogin}
@@ -182,7 +180,6 @@ const Login: React.FC = () => {
               )}
             </>
           ) : (
-            /* ── Login view ── */
             <>
               <h1 className="text-3xl font-bold text-white mb-1">{t.title}</h1>
               <p className="text-sm text-[#888] mb-6">{t.subtitle}</p>
@@ -224,14 +221,23 @@ const Login: React.FC = () => {
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={e => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded accent-[#b8f000] cursor-pointer"
-                    />
-                    <span className="text-sm text-[#888]">{t.rememberMe}</span>
+                  {/* Custom visible checkbox */}
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <div
+                      className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors cursor-pointer ${
+                        rememberMe ? 'bg-[#b8f000] border-[#b8f000]' : 'border-[#444] bg-transparent'
+                      }`}
+                      onClick={() => setRememberMe(v => !v)}
+                    >
+                      {rememberMe && (
+                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                          <path d="M1 4L3.5 6.5L9 1" stroke="black" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-sm text-[#888]">
+                      {lang === 'fr' ? 'Se souvenir de moi' : 'Remember me'}
+                    </span>
                   </label>
                   <button
                     type="button"

@@ -9,6 +9,7 @@ interface ChatMessage {
   from: 'bot' | 'user';
   text: string;
   quickReplies?: string[];
+  isCalendly?: boolean;
 }
 
 type Step = 'idle' | 'email' | 'done';
@@ -17,10 +18,13 @@ const SCRIPTS = {
   fr: {
     greeting: 'Bonjour ! 👋 Je suis le concierge TableNow. Comment puis-je vous aider ?',
     quickReplies: ['Voir une démo', 'Voir les tarifs', 'Comment ça marche ?', 'Parler à un humain'],
-    demo: "Super ! Pour organiser une démo, j'ai juste besoin de votre email.",
+    demoIntro: 'Parfait ! Réservez un créneau de 30 minutes avec notre équipe 👇',
+    demoCalendly: '📅 Réserver sur Calendly',
     pricing: 'TableNow commence à partir de 49€/mois. L’IA répond à vos clients 24h/24, gère les réservations et les annulations automatiquement.',
     how: 'TableNow est un assistant IA qui décroche votre téléphone, parle avec vos clients en français ou en anglais, et gère vos réservations. Zéro effort de votre côté.',
     human: 'Bien sûr ! Laissez-moi votre email et un expert vous rappelle dans les 24h.',
+    followUp: 'Autre chose que je peux faire pour vous ?',
+    genericReply: 'Bonne question ! Je peux vous aider avec une démo, les tarifs ou une mise en contact avec notre équipe.',
     emailPrompt: 'Entrez une adresse email valide :',
     emailPlaceholder: 'vous@restaurant.fr',
     emailThanks: 'Merci ! On vous contacte très vite 🎉',
@@ -30,10 +34,13 @@ const SCRIPTS = {
   en: {
     greeting: 'Hi! 👋 I’m the TableNow Concierge. How can I help you?',
     quickReplies: ['Book a demo', 'See pricing', 'How does it work?', 'Talk to a human'],
-    demo: 'Great! To book a demo, I just need your email.',
+    demoIntro: 'Great! Book a 30-minute slot with our team 👇',
+    demoCalendly: '📅 Book on Calendly',
     pricing: 'TableNow starts at €49/month. The AI answers your customers 24/7, handles reservations and cancellations automatically.',
     how: 'TableNow is an AI assistant that answers your phone, speaks with customers in French or English, and manages your reservations. Zero effort on your end.',
     human: 'Of course! Leave your email and an expert will call you within 24 hours.',
+    followUp: 'Anything else I can help you with?',
+    genericReply: 'Good question! I can help you with a demo, pricing, or connecting you with our team.',
     emailPrompt: 'Please enter a valid email:',
     emailPlaceholder: 'you@restaurant.com',
     emailThanks: 'Thank you! We’ll be in touch very soon 🎉',
@@ -54,19 +61,20 @@ const ChatWidget: React.FC = () => {
   const nextId = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const langRef = useRef(lang);
+  const hasShownWelcome = useRef(false);
   langRef.current = lang;
 
   const isPublic = pathname === '/login' || pathname === '/register';
   const s = SCRIPTS[lang];
 
-  // Scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Show welcome message whenever chat opens with empty messages
+  // Show welcome once when chat opens
   useEffect(() => {
-    if (open && messages.length === 0) {
+    if (open && !hasShownWelcome.current) {
+      hasShownWelcome.current = true;
       const l = langRef.current;
       setMessages([{
         id: nextId.current++,
@@ -75,7 +83,7 @@ const ChatWidget: React.FC = () => {
         quickReplies: [...SCRIPTS[l].quickReplies],
       }]);
     }
-  }, [open, messages]);
+  }, [open]);
 
   // Auto-open once per session
   useEffect(() => {
@@ -90,8 +98,21 @@ const ChatWidget: React.FC = () => {
     return () => clearTimeout(t);
   }, [pathname, isPublic]);
 
-  const addMsg = (from: 'bot' | 'user', text: string, quickReplies?: string[]) => {
-    setMessages(prev => [...prev, { id: nextId.current++, from, text, quickReplies }]);
+  const addMsg = (from: 'bot' | 'user', text: string, opts?: { quickReplies?: string[]; isCalendly?: boolean }) => {
+    setMessages(prev => [...prev, { id: nextId.current++, from, text, ...opts }]);
+  };
+
+  const showFollowUp = () => {
+    setTimeout(() => {
+      const l = langRef.current;
+      setStep('idle');
+      setMessages(prev => [...prev, {
+        id: nextId.current++,
+        from: 'bot',
+        text: SCRIPTS[l].followUp,
+        quickReplies: [...SCRIPTS[l].quickReplies],
+      }]);
+    }, 800);
   };
 
   const handleToggle = () => {
@@ -104,17 +125,29 @@ const ChatWidget: React.FC = () => {
   const handleQuickReply = (reply: string, index: number) => {
     addMsg('user', reply);
     setTimeout(() => {
-      const cur = SCRIPTS[langRef.current];
+      const l = langRef.current;
+      const cur = SCRIPTS[l];
       if (index === 0) {
-        addMsg('bot', cur.demo);
-        setStep('email');
+        // Demo → Calendly CTA + follow-up
+        setMessages(prev => [
+          ...prev,
+          { id: nextId.current++, from: 'bot', text: cur.demoIntro },
+          { id: nextId.current++, from: 'bot', text: cur.demoCalendly, isCalendly: true },
+        ]);
+        showFollowUp();
       } else if (index === 1) {
+        // Pricing
         addMsg('bot', cur.pricing);
+        showFollowUp();
       } else if (index === 2) {
+        // How it works
         addMsg('bot', cur.how);
+        showFollowUp();
       } else {
+        // Human → ask for email
         addMsg('bot', cur.human);
         setStep('email');
+        // showFollowUp is called after email is submitted
       }
     }, 400);
   };
@@ -131,15 +164,15 @@ const ChatWidget: React.FC = () => {
         try { await api.post('/contact', { email: text, lang }); } catch { /* silent */ }
         setTimeout(() => {
           addMsg('bot', SCRIPTS[langRef.current].emailThanks);
-          setStep('done');
+          showFollowUp();
         }, 400);
       } else {
         setTimeout(() => addMsg('bot', SCRIPTS[langRef.current].emailPrompt), 400);
       }
     } else {
       setTimeout(() => {
-        const cur = SCRIPTS[langRef.current];
-        addMsg('bot', cur.greeting, [...cur.quickReplies]);
+        addMsg('bot', SCRIPTS[langRef.current].genericReply);
+        showFollowUp();
       }, 400);
     }
   };
@@ -171,16 +204,25 @@ const ChatWidget: React.FC = () => {
                 key={msg.id}
                 className={`flex flex-col ${msg.from === 'user' ? 'items-end' : 'items-start'}`}
               >
-                <div
-                  className={`max-w-[80%] px-4 py-3 text-sm break-words ${
-                    msg.from === 'user'
-                      ? 'bg-[#b8f000] text-black font-medium rounded-2xl rounded-tr-sm'
-                      : 'bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-2xl rounded-tl-sm'
-                  }`}
-                  style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
-                >
-                  {msg.text}
-                </div>
+                {msg.isCalendly ? (
+                  <button
+                    onClick={() => window.open('https://calendly.com/tablenow101/30min', '_blank')}
+                    className="w-full bg-[#b8f000] text-black font-bold text-sm px-4 py-3 rounded-xl cursor-pointer hover:opacity-90 transition text-center mt-1"
+                  >
+                    {msg.text}
+                  </button>
+                ) : (
+                  <div
+                    className={`max-w-[80%] px-4 py-3 text-sm break-words ${
+                      msg.from === 'user'
+                        ? 'bg-[#b8f000] text-black font-medium rounded-2xl rounded-tr-sm'
+                        : 'bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-2xl rounded-tl-sm'
+                    }`}
+                    style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                  >
+                    {msg.text}
+                  </div>
+                )}
                 {msg.quickReplies && msg.quickReplies.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     {msg.quickReplies.map((r, i) => (
