@@ -30,12 +30,12 @@ const LanguageToggle: React.FC = () => {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-40 bg-[#111] border border-[#2a2a2a] rounded-xl overflow-hidden shadow-xl">
+        <div className="absolute right-0 mt-2 min-w-[140px] bg-[#111] border border-[#2a2a2a] rounded-xl overflow-hidden shadow-xl">
           {LANGS.map(l => (
             <button
               key={l.code}
               onClick={() => { setLang(l.code); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-[#1a1a1a] transition-colors"
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm whitespace-nowrap hover:bg-[#1a1a1a] transition-colors"
             >
               <span className="text-base">{l.flag}</span>
               <span className={lang === l.code ? 'text-white' : 'text-[#888]'}>{l.label}</span>

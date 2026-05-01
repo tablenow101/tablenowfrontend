@@ -89,7 +89,7 @@ const Login: React.FC = () => {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={e => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 accent-[#b8f000] cursor-pointer"
+                  className="w-4 h-4 rounded accent-[#b8f000] cursor-pointer"
                 />
                 <span className="text-sm text-[#888]">Se souvenir de moi</span>
               </label>
