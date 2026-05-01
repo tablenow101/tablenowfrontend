@@ -2,6 +2,9 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SidebarProvider } from './context/SidebarContext';
+import { LangProvider } from './context/LangContext';
+import LanguageToggle from './components/LanguageToggle';
+import ChatWidget from './components/ChatWidget';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
@@ -43,7 +46,6 @@ const RedirectToDashboard: React.FC = () => {
 
   if (!user) return <Navigate to="/login" />;
 
-  // Check if onboarding is incomplete
   if (!user.setup_complete && !user.opening_hours) {
     return <Navigate to="/onboarding" replace />;
   }
@@ -105,11 +107,15 @@ const AppRoutes = () => {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <SidebarProvider>
-          <AppRoutes />
-        </SidebarProvider>
-      </AuthProvider>
+      <LangProvider>
+        <AuthProvider>
+          <SidebarProvider>
+            <AppRoutes />
+          </SidebarProvider>
+        </AuthProvider>
+        <LanguageToggle />
+        <ChatWidget />
+      </LangProvider>
     </BrowserRouter>
   );
 }
