@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SidebarProvider } from './context/SidebarContext';
@@ -36,8 +36,27 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const RedirectToDashboard: React.FC = () => {
   const { user, loading } = useAuth();
+  const [checkingStripe, setCheckingStripe] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    if (!user) return;
+    const pendingPlan = localStorage.getItem('pending_plan');
+    if (!pendingPlan) return;
+    localStorage.removeItem('pending_plan');
+    setCheckingStripe(true);
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (!token) { setCheckingStripe(false); return; }
+    fetch('/api/stripe/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ plan: pendingPlan }),
+    })
+      .then(r => r.json())
+      .then(data => { if (data.url) { window.location.href = data.url; } else { setCheckingStripe(false); } })
+      .catch(() => setCheckingStripe(false));
+  }, [user]);
+
+  if (loading || checkingStripe) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading w-12 h-12"></div>
@@ -46,10 +65,6 @@ const RedirectToDashboard: React.FC = () => {
   }
 
   if (!user) return <Navigate to="/login" />;
-
-  if (!user.setup_complete && !user.opening_hours) {
-    return <Navigate to="/onboarding" replace />;
-  }
 
   const slug = user.slug || user.id;
   return <Navigate to={`/r/${slug}/dashboard`} replace />;
