@@ -18,11 +18,15 @@ interface AuthContextType {
     register: (data: any) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
-    /** Met à jour la langue du restaurant côté backend ET côté i18n. */
     setLanguage: (lang: SupportedLanguage) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const API_BASE = (import.meta as any).env?.VITE_API_URL || 'https://api.tablenow.io';
+
+const getToken = () =>
+    localStorage.getItem('token') || sessionStorage.getItem('token');
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
@@ -33,7 +37,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         checkAuth();
     }, []);
 
-    /** Aligne i18n sur la langue du restaurant après login/refresh. */
     const syncLanguageFromUser = (u: User | null) => {
         if (!u) return;
         if (isSupportedLanguage(u.language) && u.language !== i18n.resolvedLanguage) {
@@ -42,15 +45,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const checkAuth = async () => {
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const token = getToken();
         if (!token) {
             setLoading(false);
             return;
         }
 
         try {
-            const response = await authAPI.getMe();
-            const u = response.data.restaurant;
+            const res = await fetch(`${API_BASE}/api/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Unauthorized');
+            const data = await res.json();
+            const u = data.restaurant;
             setUser(u);
             syncLanguageFromUser(u);
         } catch (error) {
@@ -64,6 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = async (email: string, password: string, rememberMe = false) => {
         const response = await authAPI.login({ email, password });
         const token = response.data.token;
+
+        // Store token first so subsequent requests include it
         if (rememberMe) {
             localStorage.setItem('token', token);
             sessionStorage.removeItem('token');
@@ -71,6 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             sessionStorage.setItem('token', token);
             localStorage.removeItem('token');
         }
+
         const u = response.data.restaurant;
         setUser(u);
         syncLanguageFromUser(u);
@@ -88,10 +98,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const refreshUser = async () => {
-        const response = await authAPI.getMe();
-        const u = response.data.restaurant;
-        setUser(u);
-        syncLanguageFromUser(u);
+        const token = getToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/api/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            const u = data.restaurant;
+            setUser(u);
+            syncLanguageFromUser(u);
+        } catch { /* silent */ }
     };
 
     const setLanguage = async (lang: SupportedLanguage) => {

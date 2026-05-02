@@ -9,9 +9,9 @@ const api = axios.create({
     },
 });
 
-// Add auth token to requests
+// Add auth token to requests (checks both localStorage and sessionStorage)
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -24,6 +24,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401 || error.response?.status === 403) {
             localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
             window.location.href = '/login';
         }
         return Promise.reject(error);
@@ -67,7 +68,6 @@ export const emailAPI = {
 };
 
 export const restaurantsAPI = {
-    /** Met à jour la langue préférée du restaurant (FR/EN). */
     setLanguage: (language: 'fr' | 'en') =>
         api.patch('/restaurants/me/language', { language }),
 };
