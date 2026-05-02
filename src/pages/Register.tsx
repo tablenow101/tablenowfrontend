@@ -148,7 +148,9 @@ const Register: React.FC = () => {
       }
       if (data.token) {
         localStorage.setItem('token', data.token);
+        localStorage.setItem('restaurant_slug', data.slug);
         if (selectedPlan) {
+          localStorage.setItem('pending_plan', selectedPlan);
           const stripeRes = await fetch('/api/stripe/create-checkout-session', {
             method: 'POST',
             headers: {

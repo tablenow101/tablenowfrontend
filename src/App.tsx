@@ -10,7 +10,6 @@ import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import ResetPassword from './pages/ResetPassword';
 import Pricing from './pages/Pricing';
-import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import CallLogs from './pages/CallLogs';
@@ -70,6 +69,31 @@ const RedirectToDashboard: React.FC = () => {
   return <Navigate to={`/r/${slug}/dashboard`} replace />;
 };
 
+const DashboardWithSubscribeCheck: React.FC = () => {
+  const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('subscribed') === 'true') {
+      localStorage.removeItem('pending_plan');
+      setShowToast(true);
+      window.history.replaceState({}, '', window.location.pathname);
+      setTimeout(() => setShowToast(false), 4000);
+    }
+  }, []);
+
+  return (
+    <>
+      {showToast && (
+        <div className="fixed top-5 right-5 z-50 bg-[#b8f000] text-black text-sm font-bold px-5 py-3 rounded-xl shadow-xl animate-fade-in">
+          Abonnement activé ✓
+        </div>
+      )}
+      <Dashboard />
+    </>
+  );
+};
+
 const AppRoutes = () => {
   const isMarketing = isDomainMarketingSite();
 
@@ -95,12 +119,6 @@ const AppRoutes = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/pricing" element={<Pricing />} />
 
-      <Route path="/onboarding" element={
-        <PrivateRoute>
-          <Onboarding />
-        </PrivateRoute>
-      } />
-
       <Route path="/" element={<RedirectToDashboard />} />
       <Route path="/dashboard" element={<RedirectToDashboard />} />
       <Route path="/bookings" element={<RedirectToDashboard />} />
@@ -113,7 +131,7 @@ const AppRoutes = () => {
         </PrivateRoute>
       }>
         <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="dashboard" element={<DashboardWithSubscribeCheck />} />
         <Route path="bookings" element={<Bookings />} />
         <Route path="calls" element={<CallLogs />} />
         <Route path="settings" element={<Settings />} />
