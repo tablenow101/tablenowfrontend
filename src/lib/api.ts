@@ -38,6 +38,11 @@ export const authAPI = {
     getMe: () => api.get('/auth/me'),
 };
 
+export const referralAPI = {
+    getStats: () => api.get('/referral/stats'),
+    getList:  () => api.get('/referral/list'),
+};
+
 export const dashboardAPI = {
     getStats: (params?: any) => api.get('/dashboard/stats', { params }),
     getCalls: (params?: any) => api.get('/dashboard/calls', { params }),
