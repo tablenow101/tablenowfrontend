@@ -23,6 +23,25 @@ const planPrices: Record<string, string> = {
   fin_gourmet: '399€/mois',
 };
 
+
+// ─── Theme + Lang toggle bar ──────────────────────────────────────────────────
+function TopBar({ lang, setLang }: { lang: string; setLang: (l: 'fr'|'en') => void }) {
+  const [dark, setDark] = React.useState(() => localStorage.getItem('theme') !== 'light');
+  const toggle = () => {
+    const next = !dark;
+    setDark(next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+    document.documentElement.classList.toggle('light', !next);
+  };
+  return (
+    <div style={{ position: 'fixed', top: 12, right: 16, display: 'flex', alignItems: 'center', gap: 8, zIndex: 100 }}>
+      <button onClick={() => setLang('fr')} style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5, border: 'none', cursor: 'pointer', background: lang === 'fr' ? '#b8f000' : 'transparent', color: lang === 'fr' ? '#000' : '#555' }}>FR</button>
+      <button onClick={() => setLang('en')} style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5, border: 'none', cursor: 'pointer', background: lang === 'en' ? '#b8f000' : 'transparent', color: lang === 'en' ? '#000' : '#555' }}>EN</button>
+      <button onClick={toggle} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#555', fontSize: 16 }}>{dark ? '☀️' : '🌙'}</button>
+    </div>
+  );
+}
+
 const Register: React.FC = () => {
   const { lang } = useLang();
   const navigate = useNavigate();
@@ -56,6 +75,7 @@ const Register: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const subtitle = selectedPlan
     ? `Essai 7 jours gratuits · Puis ${planPrices[selectedPlan] ?? selectedPlan} · Résiliable à tout moment`
@@ -167,6 +187,9 @@ const Register: React.FC = () => {
         }
         // No plan or Stripe failed → go to dashboard
         navigate(`/r/${data.slug}/dashboard`);
+      } else {
+        // Email verification required — show success screen
+        setEmailSent(true);
       }
     } catch {
       setGlobalError(lang === 'fr' ? 'Une erreur est survenue.' : 'Something went wrong.');
@@ -175,8 +198,56 @@ const Register: React.FC = () => {
     }
   };
 
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="text-4xl font-bold text-white mb-10">
+            Table<span style={{ color: '#b8f000' }}>Now</span>
+          </div>
+          <div className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-10">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-black mx-auto mb-6" style={{ background: '#b8f000' }}>✓</div>
+            <h2 className="text-xl font-bold text-white mb-3">
+              {lang === 'fr' ? 'Vérifiez votre email' : 'Check your email'}
+            </h2>
+            <p className="text-sm text-[#888] mb-6 leading-relaxed">
+              {lang === 'fr' ? 'Un lien de vérification a été envoyé à' : 'A verification link was sent to'}{' '}
+              <span className="text-white font-semibold">{email}</span>
+            </p>
+            <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 text-left mb-6 space-y-3">
+              <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-3">
+                {lang === 'fr' ? 'UNE FOIS ACTIVÉ' : 'ONCE ACTIVATED'}
+              </p>
+              {[
+                lang === 'fr' ? 'Votre assistant IA est configuré selon les standards de votre établissement' : 'Your AI assistant is configured to your establishment standards',
+                lang === 'fr' ? 'Une ligne téléphonique dédiée vous est attribuée' : 'A dedicated phone line is assigned to you',
+                lang === 'fr' ? 'Votre adresse BCC est créée pour centraliser vos réservations (Zenchef, SevenRooms…)' : 'Your BCC address is created to centralise your reservations',
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold text-black" style={{ background: '#b8f000' }}>✓</div>
+                  <span className="text-sm text-[#888]">{item}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => window.location.href = '/login'}
+              className="w-full py-3 rounded-xl text-sm font-bold text-black mb-4"
+              style={{ background: '#b8f000' }}
+            >
+              {lang === 'fr' ? "J'ai vérifié mon email →" : 'I verified my email →'}
+            </button>
+            <p className="text-xs text-[#555]">
+              {lang === 'fr' ? 'Pas reçu ? Vérifiez vos spams.' : "Didn't receive it? Check your spam folder."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] px-4">
+      <TopBar lang={lang} setLang={setLang} />
       {/* Logo */}
       <div className="flex flex-col items-center mb-10 gap-3 pt-12">
         <span className="text-4xl font-black tracking-tight text-white">
