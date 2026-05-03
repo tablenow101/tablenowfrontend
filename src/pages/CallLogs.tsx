@@ -1,245 +1,277 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { dashboardAPI } from '../lib/api';
-import { Phone, Clock, Calendar, X, Download, Mic } from 'lucide-react';
+import { useLang } from '../context/LangContext';
+import { X } from 'lucide-react';
 
-function formatDuration(seconds: number): string {
-    if (!seconds) return '0s';
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return m > 0 ? `${m}m${s.toString().padStart(2, '0')}s` : `${s}s`;
+interface CallLog {
+    id: string;
+    caller_number?: string;
+    guest_name?: string;
+    status: string;
+    duration?: number;
+    transcript?: string;
+    recording_url?: string;
+    reservation_booked?: boolean;
+    created_at?: string;
+    started_at?: string;
 }
 
-const statusConfig: Record<string, { label: string; cls: string }> = {
-    completed:   { label: 'Terminé',   cls: 'bg-[#b8f000]/10 text-[#b8f000] border-[#b8f000]/20'  },
-    in_progress: { label: 'En cours',  cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20'     },
-    failed:      { label: 'Échoué',    cls: 'bg-red-500/10 text-red-400 border-red-500/20'        },
-    missed:      { label: 'Manqué',    cls: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
-};
+function fmtDuration(s?: number): string {
+    if (!s) return '0s';
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return sec > 0 ? `${m}min${String(sec).padStart(2,'0')}s` : `${m}min`;
+}
+
+function fmtTimestamp(ts?: string): string {
+    if (!ts) return '—';
+    return new Date(ts).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' }) +
+        ' · ' + new Date(ts).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+}
+
+function downloadText(text: string, filename: string) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ─── Drawer ───────────────────────────────────────────────────────────────────
+
+function CallDrawer({ call, onClose, t }: { call: CallLog; onClose: () => void; t: (k: string) => string }) {
+    const dotColor = call.status === 'completed' ? '#b8f000'
+        : call.status === 'missed' ? '#f59e0b' : '#ef4444';
+    const statusLabel = call.status === 'completed' ? t('statusCompleted')
+        : call.status === 'missed' ? t('statusMissed') : t('statusFailed');
+    const name = call.guest_name || call.caller_number || '—';
+
+    const handleDownloadTranscript = () => {
+        if (!call.transcript) return;
+        const filename = `transcript-${call.id}-${(call.created_at || '').slice(0,10)}.txt`;
+        downloadText(call.transcript, filename);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/70 z-50 flex justify-end" onClick={onClose}>
+            <div
+                className="w-[500px] bg-[#111] border-l border-[#2a2a2a] h-full overflow-y-auto p-7"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-bold text-white">{t('callDetails')}</h2>
+                    <button onClick={onClose} className="text-[#555] hover:text-white transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* Meta */}
+                <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 mb-5">
+                    <p className={`text-base font-bold mb-3 ${call.guest_name ? 'text-white' : 'text-white font-mono'}`}>{name}</p>
+                    <div className="grid grid-cols-3 gap-3">
+                        <div>
+                            <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">{t('status')}</p>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dotColor }} />
+                                <span className="text-sm font-semibold" style={{ color: dotColor }}>{statusLabel}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">{t('duration')}</p>
+                            <p className="text-sm text-white">{fmtDuration(call.duration)}</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">DATE</p>
+                            <p className="text-sm text-white">{fmtTimestamp(call.created_at || call.started_at)}</p>
+                        </div>
+                    </div>
+                    {call.reservation_booked && (
+                        <div className="mt-3 pt-3 border-t border-[#2a2a2a]">
+                            <span className="text-xs px-2 py-0.5 rounded border bg-[#b8f00015] text-[#b8f000] border-[#b8f00040]">
+                                {t('resaCreated')}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Audio */}
+                <div className="mb-5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-3">{t('audioRecording')}</p>
+                    {call.recording_url ? (
+                        <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4">
+                            <audio controls className="w-full" style={{ accentColor: '#b8f000' }}>
+                                <source src={call.recording_url} />
+                            </audio>
+                            <a
+                                href={call.recording_url}
+                                download={`appel-${call.id}.mp3`}
+                                className="mt-3 flex items-center justify-center gap-2 w-full py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#888] hover:text-white hover:border-[#b8f000] transition-colors"
+                            >
+                                {t('downloadAudio')}
+                            </a>
+                        </div>
+                    ) : (
+                        <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-[#2a2a2a] flex items-center justify-center text-[#555] flex-shrink-0">▶</div>
+                            <div className="flex-1 h-1 bg-[#2a2a2a] rounded" />
+                            <span className="text-xs text-[#555]">—</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Transcript */}
+                <div>
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-3">{t('transcript')}</p>
+                    {call.transcript ? (
+                        <>
+                            <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 max-h-[220px] overflow-y-auto mb-3">
+                                <p className="text-xs text-[#ccc] leading-[1.9] whitespace-pre-wrap">{call.transcript}</p>
+                            </div>
+                            <button
+                                onClick={handleDownloadTranscript}
+                                className="w-full py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#888] hover:text-white hover:border-[#b8f000] transition-colors"
+                            >
+                                {t('downloadTranscript')}
+                            </button>
+                        </>
+                    ) : (
+                        <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4">
+                            <p className="text-xs text-[#555] text-center">{t('noTranscript')}</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 const CallLogs: React.FC = () => {
-    const [calls, setCalls]             = useState<any[]>([]);
-    const [loading, setLoading]         = useState(true);
-    const [selectedCall, setSelectedCall] = useState<any>(null);
+    const { t } = useLang();
+    const [calls, setCalls]       = useState<CallLog[]>([]);
+    const [total, setTotal]       = useState(0);
+    const [loading, setLoading]   = useState(true);
+    const [selected, setSelected] = useState<CallLog | null>(null);
 
-    useEffect(() => {
-        (async () => {
-            try {
-                const res = await dashboardAPI.getCalls();
-                setCalls(res.data.calls || []);
-            } catch (err) {
-                console.error('Erreur lors du chargement des appels:', err);
-            } finally {
-                setLoading(false);
-            }
-        })();
+    const fetchCalls = useCallback(async () => {
+        try {
+            const res = await dashboardAPI.getCalls({ limit: 100 });
+            setCalls(res.data.calls || []);
+            setTotal(res.data.total || 0);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    function downloadTranscript(call: any) {
-        if (!call.transcript) return;
-        const content = `TRANSCRIPTION D'APPEL\n${'='.repeat(40)}\n\nNuméro : ${call.caller_number || 'Inconnu'}\nDate : ${new Date(call.created_at).toLocaleString('fr-FR')}\nDurée : ${formatDuration(call.duration || 0)}\nStatut : ${call.status}\n\nTRANSCRIPTION :\n${'-'.repeat(40)}\n\n${call.transcript}`;
-        const a = document.createElement('a');
-        a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
-        a.download = `transcription_${call.caller_number || 'inconnu'}_${new Date(call.created_at).toISOString().split('T')[0]}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
+    useEffect(() => { fetchCalls(); }, [fetchCalls]);
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="loading w-12 h-12" />
-            </div>
-        );
-    }
-
-    const completedCount = calls.filter(c => c.status === 'completed').length;
-    const avgDuration    = calls.length > 0 ? Math.floor(calls.reduce((s, c) => s + (c.duration || 0), 0) / calls.length) : 0;
+    const completedCalls = calls.filter(c => c.status === 'completed').length;
     const totalDuration  = calls.reduce((s, c) => s + (c.duration || 0), 0);
+    const avgDuration    = calls.length ? Math.round(totalDuration / calls.length) : 0;
+
+    function fmtTotalDuration(s: number): string {
+        if (s < 60) return `${s}s`;
+        const m = Math.floor(s / 60);
+        if (m < 60) return `${m}min`;
+        const h = Math.floor(m / 60);
+        const rem = m % 60;
+        return rem > 0 ? `${h}h${String(rem).padStart(2,'0')}` : `${h}h`;
+    }
+
+    if (loading) return (
+        <div className="flex items-center justify-center h-64">
+            <div className="w-8 h-8 border-2 border-white/10 border-t-white rounded-full animate-spin" />
+        </div>
+    );
 
     return (
         <div className="space-y-6">
+            {selected && <CallDrawer call={selected} onClose={() => setSelected(null)} t={t} />}
 
-            {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-white">Journal des appels</h1>
-                <p className="text-sm text-gray-500 mt-0.5">Historique complet des appels de votre assistant IA</p>
+                <h1 className="text-2xl font-bold text-white">{t('callsTitle')}</h1>
+                <p className="text-sm text-[#888] mt-1">{t('callsSub')}</p>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                    { label: 'Total',          value: calls.length,           color: 'text-white'     },
-                    { label: 'Terminés',        value: completedCount,          color: 'text-[#b8f000]' },
-                    { label: 'Durée moyenne',   value: formatDuration(avgDuration),  color: 'text-white' },
-                    { label: 'Durée totale',    value: formatDuration(totalDuration), color: 'text-white' },
-                ].map(({ label, value, color }) => (
-                    <div key={label} className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-5 h-28 flex flex-col justify-between">
-                        <p className="text-xs text-gray-500 uppercase tracking-wider">{label}</p>
-                        <p className={`text-2xl font-bold ${color}`}>{value}</p>
-                    </div>
-                ))}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">{t('total')}</p>
+                    <p className="text-[40px] font-bold text-white leading-none">{total}</p>
+                    <p className="text-xs mt-1.5 text-[#888]">{t('callsReceived')}</p>
+                </div>
+                <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">{t('completed')}</p>
+                    <p className="text-[40px] font-bold leading-none" style={{ color: '#b8f000' }}>{completedCalls}</p>
+                    <p className="text-xs mt-1.5 text-[#888]">{t('successfulDesc')}</p>
+                </div>
+                <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">{t('avgDuration')}</p>
+                    <p className="text-[40px] font-bold text-white leading-none">{fmtDuration(avgDuration)}</p>
+                    <p className="text-xs mt-1.5 text-[#888]">{t('perCall')}</p>
+                </div>
+                <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">{t('totalDuration')}</p>
+                    <p className="text-[40px] font-bold text-white leading-none">{fmtTotalDuration(totalDuration)}</p>
+                    <p className="text-xs mt-1.5 text-[#888]">{t('conversations')}</p>
+                </div>
             </div>
 
             {/* List */}
-            <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-6">
-                <h2 className="text-sm font-semibold text-white mb-4">Historique</h2>
-
+            <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-[#1a1a1a]">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('history')}</p>
+                </div>
                 {calls.length === 0 ? (
-                    <div className="text-center py-12">
-                        <Phone size={32} className="mx-auto text-gray-700 mb-3" />
-                        <p className="text-sm text-gray-500">Aucun appel pour l'instant</p>
-                        <p className="text-xs text-gray-700 mt-1">Les appels apparaîtront ici une fois votre assistant configuré</p>
-                    </div>
+                    <div className="py-12 text-center text-xs text-[#555]">—</div>
                 ) : (
-                    <div className="space-y-2">
-                        {calls.map((call) => {
-                            const st = statusConfig[call.status] || statusConfig.completed;
-                            return (
-                                <div
-                                    key={call.id}
-                                    onClick={() => setSelectedCall(call)}
-                                    className="rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] p-4 hover:border-[#2a2a2a] transition-colors cursor-pointer"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-                                            <Phone size={14} className="text-gray-400" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                                <p className="text-sm font-semibold text-white">{call.caller_number || 'Numéro inconnu'}</p>
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${st.cls}`}>{st.label}</span>
-                                                {call.reservation_booked && (
-                                                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#b8f000]/20 text-green-300 border border-[#b8f000]/30">
-                                                        ✓ Réservation créée
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-wrap gap-4 text-xs text-gray-400">
-                                                <span className="flex items-center gap-1.5">
-                                                    <Calendar size={12} />
-                                                    {new Date(call.created_at).toLocaleDateString('fr-FR')}
-                                                </span>
-                                                <span className="flex items-center gap-1.5">
-                                                    <Clock size={12} />
-                                                    {new Date(call.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                                <span className="flex items-center gap-1.5">
-                                                    <Mic size={12} />
-                                                    {formatDuration(call.duration || 0)}
-                                                </span>
-                                            </div>
-                                            {call.call_summary && (
-                                                <p className="mt-1.5 text-xs text-gray-500 line-clamp-1">{call.call_summary}</p>
-                                            )}
-                                        </div>
-                                        {call.recording_url && (
-                                            <a
-                                                href={call.recording_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                onClick={e => e.stopPropagation()}
-                                                className="flex-shrink-0 px-3 py-1.5 rounded-xl text-xs text-white border border-[#1f1f1f] hover:bg-[#1a1a1a] transition-colors"
-                                            >
-                                                Écouter
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    calls.map(call => {
+                        const dotColor = call.status === 'completed' ? '#b8f000'
+                            : call.status === 'missed' ? '#f59e0b' : '#ef4444';
+                        const statusLabel = call.status === 'completed' ? t('statusCompleted')
+                            : call.status === 'missed' ? t('statusMissed') : t('statusFailed');
+                        const name = call.guest_name || call.caller_number || '—';
+                        const isMono = !call.guest_name;
+
+                        return (
+                            <div
+                                key={call.id}
+                                className="flex items-center px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 cursor-pointer hover:bg-[#0f0f0f] transition-colors"
+                                onClick={() => setSelected(call)}
+                            >
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 mr-4" style={{ background: dotColor }} />
+                                {/* Name — fixed width */}
+                                <span className={`text-sm flex-shrink-0 w-[150px] ${isMono ? 'font-mono text-white' : 'font-medium text-white'}`}>{name}</span>
+                                {/* Status badge — fixed width */}
+                                <span className={`text-[11px] px-2 py-0.5 rounded border flex-shrink-0 w-[90px] text-center ${
+                                    call.status === 'completed' ? 'bg-[#b8f00015] text-[#b8f000] border-[#b8f00040]'
+                                    : call.status === 'missed' ? 'bg-[#f59e0b15] text-[#f59e0b] border-[#f59e0b40]'
+                                    : 'bg-[#ef444415] text-[#ef4444] border-[#ef444440]'
+                                }`}>
+                                    {statusLabel}
+                                </span>
+                                {/* Date — fixed width */}
+                                <span className="text-xs text-[#888] flex-shrink-0 w-[110px] text-right">{fmtTimestamp(call.created_at || call.started_at)}</span>
+                                {/* Duration — fixed width */}
+                                <span className="text-xs text-[#555] flex-shrink-0 w-[52px] text-right">{fmtDuration(call.duration)}</span>
+                                {/* Resa badge */}
+                                <span className="flex-shrink-0 w-[130px] text-right">
+                                    {call.reservation_booked && (
+                                        <span className="text-[11px] px-2 py-0.5 rounded border bg-[#b8f00010] text-[#b8f000] border-[#b8f00030]">
+                                            {t('resaCreated')}
+                                        </span>
+                                    )}
+                                </span>
+                            </div>
+                        );
+                    })
                 )}
             </div>
-
-            {/* Detail Modal */}
-            {selectedCall && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={() => setSelectedCall(null)}>
-                    <div
-                        className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-lg font-bold text-white">Détails de l'appel</h2>
-                            <button onClick={() => setSelectedCall(null)} className="text-gray-500 hover:text-white transition-colors">
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-1">Numéro appelant</p>
-                                    <p className="text-sm font-semibold text-white font-mono">{selectedCall.caller_number || 'Inconnu'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-1">Statut</p>
-                                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium border ${(statusConfig[selectedCall.status] || statusConfig.completed).cls}`}>
-                                        {(statusConfig[selectedCall.status] || statusConfig.completed).label}
-                                    </span>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-1">Date & heure</p>
-                                    <p className="text-sm font-semibold text-white">{new Date(selectedCall.created_at).toLocaleString('fr-FR')}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-1">Durée</p>
-                                    <p className="text-sm font-semibold text-white">{formatDuration(selectedCall.duration || 0)}</p>
-                                </div>
-                                {selectedCall.reservation_booked !== null && selectedCall.reservation_booked !== undefined && (
-                                    <div>
-                                        <p className="text-xs text-gray-500 mb-1">Réservation créée</p>
-                                        <p className={`text-sm font-semibold ${selectedCall.reservation_booked ? 'text-[#b8f000]' : 'text-gray-400'}`}>
-                                            {selectedCall.reservation_booked ? '✓ Oui' : '✗ Non'}
-                                        </p>
-                                    </div>
-                                )}
-                                {selectedCall.customer_sentiment && (
-                                    <div>
-                                        <p className="text-xs text-gray-500 mb-1">Sentiment client</p>
-                                        <p className="text-sm font-semibold text-white capitalize">{selectedCall.customer_sentiment}</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {selectedCall.call_summary && (
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-2">Résumé</p>
-                                    <div className="p-3 rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] text-sm text-gray-300">
-                                        {selectedCall.call_summary}
-                                    </div>
-                                </div>
-                            )}
-
-                            {selectedCall.transcript && (
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <p className="text-xs text-gray-500">Transcription</p>
-                                        <button
-                                            onClick={() => downloadTranscript(selectedCall)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#b8f000] hover:text-green-300 border border-[#b8f000]/30 rounded-lg hover:bg-[#b8f000]/10 transition-colors"
-                                        >
-                                            <Download size={14} /> Télécharger
-                                        </button>
-                                    </div>
-                                    <div className="p-4 rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] max-h-64 overflow-y-auto">
-                                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{selectedCall.transcript}</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {selectedCall.recording_url && (
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-2">Enregistrement</p>
-                                    <audio controls className="w-full">
-                                        <source src={selectedCall.recording_url} type="audio/mpeg" />
-                                    </audio>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

@@ -98,6 +98,62 @@ const sourceLabel: Record<string, string> = {
     web:    '🌐 Web',
 };
 
+
+// ─── Booking detail drawer ────────────────────────────────────────────────────
+function BookingDetailDrawer({ booking, onClose }: { booking: Booking; onClose: () => void }) {
+    const downloadTranscript = (text: string) => {
+        const blob = new Blob([text], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `transcript-${booking.id}.txt`;
+        a.click();
+    };
+    const statusCfg: Record<string, { label: string; color: string }> = {
+        confirmed: { label: 'Confirmé',   color: '#b8f000' },
+        pending:   { label: 'En attente', color: '#f59e0b' },
+        cancelled: { label: 'Annulé',     color: '#ef4444' },
+    };
+    const st = statusCfg[booking.status] || statusCfg.pending;
+    const time = booking.booked_for
+        ? new Date(booking.booked_for).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        : booking.booking_time || '—';
+    const date = booking.booked_for
+        ? new Date(booking.booked_for).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+        : booking.booking_date || '—';
+
+    return (
+        <div className="fixed inset-0 bg-black/70 z-50 flex justify-end" onClick={onClose}>
+            <div className="w-[480px] bg-[#111] border-l border-[#2a2a2a] h-full overflow-y-auto p-7" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-bold text-white">Détails réservation</h2>
+                    <button onClick={onClose} className="text-[#555] hover:text-white p-1"><svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                </div>
+                <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 mb-5">
+                    <p className="text-lg font-bold text-white mb-3">{booking.guest_name || 'Client'}</p>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">DATE</p><p className="text-white capitalize">{date}</p></div>
+                        <div><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">HEURE</p><p className="text-[15px] font-bold" style={{ color: '#b8f000' }}>{time}</p></div>
+                        <div><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">COUVERTS</p><p className="text-white">{booking.party_size || booking.covers || 0} personnes</p></div>
+                        <div><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">STATUT</p><span className="text-sm font-semibold" style={{ color: st.color }}>{st.label}</span></div>
+                    </div>
+                    {booking.special_requests && (
+                        <div className="mt-3 pt-3 border-t border-[#2a2a2a]"><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">DEMANDES SPÉCIALES</p><p className="text-xs text-[#888]">{booking.special_requests}</p></div>
+                    )}
+                    {booking.confirmation_number && (
+                        <div className="mt-3 pt-3 border-t border-[#2a2a2a]"><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">N° CONFIRMATION</p><p className="text-xs font-mono text-[#888]">{booking.confirmation_number}</p></div>
+                    )}
+                </div>
+                <div>
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-3">APPEL ASSOCIÉ</p>
+                    <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 text-xs text-[#555] italic text-center">
+                        Transcripts disponibles dans le journal des appels
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 const Bookings: React.FC = () => {
     const [bookings, setBookings]         = useState<Booking[]>([]);
     const [loading, setLoading]           = useState(true);
@@ -105,6 +161,7 @@ const Bookings: React.FC = () => {
     const [searchTerm, setSearchTerm]     = useState('');
     const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
     const [cancelling, setCancelling]     = useState(false);
+    const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
     const fetchBookings = useCallback(async () => {
         try {
@@ -157,6 +214,8 @@ const Bookings: React.FC = () => {
         <div className="space-y-6">
 
             {/* Cancel modal */}
+            {selectedBooking && <BookingDetailDrawer booking={selectedBooking} onClose={() => setSelectedBooking(null)} />}
+
             {cancelTarget && (
                 <CancelModal
                     booking={cancelTarget}
@@ -231,7 +290,7 @@ const Bookings: React.FC = () => {
                         {filteredBookings.map((booking) => {
                             const st = statusConfig[booking.status] || statusConfig.confirmed;
                             return (
-                                <div key={booking.id} className="rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] p-4 hover:border-[#2a2a2a] transition-colors">
+                                <div key={booking.id} className="rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] p-4 hover:border-[#2a2a2a] transition-colors cursor-pointer" onClick={() => setSelectedBooking(booking)}>
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-2 flex-wrap">

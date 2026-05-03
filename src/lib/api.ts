@@ -1,30 +1,24 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.tablenow.io/api';
 
-const api = axios.create({
-    baseURL: `${API_URL}/api`,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+export const api = axios.create({
+    baseURL: API_BASE_URL,
+    headers: { 'Content-Type': 'application/json' },
 });
 
-// Add auth token to requests (checks both localStorage and sessionStorage)
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
+    const token = localStorage.getItem('token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
 });
 
-// Handle auth errors
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
+        if (error.response?.status === 401) {
             localStorage.removeItem('token');
-            sessionStorage.removeItem('token');
+            localStorage.removeItem('user');
             window.location.href = '/login';
         }
         return Promise.reject(error);
@@ -32,10 +26,36 @@ api.interceptors.response.use(
 );
 
 export const authAPI = {
-    register: (data: any) => api.post('/auth/register', data),
-    login: (data: any) => api.post('/auth/login', data),
+    login:       (data: any) => api.post('/auth/login', data),
+    register:    (data: any) => api.post('/auth/register', data),
     verifyEmail: (token: string) => api.post('/auth/verify-email', { token }),
-    getMe: () => api.get('/auth/me'),
+    me:          () => api.get('/auth/me'),
+};
+
+export const dashboardAPI = {
+    getStats:    (params?: any) => api.get('/dashboard/stats', { params }),
+    getCalls:    (params?: any) => api.get('/dashboard/calls', { params }),
+    getInsights: (date?: string) => api.get('/dashboard/insights', { params: date ? { date } : {} }),
+};
+
+export const bookingsAPI = {
+    getAll:  (params?: any)  => api.get('/bookings', { params }),
+    create:  (data: any)     => api.post('/bookings', data),
+    update:  (id: string, data: any) => api.put(`/bookings/${id}`, data),
+    cancel:  (id: string)    => api.delete(`/bookings/${id}`),
+    getById: (id: string)    => api.get(`/bookings/${id}`),
+};
+
+export const settingsAPI = {
+    get:       ()           => api.get('/settings'),
+    update:    (data: any)  => api.put('/settings', data),
+    retryVapi: ()           => api.post('/settings/retry-vapi'),
+};
+
+export const calendarAPI = {
+    getAuthUrl:  () => api.get('/calendar/auth-url'),
+    callback:    (code: string) => api.post('/calendar/callback', { code }),
+    disconnect:  () => api.post('/calendar/disconnect'),
 };
 
 export const referralAPI = {
@@ -43,38 +63,8 @@ export const referralAPI = {
     getList:  () => api.get('/referral/list'),
 };
 
-export const dashboardAPI = {
-    getStats: (params?: any) => api.get('/dashboard/stats', { params }),
-    getCalls: (params?: any) => api.get('/dashboard/calls', { params }),
+export const callsAPI = {
+    getAll:     (params?: any) => api.get('/call-logs', { params }),
+    getById:    (id: string)   => api.get(`/call-logs/${id}`),
+    getTranscript: (id: string) => api.get(`/call-logs/${id}/transcript`),
 };
-
-export const bookingsAPI = {
-    getAll: (params?: any) => api.get('/bookings', { params }),
-    getOne: (id: string) => api.get(`/bookings/${id}`),
-    create: (data: any) => api.post('/bookings', data),
-    update: (id: string, data: any) => api.put(`/bookings/${id}`, data),
-    cancel: (id: string) => api.delete(`/bookings/${id}`),
-};
-
-export const settingsAPI = {
-    get: () => api.get('/settings'),
-    update: (data: any) => api.put('/settings', data),
-    retryVapi: () => api.post('/settings/retry-vapi'),
-};
-
-export const calendarAPI = {
-    getAuthUrl: () => api.get('/calendar/auth-url'),
-    callback: (code: string) => api.post('/calendar/callback', { code }),
-    disconnect: () => api.post('/calendar/disconnect'),
-};
-
-export const emailAPI = {
-    getBCCEmails: (params?: any) => api.get('/email/bcc', { params }),
-};
-
-export const restaurantsAPI = {
-    setLanguage: (language: 'fr' | 'en') =>
-        api.patch('/restaurants/me/language', { language }),
-};
-
-export default api;

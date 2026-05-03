@@ -57,7 +57,7 @@ const SIDEBAR_SECTIONS = [
         ],
     },
     {
-        label: 'SYSTÈME',
+        label: 'PARRAINAGE',
         items: [
             { key: 'assistant' as SectionKey,    icon: Bot,          label: 'Assistant IA'  },
             { key: 'identifiants' as SectionKey, icon: Info,         label: 'Identifiants'  },

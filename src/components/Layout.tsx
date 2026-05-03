@@ -1,46 +1,57 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Calendar, Phone, Settings, LogOut, Menu, X } from 'lucide-react';
-
-const ROUTE_LABELS: Record<string, string> = {
-    dashboard:  'TABLEAU DE BORD',
-    bookings:   'RÉSERVATIONS',
-    calls:      'APPELS',
-    settings:   'PARAMÈTRES',
-};
+import { useLang } from '../context/LangContext';
+import { LayoutDashboard, Calendar, Phone, Settings, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
 
 const Layout: React.FC = () => {
     const { user, logout } = useAuth();
+    const { lang, setLang, t } = useLang();
     const location = useLocation();
     const { restaurantSlug } = useParams();
-    const [mobileOpen, setMobileOpen] = React.useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [darkMode, setDarkMode] = useState(() => {
+        return localStorage.getItem('theme') !== 'light';
+    });
 
     const base = `/r/${restaurantSlug}`;
 
     const nav = [
-        { name: 'Dashboard',    href: `${base}/dashboard`, icon: LayoutDashboard },
-        { name: 'Réservations', href: `${base}/bookings`,  icon: Calendar },
-        { name: 'Appels',       href: `${base}/calls`,     icon: Phone },
-        { name: 'Paramètres',   href: `${base}/settings`,  icon: Settings },
+        { key: 'navDashboard', href: `${base}/dashboard`, icon: LayoutDashboard },
+        { key: 'navReservations', href: `${base}/bookings`,  icon: Calendar        },
+        { key: 'navCalls',       href: `${base}/calls`,     icon: Phone            },
+        { key: 'navSettings',    href: `${base}/settings`,  icon: Settings         },
     ];
 
     const segment = location.pathname.split('/').pop() || '';
-    const breadcrumb = ROUTE_LABELS[segment] || '';
-    const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href);
+    const breadcrumbMap: Record<string, string> = {
+        dashboard: t('navDashboard').toUpperCase(),
+        bookings:  t('navReservations').toUpperCase(),
+        calls:     t('navCalls').toUpperCase(),
+        settings:  t('navSettings').toUpperCase(),
+    };
+    const breadcrumb = breadcrumbMap[segment] || '';
+    const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
+
+    const toggleTheme = () => {
+        const next = !darkMode;
+        setDarkMode(next);
+        localStorage.setItem('theme', next ? 'dark' : 'light');
+        document.documentElement.classList.toggle('light', !next);
+    };
 
     return (
         <div className="min-h-screen bg-[#0a0a0a] text-white">
 
-            {/* ── Breadcrumb strip ──────────────────────────────────── */}
-            <div className="fixed top-0 left-0 right-0 z-50 h-8 bg-[#0a0a0a] border-b border-[#1a1a1a] flex items-center px-6">
+            {/* ── Breadcrumb strip ──────────────────────────────────────── */}
+            <div className="fixed top-0 left-0 right-0 z-50 h-7 bg-[#0a0a0a] border-b border-[#1a1a1a] flex items-center px-6">
                 <span className="text-[10px] tracking-[0.18em] uppercase text-[#555] select-none">
                     TableNow{breadcrumb ? ` › ${breadcrumb}` : ''}
                 </span>
             </div>
 
-            {/* ── Navbar ───────────────────────────────────────────── */}
-            <nav className="fixed top-8 left-0 right-0 z-40 h-[52px] bg-[#111] border-b border-[#2a2a2a] flex items-center px-6">
+            {/* ── Navbar ───────────────────────────────────────────────── */}
+            <nav className="fixed top-7 left-0 right-0 z-40 h-[52px] bg-[#111] border-b border-[#2a2a2a] flex items-center px-6">
                 <div className="flex items-center justify-between w-full">
 
                     {/* Left */}
@@ -56,19 +67,18 @@ const Layout: React.FC = () => {
                     </div>
 
                     {/* Centre — desktop nav */}
-                    <div className="hidden md:flex items-center gap-1">
-                        {nav.map(({ name, href, icon: Icon }) => {
+                    <div className="hidden md:flex items-center">
+                        {nav.map(({ key, href }) => {
                             const active = isActive(href);
                             return (
                                 <Link
                                     key={href}
                                     to={href}
-                                    className={`relative flex items-center gap-2 px-4 h-[52px] text-sm transition-colors ${
+                                    className={`relative flex items-center px-4 h-[52px] text-sm transition-colors ${
                                         active ? 'text-white' : 'text-[#888] hover:text-white'
                                     }`}
                                 >
-                                    <Icon size={15} />
-                                    <span>{name}</span>
+                                    <span>{t(key)}</span>
                                     {active && (
                                         <span className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: '#b8f000' }} />
                                     )}
@@ -79,18 +89,46 @@ const Layout: React.FC = () => {
 
                     {/* Right */}
                     <div className="hidden md:flex items-center gap-3">
+                        {/* Lang toggle */}
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                onClick={() => setLang('fr')}
+                                className={`text-xs font-bold px-2 py-1 rounded transition-colors ${
+                                    lang === 'fr' ? 'text-black' : 'text-[#555] hover:text-white'
+                                }`}
+                                style={lang === 'fr' ? { background: '#b8f000' } : {}}
+                            >FR</button>
+                            <button
+                                onClick={() => setLang('en')}
+                                className={`text-xs font-bold px-2 py-1 rounded transition-colors ${
+                                    lang === 'en' ? 'text-black' : 'text-[#555] hover:text-white'
+                                }`}
+                                style={lang === 'en' ? { background: '#b8f000' } : {}}
+                            >EN</button>
+                        </div>
+
+                        {/* Theme toggle */}
+                        <button
+                            onClick={toggleTheme}
+                            className="p-1.5 rounded-lg text-[#555] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+                        >
+                            {darkMode ? <Sun size={14} /> : <Moon size={14} />}
+                        </button>
+
+                        {/* IA badge */}
                         {user?.vapi_assistant_id && (
-                            <span className="text-[10px] font-bold tracking-widest px-3 py-1 rounded border"
-                                style={{ color: '#b8f000', borderColor: '#b8f000' }}>
-                                IA ACTIVE
+                            <span className="text-[10px] font-bold tracking-widest px-2.5 py-1 rounded border border-[#b8f000] text-[#b8f000]">
+                                {t('iaActive')}
                             </span>
                         )}
+
+                        {/* Logout */}
                         <button
                             onClick={logout}
                             className="flex items-center gap-1.5 text-xs text-[#555] hover:text-white transition-colors"
                         >
-                            <LogOut size={14} />
-                            <span>Déconnexion</span>
+                            <LogOut size={13} />
+                            <span className="hidden lg:block">{t('logout')}</span>
                         </button>
                     </div>
 
@@ -104,11 +142,11 @@ const Layout: React.FC = () => {
                 </div>
             </nav>
 
-            {/* ── Mobile menu ───────────────────────────────────────── */}
+            {/* ── Mobile menu ───────────────────────────────────────────── */}
             {mobileOpen && (
-                <div className="fixed top-[88px] left-0 right-0 z-30 bg-[#111] border-b border-[#2a2a2a] md:hidden">
+                <div className="fixed top-[79px] left-0 right-0 z-30 bg-[#111] border-b border-[#2a2a2a] md:hidden">
                     <div className="px-4 py-3 space-y-1">
-                        {nav.map(({ name, href, icon: Icon }) => {
+                        {nav.map(({ key, href, icon: Icon }) => {
                             const active = isActive(href);
                             return (
                                 <Link
@@ -121,23 +159,28 @@ const Layout: React.FC = () => {
                                     style={active ? { borderLeft: '2px solid #b8f000', paddingLeft: '10px' } : {}}
                                 >
                                     <Icon size={15} />
-                                    <span>{name}</span>
+                                    <span>{t(key)}</span>
                                 </Link>
                             );
                         })}
+                        <div className="flex items-center gap-3 px-3 py-2">
+                            <button onClick={() => setLang('fr')} className={`text-xs font-bold px-2 py-1 rounded ${lang === 'fr' ? 'text-black' : 'text-[#555]'}`} style={lang === 'fr' ? { background: '#b8f000' } : {}}>FR</button>
+                            <button onClick={() => setLang('en')} className={`text-xs font-bold px-2 py-1 rounded ${lang === 'en' ? 'text-black' : 'text-[#555]'}`} style={lang === 'en' ? { background: '#b8f000' } : {}}>EN</button>
+                            <button onClick={toggleTheme} className="ml-auto p-1.5 text-[#555]">{darkMode ? <Sun size={14} /> : <Moon size={14} />}</button>
+                        </div>
                         <button
                             onClick={() => { logout(); setMobileOpen(false); }}
                             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#555] hover:text-red-400"
                         >
                             <LogOut size={15} />
-                            <span>Déconnexion</span>
+                            <span>{t('logout')}</span>
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* ── Main content ──────────────────────────────────────── */}
-            <main className="pt-[88px] px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
+            {/* ── Main content ──────────────────────────────────────────── */}
+            <main className="pt-[79px] px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
                 <Outlet />
             </main>
         </div>
