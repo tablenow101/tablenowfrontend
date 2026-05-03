@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { settingsAPI, calendarAPI } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import ParrainageSettings from './settings/ParrainageSettings';
 import {
     Phone, Mail, User, Copy, Check, Calendar, Bell, Info,
     AlertCircle, CheckCircle, Wifi, WifiOff, Utensils,
@@ -554,13 +555,7 @@ const Settings: React.FC = () => {
 
                 {/* PARRAINAGE */}
                 {section === 'parrainage' && (
-                    <div>
-                        <SectionTitle title="Parrainage" description="Invitez des restaurants et gagnez des minutes gratuites" />
-                        <div className="p-6 rounded-xl bg-[#111] border border-[#2a2a2a] text-center space-y-3">
-                            <Gift size={32} className="mx-auto text-[#555]" />
-                            <p className="text-sm text-[#888]">Programme de parrainage bientôt disponible</p>
-                        </div>
-                    </div>
+                    <ParrainageSettings />
                 )}
 
             </div>

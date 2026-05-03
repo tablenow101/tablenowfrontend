@@ -2,26 +2,26 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { dashboardAPI } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { useLang } from '../context/LangContext';
 import { ArrowUpRight } from 'lucide-react';
 
-type Range = 'today' | '7j' | '30j' | 'all';
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface CallLog {
     id: string;
     caller_number?: string;
-    guest_name?: string;
-    status: string;
+    caller_name?: string;
+    status: 'completed' | 'missed' | 'failed' | 'in_progress';
     duration?: number;
     created_at?: string;
     started_at?: string;
     reservation_booked?: boolean;
+    transcript?: string;
 }
 
 interface Booking {
     id: string;
     guest_name?: string;
-    status: string;
+    status: 'confirmed' | 'pending' | 'cancelled';
     booking_time?: string;
     booking_date?: string;
     booked_for?: string;
@@ -39,12 +39,30 @@ interface Insights {
     best_slot_time: string | null;
 }
 
+type Range = 'today' | '7j' | '30j' | 'all';
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function greeting(): string {
+    const h = new Date().getHours();
+    if (h < 12) return 'Bonjour';
+    if (h < 18) return 'Bon après-midi';
+    return 'Bonsoir';
+}
+
+function maskPhone(n?: string): string {
+    if (!n) return 'Inconnu';
+    const clean = n.replace(/\s/g, '');
+    if (clean.length < 8) return n;
+    return clean.slice(0, 4) + ' ' + clean.slice(4, 6) + ' ··· ' + clean.slice(-2);
+}
+
 function fmtDuration(s: number): string {
-    if (!s) return '0s';
+    if (!s) return '—';
     if (s < 60) return `${s}s`;
     const m = Math.floor(s / 60);
     const sec = s % 60;
-    return sec > 0 ? `${m}min${String(sec).padStart(2,'0')}s` : `${m}min`;
+    return sec > 0 ? `${m}min${sec}s` : `${m}min`;
 }
 
 function fmtTime(b: Booking): string {
@@ -52,13 +70,13 @@ function fmtTime(b: Booking): string {
     return b.booking_time || '—';
 }
 
-function todayISO() { return new Date().toISOString().split('T')[0]; }
-
-function fmtPct(rate: number): string {
-    return `${Math.round(rate * 100)}%`;
+function todayISO(): string {
+    return new Date().toISOString().split('T')[0];
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
+
+const LIME = '#b8f000';
 
 function StatTile({ label, value, sub, subLime = false }: {
     label: string; value: string | number; sub?: string; subLime?: boolean;
@@ -72,45 +90,32 @@ function StatTile({ label, value, sub, subLime = false }: {
     );
 }
 
-function InsightRow({ label, value, desc, highlight = false }: {
-    label: string; value: string | number; desc?: string; highlight?: boolean;
-}) {
+function CallRow({ call }: { call: CallLog }) {
+    const dot = call.status === 'completed' ? LIME
+        : call.status === 'missed' ? '#f59e0b'
+        : '#ef4444';
+    const name = call.caller_name || maskPhone(call.caller_number);
+    const isNamed = !!call.caller_name;
     return (
-        <div className="flex items-center gap-4 px-5 py-3.5 border-b border-[#1a1a1a] last:border-0">
-            <span className="text-sm text-[#888] w-[220px] flex-shrink-0">{label}</span>
-            <span className={`text-[15px] font-bold min-w-[60px] ${highlight ? 'text-[#b8f000]' : 'text-white'}`}>{value}</span>
-            {desc && <span className="text-xs text-[#555]">{desc}</span>}
-        </div>
-    );
-}
-
-function CallRow({ call, slug }: { call: CallLog; slug: string }) {
-    const dotColor = call.status === 'completed' ? '#b8f000'
-        : call.status === 'missed' ? '#f59e0b' : '#ef4444';
-    const name = call.guest_name || call.caller_number || 'Inconnu';
-    const isMono = !call.guest_name;
-
-    return (
-        <div className="flex items-center gap-0 py-3 border-b border-[#1a1a1a] last:border-0">
-            <div className="w-[10px] h-[10px] rounded-full flex-shrink-0 mr-4" style={{ background: dotColor }} />
-            <span className={`text-sm flex-shrink-0 w-[140px] ${isMono ? 'font-mono text-white' : 'font-medium text-white'}`}>{name}</span>
-            <span className={`text-xs px-2 py-0.5 rounded border flex-shrink-0 w-[88px] text-center ${
-                call.status === 'completed' ? 'bg-[#b8f00015] text-[#b8f000] border-[#b8f00040]'
-                : call.status === 'missed' ? 'bg-[#f59e0b15] text-[#f59e0b] border-[#f59e0b40]'
-                : 'bg-[#ef444415] text-[#ef4444] border-[#ef444440]'
-            }`}>
-                {call.status === 'completed' ? 'Terminé' : call.status === 'missed' ? 'Manqué' : 'Non abouti'}
+        <div className="flex items-center gap-0 py-2.5 border-b border-[#1a1a1a] last:border-0">
+            <div className="w-2 h-2 rounded-full flex-shrink-0 mr-3" style={{ background: dot }} />
+            <span className={`text-sm flex-shrink-0 w-36 ${isNamed ? 'text-white font-medium' : 'text-white font-mono'}`}>
+                {name}
             </span>
+            <span className="text-xs text-[#888] flex-1 truncate">
+                {call.reservation_booked ? 'Réservation confirmée' : call.status === 'completed' ? 'Terminé' : call.status === 'missed' ? 'Manqué' : 'Non abouti'}
+            </span>
+            <span className="text-xs text-[#555] flex-shrink-0">{fmtDuration(call.duration || 0)}</span>
         </div>
     );
 }
 
 function BookingRow({ booking }: { booking: Booking }) {
     return (
-        <div className="flex items-center gap-0 py-3 border-b border-[#1a1a1a] last:border-0">
-            <span className="text-[15px] font-bold w-[52px] flex-shrink-0" style={{ color: '#b8f000' }}>{fmtTime(booking)}</span>
-            <span className="text-[14px] text-white flex-1 truncate">{booking.guest_name || 'Client'}</span>
-            <span className="text-xs text-[#888] flex-shrink-0">{booking.party_size || booking.covers || 0} couverts</span>
+        <div className="flex items-center gap-3 py-2.5 border-b border-[#1a1a1a] last:border-0">
+            <span className="text-sm font-bold w-12 flex-shrink-0" style={{ color: LIME }}>{fmtTime(booking)}</span>
+            <span className="text-sm text-white flex-1 truncate">{booking.guest_name || 'Client'}</span>
+            <span className="text-xs text-[#888]">{(booking.party_size || booking.covers || 0)} couv.</span>
         </div>
     );
 }
@@ -119,15 +124,14 @@ function BookingRow({ booking }: { booking: Booking }) {
 
 const Dashboard: React.FC = () => {
     const { user } = useAuth();
-    const { lang, t } = useLang();
     const { restaurantSlug } = useParams();
     const slug = restaurantSlug || user?.slug || '';
 
-    const [stats, setStats]       = useState<any>(null);
+    const [stats, setStats]         = useState<any>(null);
     const [todayStats, setTodayStats] = useState<any>(null);
-    const [insights, setInsights] = useState<Insights | null>(null);
-    const [loading, setLoading]   = useState(true);
-    const [range, setRange]       = useState<Range>('30j');
+    const [insights, setInsights]   = useState<Insights | null>(null);
+    const [loading, setLoading]     = useState(true);
+    const [range, setRange]         = useState<Range>('30j');
 
     const fetchTodayStats = useCallback(async () => {
         try {
@@ -139,9 +143,9 @@ const Dashboard: React.FC = () => {
 
     const fetchInsights = useCallback(async () => {
         try {
-            const res = await dashboardAPI.getInsights(todayISO());
+            const res = await dashboardAPI.getInsights();
             setInsights(res.data);
-        } catch { /* non-blocking */ }
+        } catch { /* non-blocking — insights stay null if no data yet */ }
     }, []);
 
     const fetchStats = useCallback(async () => {
@@ -149,7 +153,8 @@ const Dashboard: React.FC = () => {
             const today = new Date();
             const params: Record<string, string> = { dateRange: range };
             if (range === 'today') {
-                params.startDate = todayISO(); params.endDate = todayISO();
+                params.startDate = todayISO();
+                params.endDate   = todayISO();
             } else if (range !== 'all') {
                 const days = range === '7j' ? 7 : 30;
                 const start = new Date();
@@ -160,7 +165,7 @@ const Dashboard: React.FC = () => {
             const res = await dashboardAPI.getStats(params);
             setStats(res.data);
         } catch (e) {
-            console.error(e);
+            console.error('Dashboard stats error:', e);
         } finally {
             setLoading(false);
         }
@@ -169,30 +174,16 @@ const Dashboard: React.FC = () => {
     useEffect(() => { fetchTodayStats(); fetchInsights(); }, [fetchTodayStats, fetchInsights]);
     useEffect(() => { fetchStats(); }, [fetchStats]);
 
-    const greeting = () => {
-        const h = new Date().getHours();
-        if (h < 12) return t('greeting_morning');
-        if (h < 18) return t('greeting_afternoon');
-        return t('greeting_evening');
-    };
-
-    if (loading) return (
-        <div className="flex items-center justify-center h-64">
-            <div className="w-8 h-8 border-2 border-white/10 border-t-white rounded-full animate-spin" />
-        </div>
-    );
-
-    const totalBookings     = stats?.bookings?.total ?? 0;
-    const confirmedBookings = stats?.bookings?.confirmed ?? 0;
-    const cancelledBookings = stats?.bookings?.cancelled ?? 0;
-    const totalCalls        = stats?.calls?.total ?? 0;
+    const totalCalls        = stats?.calls?.total         ?? 0;
+    const totalBookings     = stats?.bookings?.total      ?? 0;
+    const confirmedBookings = stats?.bookings?.confirmed  ?? 0;
+    const cancelledBookings = stats?.bookings?.cancelled  ?? 0;
     const totalGuests       = stats?.bookings?.totalGuests ?? 0;
-    const avgGuests         = totalBookings > 0 ? (totalGuests / totalBookings).toFixed(1) : '—';
-    const conversionPct     = totalCalls > 0 ? `${Math.round((confirmedBookings / totalCalls) * 100)}%` : '—';
+    const conversionPct     = totalCalls > 0 ? Math.round((confirmedBookings / totalCalls) * 100) : 0;
     const recentCalls: CallLog[]    = stats?.recent?.calls    ?? [];
     const recentBookings: Booking[] = stats?.recent?.bookings ?? [];
 
-    const heroCallsToday     = todayStats?.calls?.total ?? 0;
+    const heroCallsToday     = todayStats?.calls?.total        ?? 0;
     const heroConfirmedToday = todayStats?.bookings?.confirmed ?? 0;
 
     const now = new Date();
@@ -206,29 +197,46 @@ const Dashboard: React.FC = () => {
             new Date(b.booked_for || b.booking_date || 0).getTime()
         );
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="w-8 h-8 border-2 border-white/10 border-t-white rounded-full animate-spin" />
+            </div>
+        );
+    }
+
     const RANGES: { key: Range; label: string }[] = [
-        { key: 'today', label: t('today') },
-        { key: '7j',    label: '7j'        },
-        { key: '30j',   label: '30j'       },
-        { key: 'all',   label: t('all')    },
+        { key: 'today', label: "Auj." },
+        { key: '7j',    label: '7j'   },
+        { key: '30j',   label: '30j'  },
+        { key: 'all',   label: 'Tout' },
     ];
 
-    return (
-        <div className="space-y-7">
+    const showInsights = insights && (
+        insights.confirmed_reservations > 0 ||
+        insights.abandoned_calls > 0 ||
+        insights.unplaced_requests > 0
+    );
 
-            {/* ── Header ─────────────────────────────────────────────── */}
+    return (
+        <div className="space-y-6">
+
+            {/* ── Header ──────────────────────────────────────────────── */}
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">{greeting()} {user?.name}</h1>
+                    <h1 className="text-2xl font-bold text-white">
+                        {greeting()} {user?.name || user?.owner_name}
+                    </h1>
                     <p className="text-sm text-[#888] mt-1">
-                        {t('heroSub')
-                            .replace('{calls}', String(heroCallsToday))
-                            .replace('{resas}', String(heroConfirmedToday))
-                            .split(/(\d+)/).map((part, i) =>
-                                /^\d+$/.test(part)
-                                    ? <span key={i} className="font-semibold" style={{ color: '#b8f000' }}>{part}</span>
-                                    : part
-                            )}
+                        {heroCallsToday > 0 || heroConfirmedToday > 0 ? (
+                            <>Votre assistant a traité{' '}
+                            <span className="font-semibold" style={{ color: LIME }}>{heroCallsToday} appel{heroCallsToday !== 1 ? 's' : ''}</span>
+                            {' '}et confirmé{' '}
+                            <span className="font-semibold" style={{ color: LIME }}>{heroConfirmedToday} réservation{heroConfirmedToday !== 1 ? 's' : ''}</span>
+                            {' '}aujourd'hui</>
+                        ) : (
+                            <>Aucun appel enregistré aujourd'hui pour l'instant</>
+                        )}
                     </p>
                 </div>
                 <div className="flex border border-[#2a2a2a] rounded-lg overflow-hidden flex-shrink-0">
@@ -237,7 +245,7 @@ const Dashboard: React.FC = () => {
                             key={key}
                             onClick={() => setRange(key)}
                             className="px-3 py-1.5 text-xs font-bold transition-colors"
-                            style={range === key ? { background: '#b8f000', color: '#000' } : { color: '#888' }}
+                            style={range === key ? { background: LIME, color: '#000' } : { color: '#888' }}
                         >
                             {label}
                         </button>
@@ -245,93 +253,93 @@ const Dashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── ACTIVITÉ ───────────────────────────────────────────── */}
+            {/* ── ACTIVITÉ ────────────────────────────────────────────── */}
             <div>
-                <p className="text-[10px] font-bold tracking-[.15em] uppercase text-[#555] mb-3">— {t('sectionActivity')}</p>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <p className="text-[10px] font-bold tracking-[.15em] uppercase text-[#555] mb-3">— ACTIVITÉ</p>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
                     <StatTile
-                        label={t('callsHandled')}
+                        label="Appels traités"
                         value={totalCalls}
-                        sub={t('callsDesc')}
+                        sub="Appels reçus et gérés par l'assistant"
                     />
                     <StatTile
-                        label={t('reservations')}
+                        label="Réservations"
                         value={totalBookings}
-                        sub={`${confirmedBookings} ${t('confirmed')} · ${cancelledBookings} ${t('cancelled')}`}
-                        subLime
+                        sub={`${confirmedBookings} confirmées · ${cancelledBookings} annulées`}
+                        subLime={confirmedBookings > 0}
                     />
                     <StatTile
-                        label={t('covers')}
+                        label="Couverts"
                         value={totalGuests}
-                        sub={t('coversDesc').replace('{avg}', String(avgGuests))}
+                        sub={totalGuests > 0 ? `Moyenne ${(totalGuests / Math.max(totalBookings, 1)).toFixed(1)} par réservation` : 'Aucun couvert pour la période'}
                     />
                     <StatTile
-                        label={t('conversion')}
-                        value={conversionPct}
-                        sub={t('conversionDesc')}
+                        label="Conversion"
+                        value={`${conversionPct}%`}
+                        sub="Appels transformés en réservations"
                     />
                 </div>
             </div>
 
-            {/* ── ANALYSE ────────────────────────────────────────────── */}
-            {insights && (
+            {/* ── ANALYSE ─────────────────────────────────────────────── */}
+            {showInsights && (
                 <div>
-                    <p className="text-[10px] font-bold tracking-[.15em] uppercase text-[#555] mb-3">— {t('sectionAnalysis')}</p>
+                    <p className="text-[10px] font-bold tracking-[.15em] uppercase text-[#555] mb-3">— ANALYSE</p>
                     <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
-                        <InsightRow
-                            label={t('fillRate')}
-                            value={fmtPct(insights.occupancy_rate)}
-                            desc={insights.lowest_slot_time ? t('fillRateDesc').replace('{slot}', insights.lowest_slot_time) : undefined}
-                        />
-                        <InsightRow
-                            label={t('unplaced')}
-                            value={insights.unplaced_requests}
-                            desc={insights.peak_unplaced_time ? t('unplacedDesc').replace('{time}', insights.peak_unplaced_time) : undefined}
-                        />
-                        <InsightRow
-                            label={t('abandoned')}
-                            value={insights.abandoned_calls}
-                        />
-                        <InsightRow
-                            label={t('bestSlot')}
-                            value={insights.best_slot_time ?? '—'}
-                            desc={insights.best_slot_time ? t('bestSlotDesc') : undefined}
-                            highlight
-                        />
+                        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#1a1a1a]">
+                            <span className="text-sm text-[#888] w-52 flex-shrink-0">Remplissage</span>
+                            <span className="text-sm font-bold text-white w-16">{insights!.occupancy_rate}%</span>
+                            <span className="text-xs text-[#555]">{insights!.lowest_slot_time ? `Créneau le plus faible : ${insights!.lowest_slot_time}` : '—'}</span>
+                        </div>
+                        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#1a1a1a]">
+                            <span className="text-sm text-[#888] w-52 flex-shrink-0">Demandes non placées</span>
+                            <span className="text-sm font-bold text-white w-16">{insights!.unplaced_requests}</span>
+                            <span className="text-xs text-[#555]">{insights!.peak_unplaced_time ? `Pic à ${insights!.peak_unplaced_time}` : '—'}</span>
+                        </div>
+                        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#1a1a1a]">
+                            <span className="text-sm text-[#888] w-52 flex-shrink-0">Demandes abandonnées</span>
+                            <span className="text-sm font-bold text-white w-16">{insights!.abandoned_calls}</span>
+                            <span className="text-xs text-[#555]"></span>
+                        </div>
+                        <div className="flex items-center gap-3 px-5 py-3.5">
+                            <span className="text-sm text-[#888] w-52 flex-shrink-0">Créneau à valoriser</span>
+                            <span className="text-sm font-bold w-16" style={{ color: LIME }}>{insights!.best_slot_time || '—'}</span>
+                            <span className="text-xs text-[#555]">{insights!.best_slot_time ? 'Disponibilités ouvertes' : ''}</span>
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* ── Bottom grid ────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Derniers appels */}
+            {/* ── DERNIERS APPELS + PROCHAINES RÉSAS ──────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
                     <div className="flex items-center justify-between mb-4">
-                        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('latestCalls')}</p>
-                        <Link to={`/r/${slug}/calls`} className="text-[11px] font-bold text-[#b8f000] hover:opacity-70 flex items-center gap-1">
-                            {t('seeAll')} <ArrowUpRight size={11} />
+                        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">DERNIERS APPELS</p>
+                        <Link to={`/r/${slug}/calls`} className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1" style={{ color: LIME }}>
+                            Voir tout <ArrowUpRight size={11} />
                         </Link>
                     </div>
-                    {recentCalls.length === 0
-                        ? <p className="text-xs text-[#555] py-4 text-center">—</p>
-                        : recentCalls.slice(0, 4).map(c => <CallRow key={c.id} call={c} slug={slug} />)
-                    }
+                    {recentCalls.length === 0 ? (
+                        <p className="text-xs text-[#555] py-6 text-center">Aucun appel pour l'instant</p>
+                    ) : (
+                        recentCalls.slice(0, 4).map(c => <CallRow key={c.id} call={c} />)
+                    )}
                 </div>
-
-                {/* Prochaines réservations */}
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
                     <div className="flex items-center justify-between mb-4">
-                        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('nextResa')}</p>
-                        <Link to={`/r/${slug}/bookings`} className="text-[11px] font-bold text-[#b8f000] hover:opacity-70 flex items-center gap-1">
-                            {t('seeAll')} <ArrowUpRight size={11} />
+                        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">PROCHAINES RÉSERVATIONS</p>
+                        <Link to={`/r/${slug}/bookings`} className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1" style={{ color: LIME }}>
+                            Voir tout <ArrowUpRight size={11} />
                         </Link>
                     </div>
-                    {upcomingBookings.length === 0
-                        ? <p className="text-xs text-[#555] py-4 text-center">—</p>
-                        : upcomingBookings.slice(0, 4).map(b => <BookingRow key={b.id} booking={b} />)
-                    }
+                    {upcomingBookings.length === 0 ? (
+                        <p className="text-xs text-[#555] py-6 text-center">Aucune réservation à venir</p>
+                    ) : (
+                        upcomingBookings.slice(0, 4).map(b => <BookingRow key={b.id} booking={b} />)
+                    )}
                 </div>
             </div>
+
         </div>
     );
 };
