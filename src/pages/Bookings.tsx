@@ -85,7 +85,7 @@ function CancelModal({ booking, onConfirm, onClose }: {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-    confirmed: { label: 'Confirmé',  cls: 'bg-green-500/10 text-green-400 border-green-500/20' },
+    confirmed: { label: 'Confirmé',  cls: 'bg-[#b8f000]/10 text-[#b8f000] border-[#b8f000]/20' },
     cancelled: { label: 'Annulé',    cls: 'bg-red-500/10 text-red-400 border-red-500/20'       },
     completed: { label: 'Terminé',   cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20'    },
     no_show:   { label: 'No-show',   cls: 'bg-gray-500/10 text-gray-400 border-gray-500/20'    },
@@ -181,7 +181,7 @@ const Bookings: React.FC = () => {
                             placeholder="Rechercher par nom, email ou numéro de confirmation..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-[#0f0f0f] border border-[#1f1f1f] text-white placeholder-gray-500 focus:outline-none focus:border-green-500/50 transition-colors"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-[#0f0f0f] border border-[#1f1f1f] text-white placeholder-gray-500 focus:outline-none focus:border-[#b8f000]/50 transition-colors"
                         />
                     </div>
                     <div className="flex items-center gap-2">
@@ -189,7 +189,7 @@ const Bookings: React.FC = () => {
                         <select
                             value={filter}
                             onChange={e => setFilter(e.target.value)}
-                            className="px-3 py-2.5 rounded-xl text-sm bg-[#0f0f0f] border border-[#1f1f1f] text-white focus:outline-none focus:border-green-500/50 transition-colors"
+                            className="px-3 py-2.5 rounded-xl text-sm bg-[#0f0f0f] border border-[#1f1f1f] text-white focus:outline-none focus:border-[#b8f000]/50 transition-colors"
                         >
                             <option value="all">Toutes</option>
                             <option value="confirmed">Confirmées</option>
@@ -204,7 +204,7 @@ const Bookings: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                     { label: 'Total',      value: bookings.length, color: 'text-white'     },
-                    { label: 'Confirmées', value: confirmedCount,  color: 'text-green-400' },
+                    { label: 'Confirmées', value: confirmedCount,  color: 'text-[#b8f000]' },
                     { label: 'Annulées',   value: cancelledCount,  color: 'text-red-400'   },
                     { label: 'Couverts',   value: totalGuests,     color: 'text-white'     },
                 ].map(({ label, value, color }) => (

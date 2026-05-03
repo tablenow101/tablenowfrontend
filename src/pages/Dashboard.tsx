@@ -127,6 +127,6 @@ const StatCard = React.memo(function StatCard({
     <Link to={href} className="group block">
       <div className={[
         'relative overflow-hidden rounded-2xl border p-5 h-28 transition-all duration-200',
-        'hover:border-green-500/40 hover:shadow-[0_0_24px_rgba(34,197,94,0.08)]',
-        accent ? 'bg-green-500/10 border-green-500/20' : 'bg-[#111] border-[#1f1f1f]',
+        'hover:border-[#b8f000]/40 hover:shadow-[0_0_24px_rgba(184,240,0,0.08)]',
+        accent ? 'bg-[#b8f000]/10 border-[#b8f000]/20' : 'bg-[#111] border-[#1f1f1f]',
       
