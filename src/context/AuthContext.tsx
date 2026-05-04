@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { authAPI, restaurantsAPI } from '../lib/api';
+import { authAPI, settingsAPI } from '../lib/api';
 import { isSupportedLanguage, SupportedLanguage } from '../i18n';
 
 interface User {
@@ -116,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await i18n.changeLanguage(lang);
         if (user) {
             try {
-                await restaurantsAPI.setLanguage(lang);
+                await settingsAPI.update({ language: lang });
                 setUser({ ...user, language: lang });
             } catch (err) {
                 console.warn('Failed to sync language with backend:', err);
