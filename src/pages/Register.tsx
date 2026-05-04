@@ -464,6 +464,25 @@ const Register: React.FC = () => {
               />
             </div>
 
+            {/* Row 6: Website */}
+            <div>
+              <label className={labelCls}>
+                {lang === 'fr' ? 'SITE WEB' : 'WEBSITE'}
+              </label>
+              <p className="text-xs text-[#555] mb-2">
+                {lang === 'fr'
+                  ? "Nous l'analysons pour mieux configurer votre assistant IA"
+                  : 'We analyse it to better configure your AI assistant'}
+              </p>
+              <input
+                type="url"
+                value={website}
+                onChange={e => setWebsite(e.target.value)}
+                placeholder={lang === 'fr' ? 'https://www.votre-restaurant.fr' : 'https://www.your-restaurant.com'}
+                className={fieldCls(false)}
+              />
+            </div>
+
             {/* CTA */}
             <button
               type="submit"

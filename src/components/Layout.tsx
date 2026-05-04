@@ -115,12 +115,10 @@ const Layout: React.FC = () => {
                             {darkMode ? <Sun size={14} /> : <Moon size={14} />}
                         </button>
 
-                        {/* IA badge */}
-                        {user?.vapi_assistant_id && (
-                            <span className="text-[10px] font-bold tracking-widest px-2.5 py-1 rounded border border-[#b8f000] text-[#b8f000]">
-                                {t('iaActive')}
-                            </span>
-                        )}
+                        {/* IA badge — toujours visible */}
+                        <span className="text-[10px] font-bold tracking-widest px-2.5 py-1 rounded border border-[#b8f000] text-[#b8f000]">
+                            {t('iaActive')}
+                        </span>
 
                         {/* Logout */}
                         <button
