@@ -7,26 +7,7 @@ type Status = 'loading' | 'success' | 'error';
 const LIME = '#b8f000';
 
 
-// ─── Theme + Lang toggle bar ──────────────────────────────────────────────────
-function TopBar({ lang, setLang }: { lang: string; setLang: (l: 'fr'|'en') => void }) {
-  const [dark, setDark] = React.useState(() => localStorage.getItem('theme') !== 'light');
-  const toggle = () => {
-    const next = !dark;
-    setDark(next);
-    localStorage.setItem('theme', next ? 'dark' : 'light');
-    document.documentElement.classList.toggle('light', !next);
-  };
-  return (
-    <div style={{ position: 'fixed', top: 12, right: 16, display: 'flex', alignItems: 'center', gap: 8, zIndex: 100 }}>
-      <button onClick={() => setLang('fr')} style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5, border: 'none', cursor: 'pointer', background: lang === 'fr' ? '#b8f000' : 'transparent', color: lang === 'fr' ? '#000' : '#555' }}>FR</button>
-      <button onClick={() => setLang('en')} style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5, border: 'none', cursor: 'pointer', background: lang === 'en' ? '#b8f000' : 'transparent', color: lang === 'en' ? '#000' : '#555' }}>EN</button>
-      <button onClick={toggle} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#555', fontSize: 16 }}>{dark ? '☀️' : '🌙'}</button>
-    </div>
-  );
-}
-
 const VerifyEmail: React.FC = () => {
-    const { lang, setLang } = useLang();
     const [searchParams] = useSearchParams();
     const [status, setStatus] = useState<Status>('loading');
     const [message, setMessage] = useState('');
