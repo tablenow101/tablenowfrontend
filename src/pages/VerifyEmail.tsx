@@ -1,5 +1,5 @@
 import React
-import { useLang } from '../context/LangContext';, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { authAPI } from '../lib/api';
 
