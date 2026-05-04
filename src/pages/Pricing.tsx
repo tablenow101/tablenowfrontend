@@ -10,7 +10,7 @@ const plans = [
     popular: false,
     description: 'Pour démarrer et ne plus manquer un seul appel.',
     features: [
-      'Numéro IA dédié — répond 24h/24, 7j/7',
+      'Numéro TableNow dédié — répond 24h/24, 7j/7',
       'Prise, modification et annulation de réservations',
       'Dashboard réservations + historique des appels',
       'Email de confirmation automatique au client',

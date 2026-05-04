@@ -24,9 +24,11 @@ const LanguageToggle: React.FC = () => {
 
   useEffect(() => {
     if (dark) {
+      document.documentElement.classList.remove('light');
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
     }
     localStorage.setItem('tn_theme', dark ? 'dark' : 'light');
   }, [dark]);
@@ -37,49 +39,64 @@ const LanguageToggle: React.FC = () => {
   const current = LANGS.find(l => l.code === lang) ?? LANGS[0];
 
   return (
-    <>
-      {/* Theme toggle — bouton rond lime, identique au chatbot */}
+    <div className="fixed top-6 right-6 z-[999] flex items-center gap-6">
+
+      {/* Theme toggle — minimaliste, même style que la langue */}
       <button
         onClick={() => setDark(d => !d)}
-        className="fixed top-6 right-6 w-14 h-14 bg-[#b8f000] rounded-full shadow-xl flex items-center justify-center cursor-pointer hover:opacity-90 transition z-[999]"
+        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         aria-label="Toggle theme"
       >
-        {dark ? <Sun size={22} className="text-black" /> : <Moon size={22} className="text-black" />}
+        {dark ? <Sun size={18} className="text-white" /> : <Moon size={18} className="text-[#111]" />}
+        <span className={`text-sm font-medium ${dark ? 'text-white' : 'text-[#111]'}`}>
+          {dark ? (lang === 'fr' ? 'Sombre' : 'Dark') : (lang === 'fr' ? 'Clair' : 'Light')}
+        </span>
       </button>
 
-      {/* Language selector — à gauche du toggle thème */}
-      <div className="fixed top-9 right-28 z-[999]">
+      {/* Language selector — globe + drapeau + label */}
+      <div className="relative">
         <button
           onClick={() => setOpen(o => !o)}
-          className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <Globe size={18} />
+          <Globe size={18} className={dark ? 'text-white' : 'text-[#111]'} />
           <span className="text-base">{current.flag}</span>
-          <span className="text-sm font-medium">{current.label}</span>
+          <span className={`text-sm font-medium ${dark ? 'text-white' : 'text-[#111]'}`}>
+            {current.label}
+          </span>
         </button>
 
         {open && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-            <div className="absolute right-0 mt-3 min-w-[160px] bg-[#1c1c1e] rounded-2xl overflow-hidden shadow-2xl z-50 py-1">
+            <div
+              className="absolute right-0 mt-3 min-w-[160px] rounded-2xl overflow-hidden shadow-2xl z-50 py-1"
+              style={{ background: dark ? '#1c1c1e' : '#ffffff', border: dark ? 'none' : '1px solid #e5e5e5' }}
+            >
               {LANGS.map(l => (
                 <button
                   key={l.code}
                   onClick={() => { setLang(l.code); setOpen(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#2a2a2a] transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 transition-colors"
+                  style={{ background: 'transparent' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = dark ? '#2a2a2a' : '#f5f5f5')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <span className="text-lg">{l.flag}</span>
-                  <span className={`text-sm flex-1 text-left ${lang === l.code ? 'text-[#888]' : 'text-white font-medium'}`}>
+                  <span className="text-sm flex-1 text-left" style={{
+                    color: lang === l.code ? (dark ? '#888' : '#999') : (dark ? '#fff' : '#111'),
+                    fontWeight: lang === l.code ? 400 : 500,
+                  }}>
                     {l.label}
                   </span>
-                  {lang === l.code && <Check size={14} className="text-[#888]" />}
+                  {lang === l.code && <Check size={14} style={{ color: dark ? '#888' : '#999' }} />}
                 </button>
               ))}
             </div>
           </>
         )}
       </div>
-    </>
+    </div>
   );
 };
 

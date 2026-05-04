@@ -518,7 +518,7 @@ const Settings: React.FC = () => {
                                         <Phone size={16} style={{ color: LIME }} />
                                     </div>
                                     <div>
-                                        <p className="text-xs text-[#888] mb-0.5">Numéro IA — reçoit les appels de vos clients</p>
+                                        <p className="text-xs text-[#888] mb-0.5">Numéro TableNow — reçoit les appels de vos clients</p>
                                         <p className="text-base font-bold text-white font-mono">{user.vapi_phone_number}</p>
                                     </div>
                                 </div>
@@ -545,7 +545,7 @@ const Settings: React.FC = () => {
                         <SectionTitle title="Identifiants système" description="Gérés automatiquement par TableNow — lecture seule" />
                         <div className="space-y-3">
                             <CopyField label="Adresse BCC"       value={user?.bcc_email          || 'Non configuré'} />
-                            <CopyField label="Numéro IA (VAPI)"  value={user?.vapi_phone_number   || 'Non configuré'} />
+                            <CopyField label="Numéro TableNow (VAPI)"  value={user?.vapi_phone_number   || 'Non configuré'} />
                             <CopyField label="URL du restaurant" value={user?.slug ? `tablenow.io/r/${user.slug}` : '—'} />
                             {user?.vapi_assistant_id && <CopyField label="Assistant ID" value={user.vapi_assistant_id} />}
                         </div>

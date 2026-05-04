@@ -85,21 +85,28 @@ const Register: React.FC = () => {
   const handleSelectPlace = async (placeId: string, description: string) => {
     setSearchInput(description);
     setSuggestions([]);
+    // Always lock placeId — user picked from Google list.
+    setGooglePlaceId(placeId);
     try {
       const res = await fetch(`/api/prefill/details?placeId=${placeId}&sessiontoken=${sessionToken.current}`);
+      if (!res.ok) {
+        // Graceful degradation: keep placeId but let user fill the rest manually.
+        setName(description.split(',')[0]?.trim() || '');
+        return;
+      }
       const data = await res.json();
-      setName(data.name || '');
+      setName(data.name || description.split(',')[0]?.trim() || '');
       setAddress(data.address || '');
       setPhone(data.phone || '');
       setWebsite(data.website || '');
       setCuisineType(data.cuisineType || '');
       setLat(data.lat ?? null);
       setLng(data.lng ?? null);
-      setGooglePlaceId(placeId);
       setGoogleMapsUrl(data.mapsUrl || '');
       setOpeningHoursGoogle(data.openingHours || null);
     } catch (e) {
-      console.error('Places details error:', e);
+      // Network failure — never block the user.
+      setName(description.split(',')[0]?.trim() || '');
     }
   };
 

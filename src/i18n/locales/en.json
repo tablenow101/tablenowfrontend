@@ -142,7 +142,7 @@
       "subtitle": "Finish setting up your AI assistant to start receiving bookings.",
       "cta": "Configure"
     },
-    "iaPhone": "AI Number",
+    "iaPhone": "TableNow Number",
     "bccEmail": "BCC Email",
     "stats": {
       "bookings": "Bookings",
@@ -266,10 +266,10 @@
       "name": "Restaurant name",
       "ownerName": "Owner name",
       "phone": "Restaurant phone",
-      "phoneHelper": "Number shown to guests — different from the AI number",
+      "phoneHelper": "Number shown to guests — different from the TableNow number",
       "cuisine": "Cuisine type",
       "address": "Address",
-      "iaPhone": "AI number — receives your guests' calls",
+      "iaPhone": "TableNow number — receives your guests' calls",
       "iaInfo": "This number is managed automatically by TableNow.",
       "openingDays": "Opening days",
       "capacity": "Capacity",
@@ -291,7 +291,7 @@
       "specialFeatures": "Special features",
       "phSpecialFeatures": "E.g. Terrace, kids menu, wheelchair access...",
       "bccAddress": "BCC address",
-      "vapiNumber": "AI number (VAPI)",
+      "vapiNumber": "TableNow number (VAPI)",
       "restaurantUrl": "Restaurant URL",
       "assistantId": "Assistant ID"
     },

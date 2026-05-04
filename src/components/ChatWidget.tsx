@@ -83,18 +83,7 @@ const ChatWidget: React.FC = () => {
     }
   }, [open]);
 
-  // Auto-open once per session
-  useEffect(() => {
-    if (!isPublic || sessionStorage.getItem(CHAT_SHOWN_KEY)) return;
-    const delay = pathname === '/login' ? 3000 : 5000;
-    const t = setTimeout(() => {
-      if (!sessionStorage.getItem(CHAT_SHOWN_KEY)) {
-        sessionStorage.setItem(CHAT_SHOWN_KEY, '1');
-        setOpen(true);
-      }
-    }, delay);
-    return () => clearTimeout(t);
-  }, [pathname, isPublic]);
+  // Chat stays closed until user clicks the bubble
 
   const addMsg = (from: 'bot' | 'user', text: string, opts?: { quickReplies?: string[]; isCalendly?: boolean }) => {
     setMessages(prev => [...prev, { id: nextId.current++, from, text, ...opts }]);

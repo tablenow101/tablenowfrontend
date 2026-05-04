@@ -158,3 +158,61 @@
 .loading {
   @apply inline-block w-5 h-5 border-2 border-[rgba(255,255,255,0.1)] border-t-white rounded-full animate-spin;
 }
+
+/* ─── LIGHT MODE OVERRIDES ──────────────────────────────────────────────────── */
+/* Applied when <html class="light"> is set. Inverts the dark dark palette to a soft
+   light theme (#f5f5f5 bg, white cards, dark text, lime accent unchanged). */
+
+html.light {
+  background-color: #f5f5f5 !important;
+  color: #111111 !important;
+}
+
+html.light body {
+  background-color: #f5f5f5 !important;
+  color: #111111 !important;
+}
+
+/* Backgrounds */
+html.light .bg-\[\#0a0a0a\]    { background-color: #f5f5f5 !important; }
+html.light .bg-\[\#111\]       { background-color: #ffffff !important; }
+html.light .bg-\[\#111111\]    { background-color: #ffffff !important; }
+html.light .bg-\[\#1a1a1a\]    { background-color: #ffffff !important; }
+html.light .bg-\[\#1c1c1e\]    { background-color: #ffffff !important; }
+html.light .bg-\[\#0f0f0f\]    { background-color: #fafafa !important; }
+html.light .bg-\[\#222\]       { background-color: #eeeeee !important; }
+
+/* Borders */
+html.light .border-\[\#2a2a2a\] { border-color: #e5e5e5 !important; }
+html.light .border-\[\#1a1a1a\] { border-color: #f0f0f0 !important; }
+html.light .border-\[\#444\]    { border-color: #d0d0d0 !important; }
+html.light .border-\[\#333\]    { border-color: #d8d8d8 !important; }
+
+/* Text colours */
+html.light .text-white         { color: #111111 !important; }
+html.light .text-\[\#888\]     { color: #6b6b6b !important; }
+html.light .text-\[\#555\]     { color: #8a8a8a !important; }
+html.light .text-\[\#666\]     { color: #757575 !important; }
+html.light .text-\[\#888888\]  { color: #6b6b6b !important; }
+
+/* Placeholder */
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #999999 !important;
+}
+
+/* Hover states */
+html.light .hover\:bg-\[\#1a1a1a\]:hover { background-color: #f0f0f0 !important; }
+html.light .hover\:bg-\[\#222\]:hover    { background-color: #e8e8e8 !important; }
+html.light .hover\:bg-\[\#2a2a2a\]:hover { background-color: #ececec !important; }
+
+/* Scrollbar in light mode */
+html.light ::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+html.light ::-webkit-scrollbar-thumb {
+  background: #d0d0d0;
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #b0b0b0;
+}

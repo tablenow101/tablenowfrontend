@@ -89,7 +89,7 @@ const AssistantSettings: React.FC = () => {
             </div>
             <div className="space-y-3">
               {([
-                { label: 'Numéro IA',    value: vapiPhone, accent: true  },
+                { label: 'Numéro TableNow',    value: vapiPhone, accent: true  },
                 { label: 'Assistant ID',  value: shortId,   accent: false },
                 { label: 'Modèle voix',  value: 'OpenAI shimmer',     accent: false },
                 { label: 'STT',           value: 'Deepgram nova-2 fr', accent: false },
