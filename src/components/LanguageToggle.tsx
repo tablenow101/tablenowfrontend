@@ -19,7 +19,6 @@ const LanguageToggle: React.FC = () => {
   const [dark, setDark] = useState(() => {
     const stored = localStorage.getItem('tn_theme');
     if (stored === 'light') return false;
-    // Default to dark if nothing stored
     return true;
   });
 
@@ -38,26 +37,25 @@ const LanguageToggle: React.FC = () => {
   const current = LANGS.find(l => l.code === lang) ?? LANGS[0];
 
   return (
-    <div className="fixed top-4 right-4 z-[999] flex items-center gap-3">
-
-      {/* Theme toggle — minimal, séparé */}
+    <>
+      {/* Theme toggle — bouton rond lime, identique au chatbot */}
       <button
         onClick={() => setDark(d => !d)}
-        className="text-[#666] hover:text-white transition-colors p-1"
+        className="fixed top-6 right-6 w-14 h-14 bg-[#b8f000] rounded-full shadow-xl flex items-center justify-center cursor-pointer hover:opacity-90 transition z-[999]"
         aria-label="Toggle theme"
       >
-        {dark ? <Sun size={15} /> : <Moon size={15} />}
+        {dark ? <Sun size={22} className="text-black" /> : <Moon size={22} className="text-black" />}
       </button>
 
-      {/* Language selector — style exact screenshot */}
-      <div className="relative">
+      {/* Language selector — à gauche du toggle thème */}
+      <div className="fixed top-9 right-28 z-[999]">
         <button
           onClick={() => setOpen(o => !o)}
           className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity"
         >
-          <Globe size={18} className="text-white" />
-          <span className="text-sm">{current.flag}</span>
-          <span className="text-sm font-medium text-white">{current.label}</span>
+          <Globe size={18} />
+          <span className="text-base">{current.flag}</span>
+          <span className="text-sm font-medium">{current.label}</span>
         </button>
 
         {open && (
@@ -74,16 +72,14 @@ const LanguageToggle: React.FC = () => {
                   <span className={`text-sm flex-1 text-left ${lang === l.code ? 'text-[#888]' : 'text-white font-medium'}`}>
                     {l.label}
                   </span>
-                  {lang === l.code && (
-                    <Check size={14} className="text-[#888]" />
-                  )}
+                  {lang === l.code && <Check size={14} className="text-[#888]" />}
                 </button>
               ))}
             </div>
           </>
         )}
       </div>
-    </div>
+    </>
   );
 };
 
