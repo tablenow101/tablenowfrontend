@@ -43,7 +43,7 @@ function TopBar({ lang, setLang }: { lang: string; setLang: (l: 'fr'|'en') => vo
 }
 
 const Register: React.FC = () => {
-  const { lang } = useLang();
+  const { lang, setLang } = useLang();
   const navigate = useNavigate();
 
   const sessionToken = useRef(crypto.randomUUID());
@@ -201,7 +201,8 @@ const Register: React.FC = () => {
   if (emailSent) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">
-        <div className="w-full max-w-md text-center">
+        <TopBar lang={lang} setLang={setLang} />
+      <div className="w-full max-w-md text-center">
           <div className="text-4xl font-bold text-white mb-10">
             Table<span style={{ color: '#b8f000' }}>Now</span>
           </div>
