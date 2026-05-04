@@ -54,6 +54,7 @@ const Register: React.FC = () => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [searching, setSearching] = useState(false);
   const [googlePlaceId, setGooglePlaceId] = useState('');
+  const placeFieldRef = useRef<HTMLDivElement>(null);
   const [googleMapsUrl, setGoogleMapsUrl] = useState('');
   const [openingHoursGoogle, setOpeningHoursGoogle] = useState<any>(null);
   const [lat, setLat] = useState<number | null>(null);
@@ -121,8 +122,12 @@ const Register: React.FC = () => {
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!googlePlaceId)
-      errs.place = 'Recherchez et sélectionnez votre restaurant pour continuer';
+    if (!googlePlaceId) {
+      errs.place = lang === 'fr'
+        ? 'Tapez le nom de votre restaurant et sélectionnez-le dans la liste'
+        : 'Type your restaurant name and select it from the list';
+      setTimeout(() => placeFieldRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+    }
     if (!ownerName.trim()) errs.ownerName = lang === 'fr' ? 'Champ requis' : 'Required';
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       errs.email = lang === 'fr' ? 'Email invalide' : 'Invalid email';
@@ -290,7 +295,7 @@ const Register: React.FC = () => {
 
         <form onSubmit={handleSubmit} noValidate>
           {/* Google Places search */}
-          <div className="mb-8">
+          <div className="mb-8" ref={placeFieldRef}>
             <label className={labelCls}>RESTAURANT *</label>
             <p className="text-xs text-[#555] mb-3">
               {lang === 'fr'
