@@ -84,23 +84,32 @@ function InsightRow({ label, value, desc, highlight = false }: {
     );
 }
 
-function CallRow({ call, slug }: { call: CallLog; slug: string }) {
+function CallRow({ call }: { call: CallLog }) {
     const dotColor = call.status === 'completed' ? '#b8f000'
         : call.status === 'missed' ? '#f59e0b' : '#ef4444';
     const name = call.guest_name || call.caller_number || 'Inconnu';
     const isMono = !call.guest_name;
+    const dur = call.duration ? fmtDuration(call.duration) : null;
+
+    // Description ligne : "Réservation X couverts · Xmin" ou "Information · Xmin" ou "Non abouti · Xmin"
+    let desc = '';
+    if (call.status === 'completed' && call.reservation_booked) {
+        desc = 'Réservation';
+        // covers non disponible dans CallLog — on affiche juste "Réservation · Xmin"
+    } else if (call.status === 'completed') {
+        desc = 'Information';
+    } else if (call.status === 'missed') {
+        desc = 'Manqué';
+    } else {
+        desc = 'Non abouti';
+    }
+    if (dur) desc += ` · ${dur}`;
 
     return (
-        <div className="flex items-center gap-0 py-3 border-b border-[#1a1a1a] last:border-0">
-            <div className="w-[10px] h-[10px] rounded-full flex-shrink-0 mr-4" style={{ background: dotColor }} />
-            <span className={`text-sm flex-shrink-0 w-[140px] ${isMono ? 'font-mono text-white' : 'font-medium text-white'}`}>{name}</span>
-            <span className={`text-xs px-2 py-0.5 rounded border flex-shrink-0 w-[88px] text-center ${
-                call.status === 'completed' ? 'bg-[#b8f00015] text-[#b8f000] border-[#b8f00040]'
-                : call.status === 'missed' ? 'bg-[#f59e0b15] text-[#f59e0b] border-[#f59e0b40]'
-                : 'bg-[#ef444415] text-[#ef4444] border-[#ef444440]'
-            }`}>
-                {call.status === 'completed' ? 'Terminé' : call.status === 'missed' ? 'Manqué' : 'Non abouti'}
-            </span>
+        <div className="flex items-center gap-3 py-3 border-b border-[#1a1a1a] last:border-0">
+            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />
+            <span className={`text-sm flex-shrink-0 w-[130px] truncate ${isMono ? 'font-mono text-white' : 'font-medium text-white'}`}>{name}</span>
+            <span className="text-xs text-[#555] flex-1 truncate">{desc}</span>
         </div>
     );
 }
@@ -274,33 +283,31 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* ── ANALYSE ────────────────────────────────────────────── */}
-            {insights && (
-                <div>
-                    <p className="text-[10px] font-bold tracking-[.15em] uppercase text-[#555] mb-3">— {t('sectionAnalysis')}</p>
-                    <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
-                        <InsightRow
-                            label={t('fillRate')}
-                            value={fmtPct(insights.occupancy_rate)}
-                            desc={insights.lowest_slot_time ? t('fillRateDesc').replace('{slot}', insights.lowest_slot_time) : undefined}
-                        />
-                        <InsightRow
-                            label={t('unplaced')}
-                            value={insights.unplaced_requests}
-                            desc={insights.peak_unplaced_time ? t('unplacedDesc').replace('{time}', insights.peak_unplaced_time) : undefined}
-                        />
-                        <InsightRow
-                            label={t('abandoned')}
-                            value={insights.abandoned_calls}
-                        />
-                        <InsightRow
-                            label={t('bestSlot')}
-                            value={insights.best_slot_time ?? '—'}
-                            desc={insights.best_slot_time ? t('bestSlotDesc') : undefined}
-                            highlight
-                        />
-                    </div>
+            <div>
+                <p className="text-[10px] font-bold tracking-[.15em] uppercase text-[#555] mb-3">— {t('sectionAnalysis')}</p>
+                <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
+                    <InsightRow
+                        label={t('fillRate')}
+                        value={insights ? fmtPct(insights.occupancy_rate) : '—'}
+                        desc={insights?.lowest_slot_time ? t('fillRateDesc').replace('{slot}', insights.lowest_slot_time) : undefined}
+                    />
+                    <InsightRow
+                        label={t('unplaced')}
+                        value={insights?.unplaced_requests ?? '—'}
+                        desc={insights?.peak_unplaced_time ? t('unplacedDesc').replace('{time}', insights.peak_unplaced_time) : undefined}
+                    />
+                    <InsightRow
+                        label={t('abandoned')}
+                        value={insights?.abandoned_calls ?? '—'}
+                    />
+                    <InsightRow
+                        label={t('bestSlot')}
+                        value={insights?.best_slot_time ?? '—'}
+                        desc={insights?.best_slot_time ? t('bestSlotDesc') : undefined}
+                        highlight
+                    />
                 </div>
-            )}
+            </div>
 
             {/* ── Bottom grid ────────────────────────────────────────── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -314,7 +321,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     {recentCalls.length === 0
                         ? <p className="text-xs text-[#555] py-4 text-center">—</p>
-                        : recentCalls.slice(0, 4).map(c => <CallRow key={c.id} call={c} slug={slug} />)
+                        : recentCalls.slice(0, 4).map(c => <CallRow key={c.id} call={c} />)
                     }
                 </div>
 

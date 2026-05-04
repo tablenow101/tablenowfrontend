@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { bookingsAPI } from '../lib/api';
-import { Calendar, Users, Clock, Mail, Phone, Search, Filter, XCircle, AlertTriangle, X } from 'lucide-react';
+import { Calendar, Users, Clock, Mail, Phone, Search, XCircle, AlertTriangle, X } from 'lucide-react';
+import { useLang } from '../context/LangContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -100,54 +101,97 @@ const sourceLabel: Record<string, string> = {
 
 
 // ─── Booking detail drawer ────────────────────────────────────────────────────
-function BookingDetailDrawer({ booking, onClose }: { booking: Booking; onClose: () => void }) {
-    const downloadTranscript = (text: string) => {
-        const blob = new Blob([text], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `transcript-${booking.id}.txt`;
-        a.click();
+function BookingDetailDrawer({ booking, onClose, onCancel }: { booking: Booking; onClose: () => void; onCancel: () => void }) {
+    const statusCfg: Record<string, { label: string; bg: string; color: string }> = {
+        confirmed: { label: 'confirmées', bg: '#1a2a00', color: '#b8f000' },
+        cancelled: { label: 'annulées',   bg: '#2a0000', color: '#ef4444' },
+        completed: { label: 'terminée',   bg: '#0a1a2a', color: '#60a5fa' },
+        no_show:   { label: 'no-show',    bg: '#1a1a1a', color: '#888'    },
     };
-    const statusCfg: Record<string, { label: string; color: string }> = {
-        confirmed: { label: 'Confirmé',   color: '#b8f000' },
-        pending:   { label: 'En attente', color: '#f59e0b' },
-        cancelled: { label: 'Annulé',     color: '#ef4444' },
-    };
-    const st = statusCfg[booking.status] || statusCfg.pending;
+    const st = statusCfg[booking.status] || statusCfg.confirmed;
     const time = booking.booked_for
         ? new Date(booking.booked_for).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
         : booking.booking_time || '—';
     const date = booking.booked_for
-        ? new Date(booking.booked_for).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+        ? new Date(booking.booked_for).toLocaleDateString('fr-FR')
         : booking.booking_date || '—';
 
     return (
-        <div className="fixed inset-0 bg-black/70 z-50 flex justify-end" onClick={onClose}>
-            <div className="w-[480px] bg-[#111] border-l border-[#2a2a2a] h-full overflow-y-auto p-7" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-bold text-white">Détails réservation</h2>
-                    <button onClick={onClose} className="text-[#555] hover:text-white p-1"><svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-end md:items-center justify-center p-4" onClick={onClose}>
+            <div className="w-full max-w-sm bg-[#111] border border-[#2a2a2a] rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="flex items-center justify-between p-5 border-b border-[#1a1a1a]">
+                    <h2 className="text-base font-bold text-white">Détails réservation</h2>
+                    <button onClick={onClose} className="text-[#555] hover:text-white">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
                 </div>
-                <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 mb-5">
-                    <p className="text-lg font-bold text-white mb-3">{booking.guest_name || 'Client'}</p>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">DATE</p><p className="text-white capitalize">{date}</p></div>
-                        <div><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">HEURE</p><p className="text-[15px] font-bold" style={{ color: '#b8f000' }}>{time}</p></div>
-                        <div><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">COUVERTS</p><p className="text-white">{booking.party_size || booking.covers || 0} personnes</p></div>
-                        <div><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">STATUT</p><span className="text-sm font-semibold" style={{ color: st.color }}>{st.label}</span></div>
+
+                <div className="p-5 space-y-4">
+                    {/* Infos résa */}
+                    <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4">
+                        <p className="text-base font-bold text-white mb-3">{booking.guest_name || 'Client'}</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">DATE</p>
+                                <p className="text-sm text-white">{date}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">HEURE</p>
+                                <p className="text-base font-bold" style={{ color: '#b8f000' }}>{time}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">COUVERTS</p>
+                                <p className="text-sm text-white">{booking.party_size || booking.covers || 0} personnes</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">STATUT</p>
+                                <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: st.bg, color: st.color }}>{st.label}</span>
+                            </div>
+                        </div>
                     </div>
-                    {booking.special_requests && (
-                        <div className="mt-3 pt-3 border-t border-[#2a2a2a]"><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">DEMANDES SPÉCIALES</p><p className="text-xs text-[#888]">{booking.special_requests}</p></div>
-                    )}
-                    {booking.confirmation_number && (
-                        <div className="mt-3 pt-3 border-t border-[#2a2a2a]"><p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">N° CONFIRMATION</p><p className="text-xs font-mono text-[#888]">{booking.confirmation_number}</p></div>
-                    )}
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-3">APPEL ASSOCIÉ</p>
-                    <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 text-xs text-[#555] italic text-center">
-                        Transcripts disponibles dans le journal des appels
+
+                    {/* Appel associé */}
+                    <div>
+                        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-3">APPEL ASSOCIÉ</p>
+                        <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 space-y-3">
+                            {/* Audio player */}
+                            <div className="bg-[#1a1a1a] rounded-xl p-3 flex items-center gap-3">
+                                <button className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#b8f000' }}>
+                                    <svg width="14" height="14" fill="#000" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                </button>
+                                <div className="flex-1 h-1 bg-[#2a2a2a] rounded-full">
+                                    <div className="w-1/3 h-full rounded-full" style={{ background: '#b8f000' }} />
+                                </div>
+                                <span className="text-xs text-[#555] flex-shrink-0">—</span>
+                            </div>
+                            {/* Transcript */}
+                            <div>
+                                <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">TRANSCRIPT</p>
+                                <p className="text-xs text-[#888] leading-relaxed">Transcript disponible dans le journal des appels</p>
+                            </div>
+                            {/* Download buttons */}
+                            <div className="grid grid-cols-2 gap-2">
+                                <button className="px-3 py-2 rounded-xl text-xs text-[#888] bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#444] transition-colors">
+                                    ⬇ Télécharger transcript (.txt)
+                                </button>
+                                <button className="px-3 py-2 rounded-xl text-xs text-[#888] bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#444] transition-colors">
+                                    ⬇ Télécharger audio
+                                </button>
+                            </div>
+                        </div>
                     </div>
+
+                    {/* Bouton annuler */}
+                    {booking.status === 'confirmed' && (
+                        <button
+                            onClick={onCancel}
+                            className="w-full py-3 rounded-xl text-sm font-semibold transition-colors"
+                            style={{ background: '#2a0000', color: '#ef4444' }}
+                        >
+                            Annuler la réservation
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
@@ -155,6 +199,7 @@ function BookingDetailDrawer({ booking, onClose }: { booking: Booking; onClose: 
 }
 
 const Bookings: React.FC = () => {
+    const { t } = useLang();
     const [bookings, setBookings]         = useState<Booking[]>([]);
     const [loading, setLoading]           = useState(true);
     const [filter, setFilter]             = useState('all');
@@ -214,7 +259,7 @@ const Bookings: React.FC = () => {
         <div className="space-y-6">
 
             {/* Cancel modal */}
-            {selectedBooking && <BookingDetailDrawer booking={selectedBooking} onClose={() => setSelectedBooking(null)} />}
+            {selectedBooking && <BookingDetailDrawer booking={selectedBooking} onClose={() => setSelectedBooking(null)} onCancel={() => { setCancelTarget(selectedBooking); setSelectedBooking(null); }} />}
 
             {cancelTarget && (
                 <CancelModal
@@ -251,14 +296,15 @@ const Bookings: React.FC = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total',      value: bookings.length, color: 'text-white'     },
-                    { label: 'Confirmées', value: confirmedCount,  color: 'text-[#b8f000]' },
-                    { label: 'Annulées',   value: cancelledCount,  color: 'text-red-400'   },
-                    { label: 'Couverts',   value: totalGuests,     color: 'text-white'     },
-                ].map(({ label, value, color }) => (
-                    <div key={label} className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-5 h-28 flex flex-col justify-between">
-                        <p className="text-xs text-gray-500 uppercase tracking-wider">{label}</p>
-                        <p className={`text-3xl font-bold ${color}`}>{value}</p>
+                    { label: 'TOTAL',      value: bookings.length, color: 'text-white',      sub: 'Réservations sur la période' },
+                    { label: 'CONFIRMÉES', value: confirmedCount,  color: 'text-[#b8f000]',  sub: 'Tables assurées'             },
+                    { label: 'ANNULÉES',   value: cancelledCount,  color: 'text-red-400',    sub: 'Places libérées'             },
+                    { label: 'COUVERTS',   value: totalGuests,     color: 'text-white',      sub: 'Personnes attendues'         },
+                ].map(({ label, value, color, sub }) => (
+                    <div key={label} className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-5 flex flex-col gap-2">
+                        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{label}</p>
+                        <p className={`text-4xl font-bold leading-none ${color}`}>{value}</p>
+                        <p className="text-xs text-[#555]">{sub}</p>
                     </div>
                 ))}
             </div>
