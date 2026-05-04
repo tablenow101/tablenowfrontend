@@ -19,17 +19,15 @@ const LanguageToggle: React.FC = () => {
   const [dark, setDark] = useState(() => {
     const stored = localStorage.getItem('tn_theme');
     if (stored === 'light') return false;
-    if (stored === 'dark') return true;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Default to dark if nothing stored
+    return true;
   });
 
   useEffect(() => {
     if (dark) {
-      document.documentElement.classList.remove('light');
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
     }
     localStorage.setItem('tn_theme', dark ? 'dark' : 'light');
   }, [dark]);
