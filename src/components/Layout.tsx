@@ -4,57 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
 import { LayoutDashboard, Calendar, Phone, Settings, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
 
-
-// ─── Trial Banner ─────────────────────────────────────────────────────────────
-
-function daysLeft(trialEnd?: string): number | null {
-    if (!trialEnd) return null;
-    const diff = new Date(trialEnd).getTime() - Date.now();
-    if (diff <= 0) return 0;
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-}
-
-function TrialBanner({ user, slug, lang }: { user: any; slug: string; lang: string }) {
-    if (!user) return null;
-    // Already paid — no banner
-    if (user.plan === 'paid') return null;
-
-    const days = daysLeft(user.trial_ends_at);
-
-    // Trial expired
-    if (days !== null && days <= 0) {
-        return (
-            <div className="fixed top-[79px] left-0 right-0 z-30 bg-red-500/10 border-b border-red-500/30 px-6 py-2.5 flex items-center justify-between">
-                <span className="text-sm text-red-400 font-medium">
-                    {lang === 'en' ? 'Your trial has ended. Activate your subscription to continue.' : 'Votre essai gratuit est terminé. Activez votre abonnement pour continuer.'}
-                </span>
-                <a href="/pricing" className="text-xs font-bold px-3 py-1.5 rounded-lg text-black" style={{ background: '#b8f000' }}>
-                    {lang === 'en' ? 'Activate →' : 'Activer →'}
-                </a>
-            </div>
-        );
-    }
-
-    // Trial active — show days remaining
-    if (days !== null && days <= 7) {
-        return (
-            <div className="fixed top-[79px] left-0 right-0 z-30 bg-[#111] border-b border-[#2a2a2a] px-6 py-2 flex items-center justify-between">
-                <span className="text-xs text-[#888]">
-                    {lang === 'en'
-                        ? `${days} day${days !== 1 ? 's' : ''} left in your free trial`
-                        : `${days} jour${days !== 1 ? 's' : ''} restant${days !== 1 ? 's' : ''} dans votre essai gratuit`
-                    }
-                </span>
-                <a href="/pricing" className="text-xs font-bold" style={{ color: '#b8f000' }}>
-                    {lang === 'en' ? 'Upgrade →' : 'Activer mon abonnement →'}
-                </a>
-            </div>
-        );
-    }
-
-    return null;
-}
-
 const Layout: React.FC = () => {
     const { user, logout } = useAuth();
     const { lang, setLang, t } = useLang();
@@ -229,9 +178,6 @@ const Layout: React.FC = () => {
                     </div>
                 </div>
             )}
-
-            {/* ── Trial banner ──────────────────────────────────────────── */}
-            <TrialBanner user={user} slug={restaurantSlug || ''} lang={lang} />
 
             {/* ── Main content ──────────────────────────────────────────── */}
             <main className="pt-[79px] px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">

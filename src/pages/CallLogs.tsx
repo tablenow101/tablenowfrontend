@@ -1,74 +1,57 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { dashboardAPI } from '../lib/api';
-import { Phone, Download, X, ArrowUpRight } from 'lucide-react';
+import { useLang } from '../context/LangContext';
+import { X } from 'lucide-react';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+interface CallLog {
+    id: string;
+    caller_number?: string;
+    guest_name?: string;
+    status: string;
+    duration?: number;
+    transcript?: string;
+    recording_url?: string;
+    reservation_booked?: boolean;
+    created_at?: string;
+    started_at?: string;
+}
 
-const LIME = '#b8f000';
-
-function fmtDuration(s: number): string {
-    if (!s) return '—';
+function fmtDuration(s?: number): string {
+    if (!s) return '0s';
+    if (s < 60) return `${s}s`;
     const m = Math.floor(s / 60);
     const sec = s % 60;
-    return m > 0 ? `${m}min${sec > 0 ? sec + 's' : ''}` : `${s}s`;
+    return sec > 0 ? `${m}min${String(sec).padStart(2,'0')}s` : `${m}min`;
 }
 
-function fmtDateTime(ts: string): string {
-    const d = new Date(ts);
-    return `${d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} · ${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+function fmtTimestamp(ts?: string): string {
+    if (!ts) return '—';
+    return new Date(ts).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' }) +
+        ' · ' + new Date(ts).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
 }
 
-function maskPhone(n?: string): string {
-    if (!n) return 'Inconnu';
-    const clean = n.replace(/\s/g, '');
-    if (clean.length < 8) return n;
-    return clean.slice(0, 4) + ' ' + clean.slice(4, 6) + ' ··· ' + clean.slice(-2);
+function downloadText(text: string, filename: string) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
 }
-
-function getDisplayName(call: any): { name: string; isNamed: boolean } {
-    if (call.caller_name) return { name: call.caller_name, isNamed: true };
-    return { name: maskPhone(call.caller_number), isNamed: false };
-}
-
-function downloadTranscript(call: any) {
-    if (!call.transcript) return;
-    const content = [
-        'TRANSCRIPTION D\'APPEL',
-        '='.repeat(40),
-        '',
-        `Appelant : ${call.caller_name || call.caller_number || 'Inconnu'}`,
-        `Date     : ${new Date(call.created_at).toLocaleString('fr-FR')}`,
-        `Durée    : ${fmtDuration(call.duration || 0)}`,
-        `Statut   : ${call.status}`,
-        '',
-        'TRANSCRIPTION :',
-        '-'.repeat(40),
-        '',
-        call.transcript,
-    ].join('\n');
-
-    const a = document.createElement('a');
-    a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
-    a.download = `transcription_${call.caller_number || 'inconnu'}_${new Date(call.created_at).toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-}
-
-// ─── Status config ────────────────────────────────────────────────────────────
-
-const STATUS: Record<string, { label: string; dotColor: string; badgeCls: string }> = {
-    completed:   { label: 'Terminé',   dotColor: LIME,      badgeCls: 'bg-[#b8f00015] text-[#b8f000] border-[#b8f00040]' },
-    missed:      { label: 'Manqué',    dotColor: '#f59e0b', badgeCls: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/25' },
-    failed:      { label: 'Non abouti', dotColor: '#ef4444', badgeCls: 'bg-red-500/10 text-red-400 border-red-500/25'       },
-    in_progress: { label: 'En cours',  dotColor: '#3b82f6', badgeCls: 'bg-blue-500/10 text-blue-400 border-blue-500/25'    },
-};
 
 // ─── Drawer ───────────────────────────────────────────────────────────────────
 
-function CallDrawer({ call, onClose }: { call: any; onClose: () => void }) {
-    const { name, isNamed } = getDisplayName(call);
-    const st = STATUS[call.status] || STATUS.completed;
+function CallDrawer({ call, onClose, t }: { call: CallLog; onClose: () => void; t: (k: string) => string }) {
+    const dotColor = call.status === 'completed' ? '#b8f000'
+        : call.status === 'missed' ? '#f59e0b' : '#ef4444';
+    const statusLabel = call.status === 'completed' ? t('statusCompleted')
+        : call.status === 'missed' ? t('statusMissed') : t('statusFailed');
+    const name = call.guest_name || call.caller_number || '—';
+
+    const handleDownloadTranscript = () => {
+        if (!call.transcript) return;
+        const filename = `transcript-${call.id}-${(call.created_at || '').slice(0,10)}.txt`;
+        downloadText(call.transcript, filename);
+    };
 
     return (
         <div className="fixed inset-0 bg-black/70 z-50 flex justify-end" onClick={onClose}>
@@ -78,7 +61,7 @@ function CallDrawer({ call, onClose }: { call: any; onClose: () => void }) {
             >
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
-                    <p className="text-lg font-bold text-white">Détails de l'appel</p>
+                    <h2 className="text-lg font-bold text-white">{t('callDetails')}</h2>
                     <button onClick={onClose} className="text-[#555] hover:text-white transition-colors">
                         <X size={20} />
                     </button>
@@ -86,69 +69,79 @@ function CallDrawer({ call, onClose }: { call: any; onClose: () => void }) {
 
                 {/* Meta */}
                 <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 mb-5">
-                    <p className={`text-base font-bold mb-3 ${isNamed ? 'text-white' : 'text-white font-mono'}`}>{name}</p>
+                    <p className={`text-base font-bold mb-3 ${call.guest_name ? 'text-white' : 'text-white font-mono'}`}>{name}</p>
                     <div className="grid grid-cols-3 gap-3">
                         <div>
-                            <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">STATUT</p>
-                            <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full border ${st.badgeCls}`}>{st.label}</span>
+                            <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">{t('status')}</p>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dotColor }} />
+                                <span className="text-sm font-semibold" style={{ color: dotColor }}>{statusLabel}</span>
+                            </div>
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">DURÉE</p>
-                            <p className="text-sm font-semibold text-white">{fmtDuration(call.duration || 0)}</p>
+                            <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">{t('duration')}</p>
+                            <p className="text-sm text-white">{fmtDuration(call.duration)}</p>
                         </div>
                         <div>
                             <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">DATE</p>
-                            <p className="text-sm font-semibold text-white">{fmtDateTime(call.created_at)}</p>
+                            <p className="text-sm text-white">{fmtTimestamp(call.created_at || call.started_at)}</p>
                         </div>
                     </div>
                     {call.reservation_booked && (
-                        <div className="mt-3 pt-3 border-t border-[#2a2a2a] flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-black" style={{ background: LIME }}>✓</div>
-                            <span className="text-xs font-medium" style={{ color: LIME }}>Réservation créée</span>
+                        <div className="mt-3 pt-3 border-t border-[#2a2a2a]">
+                            <span className="text-xs px-2 py-0.5 rounded border bg-[#b8f00015] text-[#b8f000] border-[#b8f00040]">
+                                {t('resaCreated')}
+                            </span>
                         </div>
                     )}
                 </div>
 
                 {/* Audio */}
-                {call.recording_url && (
-                    <div className="mb-5">
-                        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-3">ENREGISTREMENT AUDIO</p>
+                <div className="mb-5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-3">{t('audioRecording')}</p>
+                    {call.recording_url ? (
                         <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4">
-                            <audio controls className="w-full" style={{ filter: 'invert(0)' }}>
-                                <source src={call.recording_url} type="audio/mpeg" />
+                            <audio controls className="w-full" style={{ accentColor: '#b8f000' }}>
+                                <source src={call.recording_url} />
                             </audio>
+                            <a
+                                href={call.recording_url}
+                                download={`appel-${call.id}.mp3`}
+                                className="mt-3 flex items-center justify-center gap-2 w-full py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#888] hover:text-white hover:border-[#b8f000] transition-colors"
+                            >
+                                {t('downloadAudio')}
+                            </a>
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-[#2a2a2a] flex items-center justify-center text-[#555] flex-shrink-0">▶</div>
+                            <div className="flex-1 h-1 bg-[#2a2a2a] rounded" />
+                            <span className="text-xs text-[#555]">—</span>
+                        </div>
+                    )}
+                </div>
 
                 {/* Transcript */}
-                {call.transcript ? (
-                    <div>
-                        <div className="flex items-center justify-between mb-3">
-                            <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">TRANSCRIPT</p>
-                            <button
-                                onClick={() => downloadTranscript(call)}
-                                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors"
-                                style={{ color: LIME, borderColor: `${LIME}40` }}
-                            >
-                                <Download size={13} /> Télécharger .txt
-                            </button>
-                        </div>
-                        <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 max-h-64 overflow-y-auto">
-                            <p className="text-sm text-[#ccc] whitespace-pre-wrap leading-relaxed">{call.transcript}</p>
-                        </div>
-                        {call.call_summary && (
-                            <div className="mt-4">
-                                <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">RÉSUMÉ</p>
-                                <p className="text-sm text-[#888] leading-relaxed">{call.call_summary}</p>
+                <div>
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-3">{t('transcript')}</p>
+                    {call.transcript ? (
+                        <>
+                            <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 max-h-[220px] overflow-y-auto mb-3">
+                                <p className="text-xs text-[#ccc] leading-[1.9] whitespace-pre-wrap">{call.transcript}</p>
                             </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-6 text-center">
-                        <p className="text-sm text-[#555]">Aucun transcript disponible pour cet appel</p>
-                    </div>
-                )}
+                            <button
+                                onClick={handleDownloadTranscript}
+                                className="w-full py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#888] hover:text-white hover:border-[#b8f000] transition-colors"
+                            >
+                                {t('downloadTranscript')}
+                            </button>
+                        </>
+                    ) : (
+                        <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4">
+                            <p className="text-xs text-[#555] text-center">{t('noTranscript')}</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -157,16 +150,19 @@ function CallDrawer({ call, onClose }: { call: any; onClose: () => void }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 const CallLogs: React.FC = () => {
-    const [calls, setCalls]               = useState<any[]>([]);
-    const [loading, setLoading]           = useState(true);
-    const [selectedCall, setSelectedCall] = useState<any>(null);
+    const { t } = useLang();
+    const [calls, setCalls]       = useState<CallLog[]>([]);
+    const [total, setTotal]       = useState(0);
+    const [loading, setLoading]   = useState(true);
+    const [selected, setSelected] = useState<CallLog | null>(null);
 
     const fetchCalls = useCallback(async () => {
         try {
-            const res = await dashboardAPI.getCalls();
+            const res = await dashboardAPI.getCalls({ limit: 100 });
             setCalls(res.data.calls || []);
-        } catch (err) {
-            console.error('Erreur chargement appels:', err);
+            setTotal(res.data.total || 0);
+        } catch (e) {
+            console.error(e);
         } finally {
             setLoading(false);
         }
@@ -174,101 +170,102 @@ const CallLogs: React.FC = () => {
 
     useEffect(() => { fetchCalls(); }, [fetchCalls]);
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 border-2 border-white/10 border-t-white rounded-full animate-spin" />
-            </div>
-        );
+    const completedCalls = calls.filter(c => c.status === 'completed').length;
+    const totalDuration  = calls.reduce((s, c) => s + (c.duration || 0), 0);
+    const avgDuration    = calls.length ? Math.round(totalDuration / calls.length) : 0;
+
+    function fmtTotalDuration(s: number): string {
+        if (s < 60) return `${s}s`;
+        const m = Math.floor(s / 60);
+        if (m < 60) return `${m}min`;
+        const h = Math.floor(m / 60);
+        const rem = m % 60;
+        return rem > 0 ? `${h}h${String(rem).padStart(2,'0')}` : `${h}h`;
     }
 
-    const completedCount = calls.filter(c => c.status === 'completed').length;
-    const avgDuration    = calls.length > 0
-        ? Math.floor(calls.reduce((s, c) => s + (c.duration || 0), 0) / calls.length)
-        : 0;
-    const totalDuration  = calls.reduce((s, c) => s + (c.duration || 0), 0);
+    if (loading) return (
+        <div className="flex items-center justify-center h-64">
+            <div className="w-8 h-8 border-2 border-white/10 border-t-white rounded-full animate-spin" />
+        </div>
+    );
 
     return (
         <div className="space-y-6">
-            {selectedCall && <CallDrawer call={selectedCall} onClose={() => setSelectedCall(null)} />}
+            {selected && <CallDrawer call={selected} onClose={() => setSelected(null)} t={t} />}
 
-            {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-white">Journal des appels</h1>
-                <p className="text-sm text-[#555] mt-0.5">Cliquez sur un appel pour écouter l'enregistrement et télécharger le transcript</p>
+                <h1 className="text-2xl font-bold text-white">{t('callsTitle')}</h1>
+                <p className="text-sm text-[#888] mt-1">{t('callsSub')}</p>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {[
-                    { label: 'Total',         value: calls.length,               sub: 'appels reçus'             },
-                    { label: 'Terminés',      value: completedCount,             sub: 'traités avec succès', lime: true },
-                    { label: 'Durée moyenne', value: fmtDuration(avgDuration),   sub: 'par appel'                },
-                    { label: 'Durée totale',  value: fmtDuration(totalDuration), sub: 'de conversations'         },
-                ].map(({ label, value, sub, lime }) => (
-                    <div key={label} className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
-                        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">{label}</p>
-                        <p className="text-[36px] font-bold leading-none" style={{ color: lime ? LIME : '#fff' }}>{value}</p>
-                        <p className="text-xs text-[#888] mt-1.5">{sub}</p>
-                    </div>
-                ))}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">{t('total')}</p>
+                    <p className="text-[40px] font-bold text-white leading-none">{total}</p>
+                    <p className="text-xs mt-1.5 text-[#888]">{t('callsReceived')}</p>
+                </div>
+                <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">{t('completed')}</p>
+                    <p className="text-[40px] font-bold leading-none" style={{ color: '#b8f000' }}>{completedCalls}</p>
+                    <p className="text-xs mt-1.5 text-[#888]">{t('successfulDesc')}</p>
+                </div>
+                <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">{t('avgDuration')}</p>
+                    <p className="text-[40px] font-bold text-white leading-none">{fmtDuration(avgDuration)}</p>
+                    <p className="text-xs mt-1.5 text-[#888]">{t('perCall')}</p>
+                </div>
+                <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">{t('totalDuration')}</p>
+                    <p className="text-[40px] font-bold text-white leading-none">{fmtTotalDuration(totalDuration)}</p>
+                    <p className="text-xs mt-1.5 text-[#888]">{t('conversations')}</p>
+                </div>
             </div>
 
             {/* List */}
             <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
-                <div className="px-5 py-3.5 border-b border-[#1a1a1a]">
-                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">HISTORIQUE — Cliquez pour transcript et audio</p>
+                <div className="px-5 py-4 border-b border-[#1a1a1a]">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('history')}</p>
                 </div>
-
                 {calls.length === 0 ? (
-                    <div className="text-center py-16">
-                        <Phone size={28} className="mx-auto text-[#333] mb-3" />
-                        <p className="text-sm text-[#555]">Aucun appel pour l'instant</p>
-                        <p className="text-xs text-[#333] mt-1">Les appels apparaîtront ici une fois votre assistant configuré</p>
-                    </div>
+                    <div className="py-12 text-center text-xs text-[#555]">—</div>
                 ) : (
-                    calls.map((call) => {
-                        const { name, isNamed } = getDisplayName(call);
-                        const st = STATUS[call.status] || STATUS.completed;
+                    calls.map(call => {
+                        const dotColor = call.status === 'completed' ? '#b8f000'
+                            : call.status === 'missed' ? '#f59e0b' : '#ef4444';
+                        const statusLabel = call.status === 'completed' ? t('statusCompleted')
+                            : call.status === 'missed' ? t('statusMissed') : t('statusFailed');
+                        const name = call.guest_name || call.caller_number || '—';
+                        const isMono = !call.guest_name;
+
                         return (
                             <div
                                 key={call.id}
-                                onClick={() => setSelectedCall(call)}
-                                className="flex items-center gap-0 px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 hover:bg-[#0f0f0f] cursor-pointer transition-colors"
+                                className="flex items-center px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 cursor-pointer hover:bg-[#0f0f0f] transition-colors"
+                                onClick={() => setSelected(call)}
                             >
-                                {/* Status dot */}
-                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 mr-4" style={{ background: st.dotColor }} />
-
-                                {/* Name / number — fixed width */}
-                                <span className={`text-sm flex-shrink-0 w-40 ${isNamed ? 'text-white font-medium' : 'text-white font-mono'}`}>
-                                    {name}
-                                </span>
-
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 mr-4" style={{ background: dotColor }} />
+                                {/* Name — fixed width */}
+                                <span className={`text-sm flex-shrink-0 w-[150px] ${isMono ? 'font-mono text-white' : 'font-medium text-white'}`}>{name}</span>
                                 {/* Status badge — fixed width */}
-                                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex-shrink-0 w-28 text-center ${st.badgeCls}`}>
-                                    {st.label}
+                                <span className={`text-[11px] px-2 py-0.5 rounded border flex-shrink-0 w-[90px] text-center ${
+                                    call.status === 'completed' ? 'bg-[#b8f00015] text-[#b8f000] border-[#b8f00040]'
+                                    : call.status === 'missed' ? 'bg-[#f59e0b15] text-[#f59e0b] border-[#f59e0b40]'
+                                    : 'bg-[#ef444415] text-[#ef4444] border-[#ef444440]'
+                                }`}>
+                                    {statusLabel}
                                 </span>
-
+                                {/* Date — fixed width */}
+                                <span className="text-xs text-[#888] flex-shrink-0 w-[110px] text-right">{fmtTimestamp(call.created_at || call.started_at)}</span>
+                                {/* Duration — fixed width */}
+                                <span className="text-xs text-[#555] flex-shrink-0 w-[52px] text-right">{fmtDuration(call.duration)}</span>
                                 {/* Resa badge */}
-                                {call.reservation_booked ? (
-                                    <span className="text-xs font-bold px-2 py-0.5 rounded-full border flex-shrink-0 bg-[#b8f00010] border-[#b8f00030] ml-2" style={{ color: LIME }}>
-                                        ✓ Résa
-                                    </span>
-                                ) : (
-                                    <span className="w-16 flex-shrink-0 ml-2" />
-                                )}
-
-                                {/* Spacer */}
-                                <span className="flex-1" />
-
-                                {/* Date — fixed width, right-aligned */}
-                                <span className="text-xs text-[#888] flex-shrink-0 w-28 text-right">
-                                    {fmtDateTime(call.created_at || '')}
-                                </span>
-
-                                {/* Duration — fixed width, right-aligned */}
-                                <span className="text-xs text-[#555] flex-shrink-0 w-12 text-right ml-3">
-                                    {fmtDuration(call.duration || 0)}
+                                <span className="flex-shrink-0 w-[130px] text-right">
+                                    {call.reservation_booked && (
+                                        <span className="text-[11px] px-2 py-0.5 rounded border bg-[#b8f00010] text-[#b8f000] border-[#b8f00030]">
+                                            {t('resaCreated')}
+                                        </span>
+                                    )}
                                 </span>
                             </div>
                         );
