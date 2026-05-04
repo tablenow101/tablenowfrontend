@@ -34,33 +34,6 @@ export default {
             fontFamily: {
                 sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
             },
-            spacing: {
-                0: '0px',
-                4: '4px',
-                8: '8px',
-                12: '12px',
-                16: '16px',
-                20: '20px',
-                24: '24px',
-                32: '32px',
-                40: '40px',
-                48: '48px',
-                64: '64px',
-                80: '80px',
-            },
-            borderRadius: {
-                'none': '0px',
-                'sm': '4px',
-                'md': '8px',
-                'lg': '12px',
-                'full': '9999px',
-            },
-            transitionDuration: {
-                '150': '150ms',
-            },
-            transitionTimingFunction: {
-                'ease-out': 'ease-out',
-            },
             animation: {
                 'fade-in': 'fadeIn 0.3s ease-in-out',
                 'slide-up': 'slideUp 0.3s ease-out',
