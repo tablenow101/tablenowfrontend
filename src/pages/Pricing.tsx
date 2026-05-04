@@ -69,7 +69,7 @@ const faqs = [
   },
   {
     q: "Comment fonctionne l'agent voix ?",
-    a: "Un numéro IA est attribué à votre restaurant. Redirigez vos appels vers ce numéro — Clara répond 24h/24 et prend les réservations automatiquement.",
+    a: "Un numéro IA est attribué à votre restaurant. Redirigez vos appels vers ce numéro — Votre assistant TableNow répond 24h/24 et prend les réservations automatiquement.",
   },
 ];
 
