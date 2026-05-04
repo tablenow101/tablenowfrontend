@@ -70,4 +70,8 @@ export const referralAPI = {
     getList:  ()                    => api.get('/referral/list'),
 };
 
+export const restaurantsAPI = {
+    setLanguage: (lang: string)     => api.put('/settings', { language: lang }),
+};
+
 export default api;
