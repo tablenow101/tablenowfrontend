@@ -24,23 +24,6 @@ const planPrices: Record<string, string> = {
 };
 
 
-// ─── Theme + Lang toggle bar ──────────────────────────────────────────────────
-function TopBar({ lang, setLang }: { lang: string; setLang: (l: 'fr'|'en') => void }) {
-  const [dark, setDark] = React.useState(() => localStorage.getItem('theme') !== 'light');
-  const toggle = () => {
-    const next = !dark;
-    setDark(next);
-    localStorage.setItem('theme', next ? 'dark' : 'light');
-    document.documentElement.classList.toggle('light', !next);
-  };
-  return (
-    <div style={{ position: 'fixed', top: 12, right: 16, display: 'flex', alignItems: 'center', gap: 8, zIndex: 100 }}>
-      <button onClick={() => setLang('fr')} style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5, border: 'none', cursor: 'pointer', background: lang === 'fr' ? '#b8f000' : 'transparent', color: lang === 'fr' ? '#000' : '#555' }}>FR</button>
-      <button onClick={() => setLang('en')} style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5, border: 'none', cursor: 'pointer', background: lang === 'en' ? '#b8f000' : 'transparent', color: lang === 'en' ? '#000' : '#555' }}>EN</button>
-      <button onClick={toggle} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#555', fontSize: 16 }}>{dark ? '☀️' : '🌙'}</button>
-    </div>
-  );
-}
 
 const Register: React.FC = () => {
   const { lang, setLang } = useLang();
@@ -206,7 +189,6 @@ const Register: React.FC = () => {
   if (emailSent) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">
-        <TopBar lang={lang} setLang={setLang} />
       <div className="w-full max-w-md text-center">
           <div className="text-4xl font-bold text-white mb-10">
             Table<span style={{ color: '#b8f000' }}>Now</span>
@@ -253,7 +235,6 @@ const Register: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] px-4">
-      <TopBar lang={lang} setLang={setLang} />
       {/* Logo */}
       <div className="flex flex-col items-center mb-10 gap-3 pt-12">
         <span className="text-4xl font-black tracking-tight text-white">
