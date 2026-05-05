@@ -1,64 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useLang } from '../../context/LangContext';
 import { settingsAPI } from '../../lib/api';
-
-const TABS = ['Informations', 'Langue & région', 'Politique annulation', 'Spécificités'];
-
-function TabBar({ tabs, active, onChange }: { tabs: string[]; active: string; onChange: (t: string) => void }) {
-  return (
-    <div className="flex border-b border-[#2a2a2a] mb-6">
-      {tabs.map(tab => (
-        <button key={tab} onClick={() => onChange(tab)}
-          className={`px-4 py-2.5 text-sm transition-colors border-b-2 -mb-px ${
-            active === tab ? 'text-white border-[#b8f000] font-medium' : 'text-[#888] border-transparent hover:text-white'
-          }`}>
-          {tab}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-[10px] uppercase tracking-wider text-[#555] mb-2">{children}</p>;
-}
-
-function Input({ value, onChange, placeholder, type = 'text', helper }: {
-  value: string; onChange: (v: string) => void;
-  placeholder?: string; type?: string; helper?: string;
-}) {
-  return (
-    <>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full h-11 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#444] transition-colors" />
-      {helper && <p className="text-[10px] text-[#555] mt-1">{helper}</p>}
-    </>
-  );
-}
-
-function Textarea({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
-  return (
-    <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={5}
-      className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#444] transition-colors resize-vertical" />
-  );
-}
-
-function SaveBar({ onSave, onCancel, saving }: { onSave: () => void; onCancel: () => void; saving: boolean }) {
-  return (
-    <div className="flex gap-3 mt-6">
-      <button onClick={onSave} disabled={saving}
-        className="h-11 px-6 bg-[#b8f000] text-black font-bold rounded-xl text-sm disabled:opacity-60 flex items-center gap-2">
-        {saving && <span className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin" />}
-        {saving ? '…' : t('save')}
-      </button>
-      <button onClick={onCancel} disabled={saving}
-        className="h-11 px-6 bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl text-sm hover:border-[#444] transition-colors">
-        {t('cancel')}
-      </button>
-    </div>
-  );
-}
+import { useLang } from '../../context/LangContext';
 
 type FormState = {
   name: string; owner_name: string; phone: string; cuisine_type: string;
@@ -72,49 +15,59 @@ const EMPTY: FormState = {
   cancellation_policy: '', special_features: '',
 };
 
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1.5">{label}</label>
+      {hint && <p className="text-[11px] text-[#555] mb-2">{hint}</p>}
+      {children}
+    </div>
+  );
+}
+
+const inp = "w-full h-11 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#444] transition-colors";
+const ta  = "w-full px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#444] transition-colors resize-vertical";
+
 const GeneralSettings: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const { t } = useLang();
-  const [tab, setTab]     = useState('Informations');
+  const [form, setForm] = useState<FormState>(EMPTY);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState('');
-
-  const fromUser = (): FormState => ({
-    name:                (user as any)?.name               ?? '',
-    owner_name:          (user as any)?.owner_name         ?? '',
-    phone:               (user as any)?.phone              ?? '',
-    cuisine_type:        (user as any)?.cuisine_type       ?? '',
-    address:             (user as any)?.address            ?? '',
-    confirmation_email:  (user as any)?.confirmation_email ?? '',
-    website:             (user as any)?.website            ?? '',
-    cancellation_policy: (user as any)?.cancellation_policy ?? '',
-    special_features:    (user as any)?.special_features   ?? '',
-  });
-
-  const originalRef = useRef<FormState>(fromUser());
-  const [form, setForm] = useState<FormState>(fromUser());
+  const [error, setError] = useState('');
+  const original = useRef<FormState>(EMPTY);
 
   useEffect(() => {
+    const fromUser: FormState = {
+      name:                (user as any)?.name                ?? '',
+      owner_name:          (user as any)?.owner_name          ?? '',
+      phone:               (user as any)?.phone               ?? '',
+      cuisine_type:        (user as any)?.cuisine_type        ?? '',
+      address:             (user as any)?.address             ?? '',
+      confirmation_email:  (user as any)?.confirmation_email  ?? '',
+      website:             (user as any)?.website             ?? '',
+      cancellation_policy: (user as any)?.cancellation_policy ?? '',
+      special_features:    (user as any)?.special_features    ?? '',
+    };
     settingsAPI.get()
       .then(res => {
         const d = res.data?.restaurant ?? res.data ?? {};
         const loaded: FormState = {
-          name:                d.name               ?? form.name,
-          owner_name:          d.owner_name         ?? form.owner_name,
-          phone:               d.phone              ?? form.phone,
-          cuisine_type:        d.cuisine_type       ?? form.cuisine_type,
-          address:             d.address            ?? form.address,
-          confirmation_email:  d.confirmation_email ?? form.confirmation_email,
-          website:             d.website            ?? form.website,
-          cancellation_policy: d.cancellation_policy ?? form.cancellation_policy,
-          special_features:    d.special_features   ?? form.special_features,
+          name:                d.name                ?? fromUser.name,
+          owner_name:          d.owner_name          ?? fromUser.owner_name,
+          phone:               d.phone               ?? fromUser.phone,
+          cuisine_type:        d.cuisine_type        ?? fromUser.cuisine_type,
+          address:             d.address             ?? fromUser.address,
+          confirmation_email:  d.confirmation_email  ?? fromUser.confirmation_email,
+          website:             d.website             ?? fromUser.website,
+          cancellation_policy: d.cancellation_policy ?? fromUser.cancellation_policy,
+          special_features:    d.special_features    ?? fromUser.special_features,
         };
-        originalRef.current = loaded;
+        original.current = loaded;
         setForm(loaded);
       })
-      .catch(() => {/* keep user-context values */});
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      .catch(() => { original.current = fromUser; setForm(fromUser); });
+  }, []);
 
   const set = (k: keyof FormState, v: string) => {
     setForm(s => ({ ...s, [k]: v }));
@@ -122,102 +75,92 @@ const GeneralSettings: React.FC = () => {
     setError('');
   };
 
-  const changeTab = (t: string) => { setTab(t); setDirty(false); setError(''); };
-
   const save = async () => {
-    setSaving(true);
-    setError('');
+    setSaving(true); setError('');
     try {
       await settingsAPI.update(form);
-      originalRef.current = { ...form };
+      original.current = { ...form };
       await refreshUser();
       setDirty(false);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Erreur lors de la sauvegarde.');
-    } finally {
-      setSaving(false);
-    }
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'Erreur lors de la sauvegarde.');
+    } finally { setSaving(false); }
   };
 
-  const cancel = () => { setForm({ ...originalRef.current }); setDirty(false); setError(''); };
+  const cancel = () => { setForm({ ...original.current }); setDirty(false); setError(''); };
 
   return (
-    <div className="max-w-2xl">
-      {/* Assistant banner */}
-      <div className="flex items-center justify-between bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
-          <div>
-            <p className="text-sm text-white font-medium">Assistant {user?.name} · VAPI</p>
-            <p className="text-xs text-[#555] mt-0.5">
-              {(user as any)?.vapi_phone_number || '—'} · ID 
-              {((user as any)?.vapi_assistant_id || '——').slice(0, 8)}...
-            </p>
-          </div>
+    <div className="max-w-2xl space-y-5">
+      {/* Infos de base */}
+      <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-4">
+        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">
+          Informations du restaurant
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Nom du restaurant">
+            <input className={inp} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Le Bistrot"/>
+          </Field>
+          <Field label="Responsable">
+            <input className={inp} value={form.owner_name} onChange={e => set('owner_name', e.target.value)} placeholder="Jean Dupont"/>
+          </Field>
         </div>
-        <span className="text-[10px] font-bold uppercase tracking-wider border border-[#b8f000] text-[#b8f000] px-2.5 py-1 rounded">
-          ACTIF
-        </span>
+        <Field label="Téléphone public" hint="Affiché aux clients — différent du numéro IA">
+          <input className={inp} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+33 1 42 00 00 00" type="tel"/>
+        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Type de cuisine">
+            <input className={inp} value={form.cuisine_type} onChange={e => set('cuisine_type', e.target.value)} placeholder="Française"/>
+          </Field>
+          <Field label="Adresse">
+            <input className={inp} value={form.address} onChange={e => set('address', e.target.value)} placeholder="12 rue de Rivoli, Paris"/>
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="E-mail confirmations">
+            <input className={inp} value={form.confirmation_email} onChange={e => set('confirmation_email', e.target.value)} placeholder="resa@restaurant.fr" type="email"/>
+          </Field>
+          <Field label="Site web">
+            <input className={inp} value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://monrestaurant.fr"/>
+          </Field>
+        </div>
       </div>
 
-      <p className="text-[10px] uppercase tracking-wider text-[#555] pb-3 mb-4 border-b border-[#1a1a1a]">
-        {t('restaurantInfo')}
-      </p>
+      {/* Politique annulation */}
+      <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-4">
+        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">
+          Politique d'annulation
+        </p>
+        <Field label="Texte de la politique" hint="Transmis à l'assistant pour répondre aux clients">
+          <textarea className={ta} rows={3} value={form.cancellation_policy} onChange={e => set('cancellation_policy', e.target.value)}
+            placeholder="Annulation gratuite jusqu'à 24h avant. Au-delà, 50% du repas facturé."/>
+        </Field>
+      </div>
 
-      <TabBar tabs={TABS} active={tab} onChange={changeTab} />
+      {/* Spécificités */}
+      <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-4">
+        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">
+          Spécificités &amp; particularités
+        </p>
+        <Field label="Notes pour l'IA" hint="L'assistant s'en sert pour personnaliser les réponses (terrasse, parking, allergies…)">
+          <textarea className={ta} rows={3} value={form.special_features} onChange={e => set('special_features', e.target.value)}
+            placeholder="Terrasse couverte disponible. Menu végétarien sur demande. Parking à 200m."/>
+        </Field>
+      </div>
 
-      {error && (
-        <div className="mb-4 p-3 rounded-xl text-sm bg-red-500/10 border border-red-500/30 text-red-400">{error}</div>
-      )}
+      {error && <p className="text-sm text-red-400">{error}</p>}
 
-      {tab === 'Informations' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div><FieldLabel>Nom du restaurant</FieldLabel>
-              <Input value={form.name} onChange={v => set('name', v)} placeholder="Le Bistrot" /></div>
-            <div><FieldLabel>Responsable</FieldLabel>
-              <Input value={form.owner_name} onChange={v => set('owner_name', v)} placeholder="Jean Dupont" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><FieldLabel>Téléphone public</FieldLabel>
-              <Input value={form.phone} onChange={v => set('phone', v)} placeholder="+33 1 42 00 00 00" type="tel"
-                helper="Affiché aux clients · différent du numéro IA" /></div>
-            <div><FieldLabel>Type de cuisine</FieldLabel>
-              <Input value={form.cuisine_type} onChange={v => set('cuisine_type', v)} placeholder="Française" /></div>
-          </div>
-          <div><FieldLabel>Adresse</FieldLabel>
-            <Input value={form.address} onChange={v => set('address', v)} placeholder="12 rue de Rivoli, Paris" /></div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><FieldLabel>E-mail confirmations</FieldLabel>
-              <Input value={form.confirmation_email} onChange={v => set('confirmation_email', v)}
-                placeholder="resa@restaurant.fr" type="email" /></div>
-            <div><FieldLabel>Site web</FieldLabel>
-              <Input value={form.website} onChange={v => set('website', v)} placeholder="monrestaurant.fr" /></div>
-          </div>
-          {dirty && <SaveBar onSave={save} onCancel={cancel} saving={saving} />}
+      {dirty && (
+        <div className="flex gap-3">
+          <button onClick={save} disabled={saving}
+            className="h-11 px-6 bg-[#b8f000] text-black font-bold rounded-xl text-sm disabled:opacity-60 flex items-center gap-2">
+            {saving && <span className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin"/>}
+            {t('save')}
+          </button>
+          <button onClick={cancel} disabled={saving}
+            className="h-11 px-6 bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl text-sm hover:border-[#444] transition-colors">
+            {t('cancel')}
+          </button>
         </div>
-      )}
-
-      {tab === 'Politique annulation' && (
-        <div>
-          <FieldLabel>Politique d’annulation</FieldLabel>
-          <Textarea value={form.cancellation_policy} onChange={v => set('cancellation_policy', v)}
-            placeholder="Annulation gratuite jusqu’à 24h avant. Au-delà, 50 % du repas facturé." />
-          {dirty && <SaveBar onSave={save} onCancel={cancel} saving={saving} />}
-        </div>
-      )}
-
-      {tab === 'Spécificités' && (
-        <div>
-          <FieldLabel>Services &amp; particularités</FieldLabel>
-          <Textarea value={form.special_features} onChange={v => set('special_features', v)}
-            placeholder="Terrasse, parking, menu végétarien…" />
-          {dirty && <SaveBar onSave={save} onCancel={cancel} saving={saving} />}
-        </div>
-      )}
-
-      {tab === 'Langue & région' && (
-        <p className="text-sm text-[#555]">À venir.</p>
       )}
     </div>
   );

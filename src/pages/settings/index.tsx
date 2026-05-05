@@ -6,6 +6,7 @@ import CalendarSettings      from './CalendarSettings';
 import NotificationsSettings from './NotificationsSettings';
 import IdentifiantsSettings  from './IdentifiantsSettings';
 import AssistantSettings     from './AssistantSettings';
+import ParrainageSettings    from './ParrainageSettings';
 
 type Tab = 'general' | 'horaires' | 'integrations' | 'systeme';
 
@@ -37,7 +38,7 @@ const SettingsPage: React.FC = () => {
             {tab === 'general'      && <GeneralSettings />}
             {tab === 'horaires'     && <HoraireSettings />}
             {tab === 'integrations' && <div className="space-y-4"><CalendarSettings /><NotificationsSettings /></div>}
-            {tab === 'systeme'      && <div className="space-y-4"><AssistantSettings /><IdentifiantsSettings /></div>}
+            {tab === 'systeme'      && <div className="space-y-6"><AssistantSettings /><IdentifiantsSettings /><ParrainageSettings /></div>}
         </div>
     );
 };

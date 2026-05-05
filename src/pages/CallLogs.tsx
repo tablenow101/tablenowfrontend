@@ -285,46 +285,6 @@ const CallLogs: React.FC = () => {
                         );
                     })
                 )}
-
-                        return (
-                            <div
-                                key={call.id}
-                                className="grid items-center px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 cursor-pointer hover:bg-[#0f0f0f] transition-colors"
-                                style={{ gridTemplateColumns: '16px 1fr 100px 130px 60px 130px 90px' }}
-                                onClick={() => setSelected(call)}
-                            >
-                                <div className="w-2.5 h-2.5 rounded-full" style={{ background: dotColor }} />
-                                <span className={`text-sm truncate ${isMono ? 'font-mono text-white' : 'font-medium text-white'}`}>{name}</span>
-                                <span className={`text-[11px] px-2 py-0.5 rounded border w-fit ${
-                                    call.status === 'completed' ? 'bg-[#b8f00015] text-[#b8f000] border-[#b8f00040]'
-                                    : call.status === 'missed'  ? 'bg-[#f59e0b15] text-[#f59e0b] border-[#f59e0b40]'
-                                    : 'bg-[#ef444415] text-[#ef4444] border-[#ef444440]'
-                                }`}>{statusLabel}</span>
-                                <span className="text-xs text-[#888]">{fmtTimestamp(call.created_at || call.started_at)}</span>
-                                <span className="text-xs text-[#555] text-right">{fmtDuration(call.duration)}</span>
-                                <span>
-                                    {call.reservation_booked && (
-                                        <span className="text-[11px] px-2 py-0.5 rounded border bg-[#b8f00010] text-[#b8f000] border-[#b8f00030]">
-                                            {t('resaCreated')}
-                                        </span>
-                                    )}
-                                </span>
-                                <span className="flex justify-end">
-                                    {call.status === 'completed' ? (
-                                        <button
-                                            onClick={e => { e.stopPropagation(); setSelected(call); }}
-                                            className="px-3 py-1 border border-[#2a2a2a] rounded-lg text-xs text-[#888] hover:border-[#b8f000] hover:text-white transition-colors"
-                                        >
-                                            Écouter
-                                        </button>
-                                    ) : (
-                                        <span className="text-[#555] text-sm">—</span>
-                                    )}
-                                </span>
-                            </div>
-                        );
-                    })
-                )}
             </div>
         </div>
     );
