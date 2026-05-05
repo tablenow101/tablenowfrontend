@@ -94,7 +94,7 @@ const GeneralSettings: React.FC = () => {
       {/* Infos de base */}
       <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-4">
         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">
-          Informations du restaurant
+          {t('restaurantInfo')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Nom du restaurant">
@@ -127,23 +127,21 @@ const GeneralSettings: React.FC = () => {
 
       {/* Politique annulation */}
       <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-4">
-        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">
-          Politique d'annulation
-        </p>
-        <Field label="Texte de la politique" hint="Transmis à l'assistant pour répondre aux clients">
+        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">{t('cancelPolicyLabel')}</p>
+        {/* @ts-ignore */}
+        <Field label={t('cancelPolicyField')} hint={t('cancelPolicyHint')}>
           <textarea className={ta} rows={3} value={form.cancellation_policy} onChange={e => set('cancellation_policy', e.target.value)}
-            placeholder="Annulation gratuite jusqu'à 24h avant. Au-delà, 50% du repas facturé."/>
+            placeholder={t('cancelPolicyPlaceholder')}/>
         </Field>
       </div>
 
       {/* Spécificités */}
       <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-4">
-        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">
-          Spécificités &amp; particularités
-        </p>
-        <Field label="Notes pour l'IA" hint="L'assistant s'en sert pour personnaliser les réponses (terrasse, parking, allergies…)">
+        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">{t('specificities')}</p>
+        {/* @ts-ignore */}
+        <Field label={t('specificitiesField')} hint={t('specificitiesHint')}>
           <textarea className={ta} rows={3} value={form.special_features} onChange={e => set('special_features', e.target.value)}
-            placeholder="Terrasse couverte disponible. Menu végétarien sur demande. Parking à 200m."/>
+            placeholder={t('specificitiesPlaceholder')}/>
         </Field>
       </div>
 

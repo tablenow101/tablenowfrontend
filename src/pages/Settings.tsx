@@ -17,7 +17,7 @@ const Settings: React.FC = () => {
         { key: 'general',      label: t('subGeneral')      },
         { key: 'horaires',     label: t('subHours')        },
         { key: 'integrations', label: t('subIntegrations') },
-        { key: 'parrainage',   label: 'Parrainage'         },
+        { key: 'parrainage',   label: t('subParrainage') },
     ];
 
     return (

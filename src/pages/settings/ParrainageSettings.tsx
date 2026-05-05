@@ -35,10 +35,10 @@ const ParrainageSettings: React.FC = () => {
           <span className="text-[#b8f000] font-bold text-sm">+100 MIN. PAR PARRAINAGE</span>
         </div>
         <h2 className="text-xl font-bold text-white mb-1">
-          Parrainez un restaurant,<br/>
-          gagnez <span style={{ color: '#b8f000' }}>100 minutes</span> offertes
+          {t('referralHeadline')}<br/>
+          {t('referralMinutes')}
         </h2>
-        <p className="text-sm text-[#555] mb-5">{t('referralSub')}</p>
+        <p className="text-sm text-[#555] mb-5">{t('referralSub2')}</p>
 
         <div className="flex gap-3">
           <div className="flex-1 bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl px-4 py-3">
@@ -73,12 +73,12 @@ const ParrainageSettings: React.FC = () => {
 
       {/* Comment ça marche */}
       <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-5">
-        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-4">COMMENT ÇA MARCHE</p>
+        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-4">{t('calHowItWorks')}</p>
         <div className="space-y-0">
           {[
-            { n: 1, text: `Partagez votre code ${code} à un restaurateur de votre réseau`, extra: '' },
-            { n: 2, text: "Il s'inscrit et active son essai gratuit avec votre code", extra: '' },
-            { n: 3, text: 'Il souscrit à un abonnement payant', extra: '+100 min' },
+            { n: 1, text: t('referralStep1').replace('{code}', code), extra: '' },
+            { n: 2, text: t('referralStep2'), extra: '' },
+            { n: 3, text: t('referralStep3'), extra: '+100 min' },
           ].map(({ n, text, extra }, i) => (
             <div key={n} className={`flex items-center gap-3 py-3 ${i < 2 ? 'border-b border-[#1a1a1a]' : ''}`}>
               <div className="w-6 h-6 rounded-full border border-[#b8f000] text-[#b8f000] text-xs font-bold flex items-center justify-center flex-shrink-0">
@@ -106,7 +106,7 @@ const ParrainageSettings: React.FC = () => {
           ))
         ) : (
           <p className="text-sm text-[#555] text-center py-4">
-            Aucun parrainage pour le moment — partagez votre code pour commencer
+            {t('referralEmpty')}
           </p>
         )}
       </div>

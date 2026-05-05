@@ -267,7 +267,13 @@ const Login: React.FC = () => {
               </div>
 
               <button
-                onClick={() => { window.location.href = 'https://api.tablenow.io/api/auth/google'; }}
+                onClick={async () => {
+                  const { supabase } = await import('../lib/supabase');
+                  await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: 'https://app.tablenow.io/auth/callback' }
+                  });
+                }}
                 className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
               >
                 <GoogleIcon />
