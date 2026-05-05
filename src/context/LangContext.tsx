@@ -68,7 +68,7 @@ const translations: Record<Lang, Record<string, string>> = {
         avgDuration: 'Durée moyenne', perCall: 'par appel', totalDuration: 'Durée totale', conversations: 'de conversations',
         history: 'HISTORIQUE',
         statusCompleted: 'Terminé', statusMissed: 'Manqué', statusFailed: 'Non abouti',
-        resaCreated: '✓ Résa créée',
+        resaCreated: 'Réservation ✓',
         // Settings
         settingsTitle: 'Paramètres', subGeneral: 'Général', subHours: 'Horaires & Services',
         subIntegrations: 'Intégrations', subParrainage: 'Parrainage',
@@ -149,7 +149,7 @@ const translations: Record<Lang, Record<string, string>> = {
         avgDuration: 'Avg duration', perCall: 'per call', totalDuration: 'Total duration', conversations: 'of conversations',
         history: 'HISTORY',
         statusCompleted: 'Completed', statusMissed: 'Missed', statusFailed: 'Failed',
-        resaCreated: '✓ Reservation created',
+        resaCreated: 'Reservation ✓',
         settingsTitle: 'Settings', subGeneral: 'General', subHours: 'Hours & Services',
         subIntegrations: 'Integrations', subParrainage: 'Referral',
         restaurantInfo: 'Restaurant information', restaurantName: 'Restaurant name', website: 'Website',

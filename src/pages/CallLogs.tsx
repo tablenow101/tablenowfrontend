@@ -241,35 +241,27 @@ const CallLogs: React.FC = () => {
                         return (
                             <div
                                 key={call.id}
-                                className="flex items-center gap-4 px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 cursor-pointer hover:bg-[#0f0f0f] transition-colors"
+                                className="grid items-center px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 cursor-pointer hover:bg-[#0f0f0f] transition-colors"
+                                style={{ gridTemplateColumns: '12px 1fr 95px 115px 55px 115px 90px' }}
                                 onClick={() => setSelected(call)}
                             >
-                                {/* Dot */}
-                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />
-                                {/* Numéro — toujours visible, largeur fixe */}
-                                <span className="font-mono text-sm text-white flex-shrink-0 w-[175px] truncate">{number}</span>
-                                {/* Badge statut — largeur fixe */}
-                                <span className="flex-shrink-0 w-[90px]">
-                                    <span className={`text-[11px] px-2.5 py-1 rounded font-bold ${
-                                        call.status === 'completed' ? 'bg-[#1a2a00] text-[#b8f000]'
-                                        : call.status === 'missed'  ? 'bg-[#2a1a00] text-[#f59e0b]'
-                                        : 'bg-[#2a0a0a] text-[#ef4444]'
-                                    }`}>{statusLabel}</span>
-                                </span>
-                                {/* Date — largeur fixe */}
-                                <span className="text-xs text-[#888] flex-shrink-0 w-[120px]">{fmtTimestamp(call.created_at || call.started_at)}</span>
-                                {/* Durée — largeur fixe */}
-                                <span className="text-xs text-[#555] flex-shrink-0 w-[52px]">{fmtDuration(call.duration)}</span>
-                                {/* Résa créée — largeur fixe */}
-                                <span className="flex-shrink-0 w-[110px]">
+                                <div className="w-2.5 h-2.5 rounded-full" style={{ background: dotColor }} />
+                                <span className="font-mono text-sm text-white truncate pr-3">{number}</span>
+                                <span className={`text-[11px] px-2.5 py-1 rounded font-bold w-fit ${
+                                    call.status === 'completed' ? 'bg-[#1a2a00] text-[#b8f000]'
+                                    : call.status === 'missed'  ? 'bg-[#2a1a00] text-[#f59e0b]'
+                                    : 'bg-[#2a0a0a] text-[#ef4444]'
+                                }`}>{statusLabel}</span>
+                                <span className="text-xs text-[#888]">{fmtTimestamp(call.created_at || call.started_at)}</span>
+                                <span className="text-xs text-[#555]">{fmtDuration(call.duration)}</span>
+                                <span>
                                     {call.reservation_booked && (
                                         <span className="text-[11px] px-2 py-0.5 rounded bg-[#1a2a00] text-[#b8f000]">
                                             {t('resaCreated')}
                                         </span>
                                     )}
                                 </span>
-                                {/* Bouton Écouter */}
-                                <span className="ml-auto flex-shrink-0">
+                                <span className="flex justify-end">
                                     {call.status === 'completed' ? (
                                         <button
                                             onClick={e => { e.stopPropagation(); setSelected(call); }}
@@ -278,7 +270,7 @@ const CallLogs: React.FC = () => {
                                             Écouter
                                         </button>
                                     ) : (
-                                        <span className="text-[#555] text-sm px-3">—</span>
+                                        <span className="text-[#555] text-sm">—</span>
                                     )}
                                 </span>
                             </div>
