@@ -90,12 +90,14 @@ function CancelModal({ booking, onConfirm, onClose }: {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 // statusConfig built dynamically below
-const statusConfig: Record<string, { label: string; cls: string }> = {
-    confirmed: { label: 'Confirmé',  cls: 'bg-[#b8f000]/10 text-[#b8f000] border-[#b8f000]/20' },
-    cancelled: { label: 'Annulé',    cls: 'bg-red-500/10 text-red-400 border-red-500/20'       },
-    completed: { label: 'Terminé',   cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20'    },
-    no_show:   { label: 'No-show',   cls: 'bg-gray-500/10 text-gray-400 border-gray-500/20'    },
-};
+// statusConfig est maintenant une fonction qui utilise t()
+const getStatusConfig = (t: (k: string) => string): Record<string, { label: string; cls: string }> => ({
+    confirmed: { label: t('statusConfirmed'),  cls: 'bg-[#b8f000]/10 text-[#b8f000] border-[#b8f000]/20' },
+    cancelled: { label: t('statusCancelled2'), cls: 'bg-red-500/10 text-red-400 border-red-500/20'       },
+    completed: { label: t('statusCompleted2'), cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20'    },
+    no_show:   { label: t('statusNoShow'),     cls: 'bg-gray-500/10 text-gray-400 border-gray-500/20'    },
+    pending:   { label: t('pending'),          cls: 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/20' },
+});
 
 const sourceLabel: Record<string, string> = {
     vapi:   '📞 Téléphone',
@@ -107,11 +109,12 @@ const sourceLabel: Record<string, string> = {
 
 // ─── Booking detail drawer ────────────────────────────────────────────────────
 function BookingDetailDrawer({ booking, onClose, onCancel }: { booking: Booking; onClose: () => void; onCancel: () => void }) {
+    const { t } = useLang();
     const statusCfg: Record<string, { label: string; bg: string; color: string }> = {
-        confirmed: { label: 'confirmées', bg: '#1a2a00', color: '#b8f000' },
-        cancelled: { label: 'annulées',   bg: '#2a0000', color: '#ef4444' },
-        completed: { label: 'terminée',   bg: '#0a1a2a', color: '#60a5fa' },
-        no_show:   { label: 'no-show',    bg: '#1a1a1a', color: '#888'    },
+        confirmed: { label: t('statusConfirmed'),  bg: '#1a2a00', color: '#b8f000' },
+        cancelled: { label: t('statusCancelled2'), bg: '#2a0000', color: '#ef4444' },
+        completed: { label: t('statusCompleted2'), bg: '#0a1a2a', color: '#60a5fa' },
+        no_show:   { label: t('statusNoShow'),     bg: '#1a1a1a', color: '#888'    },
     };
     const st = statusCfg[booking.status] || statusCfg.confirmed;
     const time = booking.booked_for
@@ -178,10 +181,10 @@ function BookingDetailDrawer({ booking, onClose, onCancel }: { booking: Booking;
                             {/* Download buttons */}
                             <div className="grid grid-cols-2 gap-2">
                                 <button className="px-3 py-2 rounded-xl text-xs text-[#888] bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#444] transition-colors">
-                                    ⬇ Télécharger transcript (.txt)
+                                    {t('downloadTranscriptBtn')}
                                 </button>
                                 <button className="px-3 py-2 rounded-xl text-xs text-[#888] bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#444] transition-colors">
-                                    ⬇ Télécharger audio
+                                    {t('downloadAudioBtn')}
                                 </button>
                             </div>
                         </div>
@@ -339,10 +342,11 @@ const Bookings: React.FC = () => {
                 {filteredBookings.length === 0 ? (
                     <div className="text-center py-12">
                         <Calendar size={32} className="mx-auto text-gray-700 mb-3" />
-                        <p className="text-sm text-gray-500">Aucune réservation trouvée</p>
+                        <p className="text-sm text-gray-500">{t('noResas')}</p>
                     </div>
-                ) : (
-                    filteredBookings.map((booking) => {
+                ) : (() => {
+                    const statusConfig = getStatusConfig(t);
+                    return filteredBookings.map((booking) => {
                         const st = statusConfig[booking.status] || statusConfig.confirmed;
                         return (
                             <div
@@ -370,8 +374,8 @@ const Bookings: React.FC = () => {
                                 </span>
                             </div>
                         );
-                    })
-                )}
+                    });
+                })()}
             </div>
             </div>
         </div>

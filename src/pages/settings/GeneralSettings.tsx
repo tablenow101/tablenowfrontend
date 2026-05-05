@@ -145,6 +145,26 @@ const GeneralSettings: React.FC = () => {
         </Field>
       </div>
 
+      {/* Infos système */}
+      <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-[#1a1a1a]">
+          <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('systemInfo')}</p>
+          <p className="text-[10px] text-[#555]">{t('readOnly')}</p>
+        </div>
+        <div className="space-y-3">
+          {[
+            { label: t('tableNowNumber'), value: (user as any)?.vapi_phone_number || '—', accent: true },
+            { label: t('bccAddress'),     value: (user as any)?.bcc_email          || '—' },
+            { label: t('assistantId'),    value: (user as any)?.vapi_assistant_id  ? `${((user as any).vapi_assistant_id as string).slice(0,8)}…` : '—' },
+          ].map(({ label, value, accent }) => (
+            <div key={label} className="flex items-center justify-between py-2 border-b border-[#1a1a1a] last:border-0">
+              <span className="text-xs text-[#555]">{label}</span>
+              <span className={`text-sm font-mono font-medium ${accent ? 'text-[#b8f000]' : 'text-[#888]'}`}>{value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {dirty && (

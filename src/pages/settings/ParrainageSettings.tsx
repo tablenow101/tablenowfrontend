@@ -32,7 +32,7 @@ const ParrainageSettings: React.FC = () => {
           <span className="text-[10px] font-bold tracking-[.12em] uppercase border border-[#2a2a2a] rounded px-2 py-1 text-[#888]">
             {t('referralProgram')}
           </span>
-          <span className="text-[#b8f000] font-bold text-sm">+100 MIN. PAR PARRAINAGE</span>
+          <span className="text-[#b8f000] font-bold text-sm">{t('minPerReferral')}</span>
         </div>
         <h2 className="text-xl font-bold text-white mb-1">
           {t('referralHeadline')}<br/>
@@ -94,8 +94,8 @@ const ParrainageSettings: React.FC = () => {
       {/* Filleuls */}
       <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">FILLEULS PARRAINÉS</p>
-          <span className="text-xs text-[#555]">{stats.referrals?.length ?? 0} au total</span>
+          <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('referredRestaurants')}</p>
+          <span className="text-xs text-[#555]">{stats.referrals?.length ?? 0} {t('totalReferrals')}</span>
         </div>
         {stats.referrals?.length > 0 ? (
           stats.referrals.map((r: any, i: number) => (
