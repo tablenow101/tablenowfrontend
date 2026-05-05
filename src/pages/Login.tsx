@@ -115,7 +115,9 @@ const Login: React.FC = () => {
       <div className="w-full max-w-lg">
         {/* Logo + tagline */}
         <div className="flex flex-col items-center mb-10 gap-3">
-          <img src="/logo.png" alt="TableNow" className="h-10 w-auto" />
+          <span className="text-4xl font-black tracking-tight text-white">
+            Table<span className="text-[#b8f000]">Now</span>
+          </span>
           <span className="text-sm text-[#555] tracking-wide">
             Your Restaurant Host(ess) 24/7
           </span>

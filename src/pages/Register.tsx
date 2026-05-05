@@ -244,7 +244,9 @@ const Register: React.FC = () => {
     <div className="min-h-screen bg-[#0a0a0a] px-4">
       {/* Logo */}
       <div className="flex flex-col items-center mb-10 gap-3 pt-12">
-        <img src="/logo.png" alt="TableNow" className="h-10 w-auto" />
+        <span className="text-4xl font-black tracking-tight text-white">
+          Table<span className="text-[#b8f000]">Now</span>
+        </span>
         <span className="text-sm text-[#555] tracking-wide">
           Your Restaurant Host(ess) 24/7
         </span>
