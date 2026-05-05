@@ -26,8 +26,12 @@ interface Booking {
 function getBookingName(b: Booking) { return b.guest_name || 'Client'; }
 
 function getBookingDate(b: Booking) {
-    if (b.booked_for) return new Date(b.booked_for).toLocaleDateString('fr-FR');
-    return b.booking_date || '—';
+    const dateStr = b.booked_for || b.booking_date;
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    const day = d.toLocaleDateString('fr-FR', { weekday: 'short' });
+    const date = d.toLocaleDateString('fr-FR');
+    return `${day.charAt(0).toUpperCase() + day.slice(1, 3)}. ${date}`;
 }
 
 function getBookingTime(b: Booking) {
@@ -326,8 +330,8 @@ const Bookings: React.FC = () => {
             <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] overflow-hidden">
                 {/* Table header */}
                 <div className="grid items-center px-5 py-3 border-b border-[#1f1f1f]"
-                    style={{ gridTemplateColumns: '1.8fr 1fr 90px 70px 130px 110px 90px' }}>
-                    {[t('client'), t('date'), t('time'), 'COUV.', 'SOURCE', t('status'), ''].map(h => (
+                    style={{ gridTemplateColumns: '1.8fr 1.2fr 90px 70px 110px 90px' }}>
+                    {[t('client'), t('date'), t('time'), 'COUV.', t('status'), ''].map(h => (
                         <span key={h} className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{h}</span>
                     ))}
                 </div>
@@ -344,14 +348,13 @@ const Bookings: React.FC = () => {
                             <div
                                 key={booking.id}
                                 className="grid items-center px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 hover:bg-[#161616] transition-colors cursor-pointer"
-                                style={{ gridTemplateColumns: '1.8fr 1fr 90px 70px 130px 110px 90px' }}
+                                style={{ gridTemplateColumns: '1.8fr 1.2fr 90px 70px 110px 90px' }}
                                 onClick={() => setSelectedBooking(booking)}
                             >
                                 <span className="text-sm font-medium text-white truncate pr-3">{getBookingName(booking)}</span>
                                 <span className="text-sm text-[#888]">{getBookingDate(booking)}</span>
                                 <span className="text-sm font-bold" style={{ color: '#b8f000' }}>{getBookingTime(booking)}</span>
                                 <span className="text-sm text-white">{getGuestCount(booking)}</span>
-                                <span className="text-xs text-[#888]">{sourceLabel[booking.source || ''] || booking.source || '—'}</span>
                                 <span>
                                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border ${st.cls}`}>{st.label}</span>
                                 </span>
