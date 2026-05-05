@@ -178,7 +178,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* ── Main content ──────────────────────────────────────────── */}
-            <main className="pt-[79px] px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
+            <main className="pt-[79px] px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto" style={{ paddingTop: '107px' }}>
                 <Outlet />
             </main>
         </div>
