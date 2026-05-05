@@ -11,31 +11,48 @@ const AuthCallback: React.FC = () => {
     useEffect(() => {
         const handle = async () => {
             try {
-                // Supabase gère automatiquement le hash/code dans l'URL
-                const { data, error: authError } = await supabase.auth.getSession();
-                if (authError || !data.session) {
-                    setError('Authentification échouée. Veuillez réessayer.');
-                    setTimeout(() => navigate('/login'), 3000);
-                    return;
+                // Supabase parse automatiquement le hash — on attend la session via onAuthStateChange
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError || !session) {
+                    // Attendre que Supabase parse le hash (peut prendre un tick)
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    const { data: { session: session2 }, error: err2 } = await supabase.auth.getSession();
+                    if (err2 || !session2) {
+                        setError('Authentification échouée. Redirection...');
+                        setTimeout(() => navigate('/login'), 3000);
+                        return;
+                    }
+                    return exchangeToken(session2.access_token);
                 }
-                // Échanger le token Supabase contre un token backend TableNow
+                
+                return exchangeToken(session.access_token);
+            } catch {
+                setError('Erreur inattendue. Redirection...');
+                setTimeout(() => navigate('/login'), 3000);
+            }
+        };
+
+        const exchangeToken = async (accessToken: string) => {
+            try {
                 const res = await fetch('https://api.tablenow.io/api/auth/google/supabase', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ access_token: data.session.access_token }),
+                    body: JSON.stringify({ access_token: accessToken }),
                 });
                 if (!res.ok) throw new Error('Backend exchange failed');
                 const json = await res.json();
                 if (json.token) {
                     await loginWithToken(json.token);
                 } else {
-                    throw new Error('No token returned');
+                    throw new Error('No token');
                 }
-            } catch (err) {
+            } catch {
                 setError('Connexion impossible. Redirection...');
                 setTimeout(() => navigate('/login'), 3000);
             }
         };
+
         handle();
     }, []);
 
