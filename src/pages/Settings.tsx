@@ -42,7 +42,7 @@ const Settings: React.FC = () => {
             {tab === 'general'      && <GeneralSettings />}
             {tab === 'horaires'     && <HoraireSettings />}
             {tab === 'integrations' && <div className="space-y-4"><CalendarSettings /><NotificationsSettings /></div>}
-            {tab === 'systeme'      && <IdentifiantsSettings />}
+            {tab === 'systeme'      && <GeneralSettings />}
             {tab === 'parrainage'   && <ParrainageSettings />}
         </div>
     );
