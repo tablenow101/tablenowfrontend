@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LangProvider } from './context/LangContext';
+import ChatWidget from './components/ChatWidget';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
@@ -95,6 +96,7 @@ function App() {
       <LangProvider>
         <AuthProvider>
           <AppRoutes />
+          <ChatWidget />
         </AuthProvider>
       </LangProvider>
     </BrowserRouter>
