@@ -1,29 +1,42 @@
-import React from 'react';
-import { useSidebar } from '../../context/SidebarContext';
+import React, { useState } from 'react';
 import GeneralSettings       from './GeneralSettings';
 import HoraireSettings       from './HoraireSettings';
-import AssistantSettings     from './AssistantSettings';
-import ParrainageSettings    from './ParrainageSettings';
 import CalendarSettings      from './CalendarSettings';
 import NotificationsSettings from './NotificationsSettings';
 import IdentifiantsSettings  from './IdentifiantsSettings';
-import ServicesSettings      from './ServicesSettings';
+import AssistantSettings     from './AssistantSettings';
+
+type Tab = 'general' | 'horaires' | 'integrations' | 'systeme';
+
+const TABS: { key: Tab; label: string }[] = [
+    { key: 'general',      label: 'Général'             },
+    { key: 'horaires',     label: 'Horaires & Services' },
+    { key: 'integrations', label: 'Intégrations'        },
+    { key: 'systeme',      label: 'Système'             },
+];
 
 const SettingsPage: React.FC = () => {
-  const { activeSection } = useSidebar();
-
-  return (
-    <div className="bg-[#0a0a0a] min-h-[calc(100vh-84px)] p-8">
-      {activeSection === 'general'       && <GeneralSettings />}
-      {activeSection === 'hours'         && <HoraireSettings />}
-      {activeSection === 'assistant'     && <AssistantSettings />}
-      {activeSection === 'referral'      && <ParrainageSettings />}
-      {activeSection === 'services'      && <ServicesSettings />}
-      {activeSection === 'calendar'      && <CalendarSettings />}
-      {activeSection === 'notifications' && <NotificationsSettings />}
-      {activeSection === 'identifiers'   && <IdentifiantsSettings />}
-    </div>
-  );
+    const [tab, setTab] = useState<Tab>('general');
+    return (
+        <div>
+            <h1 className="text-2xl font-bold text-white mb-5">Paramètres</h1>
+            <div className="flex border-b border-[#2a2a2a] mb-6">
+                {TABS.map(({ key, label }) => (
+                    <button key={key} onClick={() => setTab(key)}
+                        className="px-5 py-3 text-sm transition-colors border-b-2 -mb-px whitespace-nowrap"
+                        style={tab === key
+                            ? { color: '#fff', borderBottomColor: '#b8f000' }
+                            : { color: '#888', borderBottomColor: 'transparent' }
+                        }
+                    >{label}</button>
+                ))}
+            </div>
+            {tab === 'general'      && <GeneralSettings />}
+            {tab === 'horaires'     && <HoraireSettings />}
+            {tab === 'integrations' && <div className="space-y-4"><CalendarSettings /><NotificationsSettings /></div>}
+            {tab === 'systeme'      && <div className="space-y-4"><AssistantSettings /><IdentifiantsSettings /></div>}
+        </div>
+    );
 };
 
 export default SettingsPage;
