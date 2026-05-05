@@ -60,7 +60,7 @@ const Layout: React.FC = () => {
                             Table<span style={{ color: '#b8f000' }}>Now</span>
                         </Link>
                         {user?.name && (
-                            <span className="hidden sm:block px-2 py-0.5 rounded border border-[#2a2a2a] text-xs text-[#888] truncate max-w-[140px]">
+                            <span className="hidden sm:block text-sm text-[#888] truncate max-w-[140px]">
                                 {user.name}
                             </span>
                         )}
