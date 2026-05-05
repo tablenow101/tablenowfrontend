@@ -186,12 +186,7 @@ const LangContext = createContext<LangContextValue>({
 });
 
 export const LangProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [lang, setLangState] = useState<Lang>(() => {
-        const stored = localStorage.getItem('lang');
-        if (stored === 'fr' || stored === 'en') return stored;
-        // Default FR — TableNow est un produit français
-        return 'fr';
-    });
+    const [lang, setLangState] = useState<Lang>('fr');
 
     const setLang = (l: Lang) => {
         localStorage.setItem('lang', l);
