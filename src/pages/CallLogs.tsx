@@ -235,8 +235,56 @@ const CallLogs: React.FC = () => {
                             : call.status === 'missed' ? '#f59e0b' : '#ef4444';
                         const statusLabel = call.status === 'completed' ? t('statusCompleted')
                             : call.status === 'missed' ? t('statusMissed') : t('statusFailed');
-                        const name = call.guest_name || call.caller_number || '—';
-                        const isMono = !call.guest_name;
+                        const number = call.caller_number || '—';
+                        const name = call.guest_name || null;
+
+                        return (
+                            <div
+                                key={call.id}
+                                className="flex items-center gap-4 px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 cursor-pointer hover:bg-[#0f0f0f] transition-colors"
+                                onClick={() => setSelected(call)}
+                            >
+                                {/* Dot */}
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />
+                                {/* Numéro — toujours visible, largeur fixe */}
+                                <span className="font-mono text-sm text-white flex-shrink-0 w-[175px] truncate">{number}</span>
+                                {/* Badge statut — largeur fixe */}
+                                <span className="flex-shrink-0 w-[90px]">
+                                    <span className={`text-[11px] px-2.5 py-1 rounded font-bold ${
+                                        call.status === 'completed' ? 'bg-[#1a2a00] text-[#b8f000]'
+                                        : call.status === 'missed'  ? 'bg-[#2a1a00] text-[#f59e0b]'
+                                        : 'bg-[#2a0a0a] text-[#ef4444]'
+                                    }`}>{statusLabel}</span>
+                                </span>
+                                {/* Date — largeur fixe */}
+                                <span className="text-xs text-[#888] flex-shrink-0 w-[120px]">{fmtTimestamp(call.created_at || call.started_at)}</span>
+                                {/* Durée — largeur fixe */}
+                                <span className="text-xs text-[#555] flex-shrink-0 w-[52px]">{fmtDuration(call.duration)}</span>
+                                {/* Résa créée — largeur fixe */}
+                                <span className="flex-shrink-0 w-[110px]">
+                                    {call.reservation_booked && (
+                                        <span className="text-[11px] px-2 py-0.5 rounded bg-[#1a2a00] text-[#b8f000]">
+                                            {t('resaCreated')}
+                                        </span>
+                                    )}
+                                </span>
+                                {/* Bouton Écouter */}
+                                <span className="ml-auto flex-shrink-0">
+                                    {call.status === 'completed' ? (
+                                        <button
+                                            onClick={e => { e.stopPropagation(); setSelected(call); }}
+                                            className="px-3 py-1.5 border border-[#2a2a2a] rounded-lg text-xs text-[#888] hover:border-[#b8f000] hover:text-white transition-colors"
+                                        >
+                                            Écouter
+                                        </button>
+                                    ) : (
+                                        <span className="text-[#555] text-sm px-3">—</span>
+                                    )}
+                                </span>
+                            </div>
+                        );
+                    })
+                )}
 
                         return (
                             <div
