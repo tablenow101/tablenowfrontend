@@ -49,8 +49,8 @@ const VerifyEmail: React.FC = () => {
 
             <div className="w-full max-w-[480px]">
                 <div className="text-center mb-9">
-                    <Link to="/" className="inline-block text-[36px] font-bold tracking-tight text-white">
-                        Table<span style={{ color: '#b8f000' }}>Now</span>
+                    <Link to="/" className="inline-block">
+                        <img src="/logo.png" alt="TableNow" className="h-10 w-auto mx-auto" />
                     </Link>
                     <p className="text-sm text-[#555] mt-2">{t('tagline')}</p>
                 </div>

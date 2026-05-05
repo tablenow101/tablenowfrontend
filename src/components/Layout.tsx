@@ -56,8 +56,8 @@ const Layout: React.FC = () => {
 
                     {/* Left */}
                     <div className="flex items-center gap-3 min-w-0">
-                        <Link to={`${base}/dashboard`} className="text-sm font-bold text-white tracking-tight whitespace-nowrap">
-                            Table<span style={{ color: '#b8f000' }}>Now</span>
+                        <Link to={`${base}/dashboard`} className="flex items-center">
+                            <img src="/logo.png" alt="TableNow" className="h-7 w-auto" />
                         </Link>
                         {user?.name && (
                             <span className="hidden sm:block text-sm text-[#888] truncate max-w-[140px]">
