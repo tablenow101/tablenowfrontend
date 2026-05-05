@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { calendarAPI } from '../../lib/api';
 import { Calendar, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
+import { useLang } from '../../context/LangContext';
 
 const CalendarSettings: React.FC = () => {
   const { user, refreshUser } = useAuth();
+  const { t } = useLang();
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +88,7 @@ const CalendarSettings: React.FC = () => {
               className="flex items-center gap-2 h-11 px-6 bg-[#b8f000] text-black font-bold rounded-xl text-sm disabled:opacity-50"
             >
               <ExternalLink size={14} />
-              {connecting ? 'Redirection…' : 'Connecter Google Agenda'}
+              {connecting ? '…' : t('connectCal')}
             </button>
           </>
         )}
@@ -101,7 +103,7 @@ const CalendarSettings: React.FC = () => {
         </p>
         <div className="space-y-3">
           {[
-            'Cliquez sur "Connecter Google Agenda" ci-dessus',
+            t('connectCal'),
             'Autorisez Tablenow à accéder à votre calendrier',
             'Chaque nouvelle réservation crée automatiquement un événement',
             "Les annulations suppriment l'événement correspondant",

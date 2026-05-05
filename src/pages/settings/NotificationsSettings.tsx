@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { settingsAPI } from '../../lib/api';
+import { useLang } from '../../context/LangContext';
 
 type NotifPrefs = {
   new_booking: boolean;
@@ -49,6 +50,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
 }
 
 const NotificationsSettings: React.FC = () => {
+  const { t } = useLang();
   const [prefs, setPrefs] = useState<NotifPrefs>(DEFAULT_PREFS);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -127,13 +129,13 @@ const NotificationsSettings: React.FC = () => {
             disabled={saving}
             className="h-11 px-6 bg-[#b8f000] text-black font-bold rounded-xl text-sm disabled:opacity-50"
           >
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
+            {saving ? '…' : t('save')}
           </button>
           <button
             onClick={cancel}
             className="h-11 px-6 bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl text-sm hover:border-[#444] transition-colors"
           >
-            Annuler
+            {t('cancel')}
           </button>
         </div>
       )}

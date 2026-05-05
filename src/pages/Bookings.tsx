@@ -85,6 +85,7 @@ function CancelModal({ booking, onConfirm, onClose }: {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+// statusConfig built dynamically below
 const statusConfig: Record<string, { label: string; cls: string }> = {
     confirmed: { label: 'Confirmé',  cls: 'bg-[#b8f000]/10 text-[#b8f000] border-[#b8f000]/20' },
     cancelled: { label: 'Annulé',    cls: 'bg-red-500/10 text-red-400 border-red-500/20'       },
@@ -272,14 +273,14 @@ const Bookings: React.FC = () => {
             {/* Header + filter pills */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Réservations</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Cliquez sur une ligne pour les détails et le transcript</p>
+                    <h1 className="text-2xl font-bold text-white">{t('resaPageTitle')}</h1>
+                    <p className="text-sm text-gray-500 mt-0.5">{t('resaPageSub')}</p>
                 </div>
                 <div className="flex border border-[#2a2a2a] rounded-lg overflow-hidden flex-shrink-0">
                     {[
-                        { key: 'all',       label: 'Toutes'     },
-                        { key: 'confirmed', label: 'Confirmées' },
-                        { key: 'cancelled', label: 'Annulées'   },
+                        { key: 'all',       label: t('all2')      },
+                        { key: 'confirmed', label: t('confirmed') },
+                        { key: 'cancelled', label: t('cancelled') },
                     ].map(({ key, label }) => (
                         <button
                             key={key}
@@ -296,10 +297,10 @@ const Bookings: React.FC = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'TOTAL',      value: bookings.length, color: 'text-white',      sub: 'Réservations sur la période' },
-                    { label: 'CONFIRMÉES', value: confirmedCount,  color: 'text-[#b8f000]',  sub: 'Tables assurées'             },
-                    { label: 'ANNULÉES',   value: cancelledCount,  color: 'text-red-400',    sub: 'Places libérées'             },
-                    { label: 'COUVERTS',   value: totalGuests,     color: 'text-white',      sub: 'Personnes attendues'         },
+                    { label: t('total').toUpperCase(),      value: bookings.length, color: 'text-white',      sub: t('resasDesc') },
+                    { label: t('confirmed').toUpperCase(), value: confirmedCount,  color: 'text-[#b8f000]',  sub: t('tablesSecured')             },
+                    { label: t('cancelled').toUpperCase(),   value: cancelledCount,  color: 'text-red-400',    sub: t('slotsFreed')             },
+                    { label: t('covers').toUpperCase(),   value: totalGuests,     color: 'text-white',      sub: t('expected')         },
                 ].map(({ label, value, color, sub }) => (
                     <div key={label} className="rounded-2xl bg-[#111] border border-[#1f1f1f] p-5 flex flex-col gap-2">
                         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{label}</p>
@@ -326,7 +327,7 @@ const Bookings: React.FC = () => {
                 {/* Table header */}
                 <div className="grid items-center px-5 py-3 border-b border-[#1f1f1f]"
                     style={{ gridTemplateColumns: '1.8fr 1fr 90px 70px 130px 110px 90px' }}>
-                    {['CLIENT','DATE','HEURE','COUV.','SOURCE','STATUT',''].map(h => (
+                    {[t('client'), t('date'), t('time'), 'COUV.', 'SOURCE', t('status'), ''].map(h => (
                         <span key={h} className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{h}</span>
                     ))}
                 </div>

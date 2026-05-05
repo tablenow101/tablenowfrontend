@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLang } from '../../context/LangContext';
 import { settingsAPI } from '../../lib/api';
 
 const TABS = ['Informations', 'Langue & région', 'Politique annulation', 'Spécificités'];
@@ -49,11 +50,11 @@ function SaveBar({ onSave, onCancel, saving }: { onSave: () => void; onCancel: (
       <button onClick={onSave} disabled={saving}
         className="h-11 px-6 bg-[#b8f000] text-black font-bold rounded-xl text-sm disabled:opacity-60 flex items-center gap-2">
         {saving && <span className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin" />}
-        Enregistrer
+        {saving ? '…' : t('save')}
       </button>
       <button onClick={onCancel} disabled={saving}
         className="h-11 px-6 bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl text-sm hover:border-[#444] transition-colors">
-        Annuler
+        {t('cancel')}
       </button>
     </div>
   );
@@ -73,6 +74,7 @@ const EMPTY: FormState = {
 
 const GeneralSettings: React.FC = () => {
   const { user, refreshUser } = useAuth();
+  const { t } = useLang();
   const [tab, setTab]     = useState('Informations');
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -159,7 +161,7 @@ const GeneralSettings: React.FC = () => {
       </div>
 
       <p className="text-[10px] uppercase tracking-wider text-[#555] pb-3 mb-4 border-b border-[#1a1a1a]">
-        Informations du restaurant
+        {t('restaurantInfo')}
       </p>
 
       <TabBar tabs={TABS} active={tab} onChange={changeTab} />

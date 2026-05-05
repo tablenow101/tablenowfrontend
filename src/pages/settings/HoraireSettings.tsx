@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { settingsAPI } from '../../lib/api';
+import { useLang } from '../../context/LangContext';
 
 const TABS = ['Jours & heures', 'Capacité', 'Jours fermés'];
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -45,6 +46,7 @@ function TabBar({
 }
 
 const HoraireSettings: React.FC = () => {
+  const { t } = useLang();
   const [tab, setTab] = useState('Jours & heures');
   const [hours, setHours] = useState<DaySchedule[]>(DEFAULT_HOURS);
   const [dirty, setDirty] = useState(false);
@@ -103,7 +105,7 @@ const HoraireSettings: React.FC = () => {
       {tab === 'Jours & heures' && (
         <>
           <p className="text-[10px] uppercase tracking-wider text-[#555] mb-4">
-            Jours d'ouverture
+            {t('hoursDesc')}
           </p>
 
           <div className="bg-[#111] border border-[#2a2a2a] rounded-xl overflow-hidden">
@@ -154,7 +156,7 @@ const HoraireSettings: React.FC = () => {
                       />
                     </div>
                   ) : (
-                    <span className="ml-auto text-sm text-[#555]">Fermé</span>
+                    <span className="ml-auto text-sm text-[#555]">{t('closed')}</span>
                   )}
                 </div>
               );
@@ -170,13 +172,13 @@ const HoraireSettings: React.FC = () => {
                 disabled={saving}
                 className="h-11 px-6 bg-[#b8f000] text-black font-bold rounded-xl text-sm disabled:opacity-50"
               >
-                {saving ? 'Enregistrement…' : 'Enregistrer'}
+                {saving ? '…' : t('save')}
               </button>
               <button
                 onClick={cancel}
                 className="h-11 px-6 bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl text-sm hover:border-[#444] transition-colors"
               >
-                Annuler
+                {t('cancel')}
               </button>
             </div>
           )}

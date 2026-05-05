@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLang } from '../../context/LangContext';
 import GeneralSettings       from './GeneralSettings';
 import HoraireSettings       from './HoraireSettings';
 import CalendarSettings      from './CalendarSettings';
@@ -8,18 +9,20 @@ import AssistantSettings     from './AssistantSettings';
 
 type Tab = 'general' | 'horaires' | 'integrations' | 'systeme';
 
-const TABS: { key: Tab; label: string }[] = [
-    { key: 'general',      label: 'Général'             },
-    { key: 'horaires',     label: 'Horaires & Services' },
-    { key: 'integrations', label: 'Intégrations'        },
-    { key: 'systeme',      label: 'Système'             },
-];
-
 const SettingsPage: React.FC = () => {
+    const { t } = useLang();
     const [tab, setTab] = useState<Tab>('general');
+
+    const TABS: { key: Tab; label: string }[] = [
+        { key: 'general',      label: t('subGeneral')      },
+        { key: 'horaires',     label: t('subHours')        },
+        { key: 'integrations', label: t('subIntegrations') },
+        { key: 'systeme',      label: 'Système'            },
+    ];
+
     return (
         <div>
-            <h1 className="text-2xl font-bold text-white mb-5">Paramètres</h1>
+            <h1 className="text-2xl font-bold text-white mb-5">{t('settingsTitle')}</h1>
             <div className="flex border-b border-[#2a2a2a] mb-6">
                 {TABS.map(({ key, label }) => (
                     <button key={key} onClick={() => setTab(key)}

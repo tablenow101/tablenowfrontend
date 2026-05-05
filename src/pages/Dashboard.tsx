@@ -94,14 +94,14 @@ function CallRow({ call }: { call: CallLog }) {
     // Description ligne : "Réservation X couverts · Xmin" ou "Information · Xmin" ou "Non abouti · Xmin"
     let desc = '';
     if (call.status === 'completed' && call.reservation_booked) {
-        desc = 'Réservation';
+        desc = t('callResaDesc') || 'Réservation';
         // covers non disponible dans CallLog — on affiche juste "Réservation · Xmin"
     } else if (call.status === 'completed') {
-        desc = 'Information';
+        desc = t('callInfoDesc') || 'Information';
     } else if (call.status === 'missed') {
-        desc = 'Manqué';
+        desc = t('statusMissed');
     } else {
-        desc = 'Non abouti';
+        desc = t('statusFailed');
     }
     if (dur) desc += ` · ${dur}`;
 
@@ -119,7 +119,7 @@ function BookingRow({ booking }: { booking: Booking }) {
         <div className="flex items-center gap-0 py-3 border-b border-[#1a1a1a] last:border-0">
             <span className="text-[15px] font-bold w-[52px] flex-shrink-0" style={{ color: '#b8f000' }}>{fmtTime(booking)}</span>
             <span className="text-[14px] text-white flex-1 truncate">{booking.guest_name || 'Client'}</span>
-            <span className="text-xs text-[#888] flex-shrink-0">{booking.party_size || booking.covers || 0} couverts</span>
+            <span className="text-xs text-[#888] flex-shrink-0">{booking.party_size || booking.covers || 0} {t('coversUnit') || 'couverts'}</span>
         </div>
     );
 }

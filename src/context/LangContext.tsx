@@ -54,6 +54,7 @@ const translations: Record<Lang, Record<string, string>> = {
         bestSlot: 'Créneau à valoriser', bestSlotDesc: 'Disponibilités ouvertes',
         latestCalls: 'DERNIERS APPELS', nextResa: 'PROCHAINES RÉSERVATIONS',
         seeAll: 'Voir tout →',
+        callResaDesc: 'Réservation', callInfoDesc: 'Information', coversUnit: 'couverts',
         // Reservations
         resaPageTitle: 'Réservations', resaPageSub: 'Cliquez sur une ligne pour les détails et le transcript',
         all2: 'Toutes', total: 'Total', resasDesc: 'Réservations sur la période',
@@ -136,6 +137,7 @@ const translations: Record<Lang, Record<string, string>> = {
         bestSlot: 'Slot to promote', bestSlotDesc: 'Availability open',
         latestCalls: 'RECENT CALLS', nextResa: 'UPCOMING RESERVATIONS',
         seeAll: 'See all →',
+        callResaDesc: 'Reservation', callInfoDesc: 'Information', coversUnit: 'covers',
         resaPageTitle: 'Reservations', resaPageSub: 'Click a row for details and call transcript',
         all2: 'All', total: 'Total', resasDesc: 'Reservations for the period',
         tablesSecured: 'Tables secured', slotsFreed: 'Slots freed', expected: 'Expected guests',
