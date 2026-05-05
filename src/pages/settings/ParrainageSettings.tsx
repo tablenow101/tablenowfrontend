@@ -58,7 +58,7 @@ const ParrainageSettings: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: t('activeReferrals'), value: stats.active,  color: 'text-[#b8f000]' },
           { label: t('pending'),         value: stats.pending, color: 'text-[#888]'     },

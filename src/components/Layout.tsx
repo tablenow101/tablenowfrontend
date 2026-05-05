@@ -43,15 +43,8 @@ const Layout: React.FC = () => {
     return (
         <div className="min-h-screen bg-[#0a0a0a] text-white">
 
-            {/* ── Breadcrumb strip ──────────────────────────────────────── */}
-            <div className="fixed top-0 left-0 right-0 z-50 h-7 bg-[#0a0a0a] border-b border-[#1a1a1a] flex items-center px-6">
-                <span className="text-[10px] tracking-[0.18em] uppercase text-[#555] select-none">
-                    TableNow{breadcrumb ? ` › ${breadcrumb}` : ''}
-                </span>
-            </div>
-
             {/* ── Navbar ───────────────────────────────────────────────── */}
-            <nav className="fixed top-7 left-0 right-0 z-40 h-[52px] bg-[#111] border-b border-[#2a2a2a] flex items-center px-6">
+            <nav className="fixed top-0 left-0 right-0 z-50 h-[52px] bg-[#111] border-b border-[#2a2a2a] flex items-center px-6">
                 <div className="flex items-center justify-between w-full">
 
                     {/* Left */}
@@ -178,7 +171,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* ── Main content ──────────────────────────────────────────── */}
-            <main className="pt-[79px] px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto" style={{ paddingTop: '107px' }}>
+            <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: '80px' }}>
                 <Outlet />
             </main>
         </div>

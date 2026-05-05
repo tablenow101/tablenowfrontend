@@ -299,7 +299,7 @@ const Bookings: React.FC = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                     { label: t('total').toUpperCase(),      value: bookings.length, color: 'text-white',      sub: t('resasDesc') },
                     { label: t('confirmed').toUpperCase(), value: confirmedCount,  color: 'text-[#b8f000]',  sub: t('tablesSecured')             },
@@ -327,10 +327,10 @@ const Bookings: React.FC = () => {
                 />
             </div>
 
-            <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] overflow-hidden">
+            <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] overflow-hidden"><div className="overflow-x-auto">
                 {/* Table header */}
                 <div className="grid items-center px-5 py-3 border-b border-[#1f1f1f]"
-                    style={{ gridTemplateColumns: '1.8fr 1.2fr 90px 70px 110px 90px' }}>
+                    style={{ gridTemplateColumns: "1.8fr 1.2fr 90px 70px 110px 90px", minWidth: "580px" }}>
                     {[t('client'), t('date'), t('time'), 'COUV.', t('status'), ''].map(h => (
                         <span key={h} className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{h}</span>
                     ))}
@@ -348,7 +348,7 @@ const Bookings: React.FC = () => {
                             <div
                                 key={booking.id}
                                 className="grid items-center px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 hover:bg-[#161616] transition-colors cursor-pointer"
-                                style={{ gridTemplateColumns: '1.8fr 1.2fr 90px 70px 110px 90px' }}
+                                style={{ gridTemplateColumns: "1.8fr 1.2fr 90px 70px 110px 90px", minWidth: "580px" }}
                                 onClick={() => setSelectedBooking(booking)}
                             >
                                 <span className="text-sm font-medium text-white truncate pr-3">{getBookingName(booking)}</span>
@@ -372,6 +372,7 @@ const Bookings: React.FC = () => {
                         );
                     })
                 )}
+            </div>
             </div>
         </div>
     );

@@ -18,7 +18,7 @@ const CalendarSettings: React.FC = () => {
     setError(null);
     try {
       const res = await calendarAPI.getAuthUrl();
-      const url = res.data?.url ?? res.data?.auth_url ?? res.data;
+      const url = res.data?.authUrl ?? res.data?.url ?? res.data?.auth_url ?? res.data;
       if (typeof url === 'string') {
         window.location.href = url;
       } else {

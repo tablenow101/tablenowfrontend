@@ -51,7 +51,7 @@ const GeneralSettings: React.FC = () => {
     };
     settingsAPI.get()
       .then(res => {
-        const d = res.data?.restaurant ?? res.data ?? {};
+        const d = res.data?.settings ?? res.data?.restaurant ?? res.data ?? {};
         const loaded: FormState = {
           name:                d.name                ?? fromUser.name,
           owner_name:          d.owner_name          ?? fromUser.owner_name,
@@ -96,7 +96,7 @@ const GeneralSettings: React.FC = () => {
         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">
           Informations du restaurant
         </p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Nom du restaurant">
             <input className={inp} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Le Bistrot"/>
           </Field>
@@ -107,7 +107,7 @@ const GeneralSettings: React.FC = () => {
         <Field label="Téléphone public" hint="Affiché aux clients — différent du numéro IA">
           <input className={inp} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+33 1 42 00 00 00" type="tel"/>
         </Field>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Type de cuisine">
             <input className={inp} value={form.cuisine_type} onChange={e => set('cuisine_type', e.target.value)} placeholder="Française"/>
           </Field>
@@ -115,7 +115,7 @@ const GeneralSettings: React.FC = () => {
             <input className={inp} value={form.address} onChange={e => set('address', e.target.value)} placeholder="12 rue de Rivoli, Paris"/>
           </Field>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="E-mail confirmations">
             <input className={inp} value={form.confirmation_email} onChange={e => set('confirmation_email', e.target.value)} placeholder="resa@restaurant.fr" type="email"/>
           </Field>

@@ -375,7 +375,7 @@ const Register: React.FC = () => {
             </div>
 
             {/* Row 3: Password + Confirm */}
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className={labelCls}>
                   {lang === 'fr' ? 'MOT DE PASSE' : 'PASSWORD'} *
@@ -423,7 +423,7 @@ const Register: React.FC = () => {
             </div>
 
             {/* Row 4: Phone + Cuisine */}
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className={labelCls}>
                   {lang === 'fr' ? 'TÉLÉPHONE' : 'PHONE'}

@@ -266,7 +266,10 @@ const Login: React.FC = () => {
                 <div className="flex-1 h-px bg-[#2a2a2a]" />
               </div>
 
-              <button className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors">
+              <button
+                onClick={() => { window.location.href = 'https://api.tablenow.io/api/auth/google'; }}
+                className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
+              >
                 <GoogleIcon />
                 {t.google}
               </button>

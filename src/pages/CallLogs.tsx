@@ -54,9 +54,9 @@ function CallDrawer({ call, onClose, t }: { call: CallLog; onClose: () => void; 
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 z-50 flex justify-end" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-end sm:justify-end" onClick={onClose}>
             <div
-                className="w-[500px] bg-[#111] border-l border-[#2a2a2a] h-full overflow-y-auto p-7"
+                className="w-full sm:w-[480px] max-h-[90vh] sm:max-h-full sm:h-full bg-[#111] sm:border-l border-t sm:border-t-0 border-[#2a2a2a] overflow-y-auto p-5 sm:p-7 rounded-t-2xl sm:rounded-none"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
@@ -199,7 +199,7 @@ const CallLogs: React.FC = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
                     <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">{t('total')}</p>
                     <p className="text-[40px] font-bold text-white leading-none">{total}</p>
@@ -224,6 +224,7 @@ const CallLogs: React.FC = () => {
 
             {/* List */}
             <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
+                <div className="overflow-x-auto">
                 <div className="px-5 py-4 border-b border-[#1a1a1a]">
                     <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('history')}</p>
                 </div>
@@ -242,7 +243,7 @@ const CallLogs: React.FC = () => {
                             <div
                                 key={call.id}
                                 className="grid items-center px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 cursor-pointer hover:bg-[#0f0f0f] transition-colors"
-                                style={{ gridTemplateColumns: '12px 1fr 95px 115px 55px 115px 90px' }}
+                                style={{ gridTemplateColumns: '12px 1fr 95px 115px 55px 115px 90px', minWidth: '650px' }}
                                 onClick={() => setSelected(call)}
                             >
                                 <div className="w-2.5 h-2.5 rounded-full" style={{ background: dotColor }} />
@@ -277,6 +278,7 @@ const CallLogs: React.FC = () => {
                         );
                     })
                 )}
+            </div>
             </div>
         </div>
     );

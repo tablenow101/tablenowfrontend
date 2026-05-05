@@ -76,10 +76,10 @@ function InsightRow({ label, value, desc, highlight = false }: {
     label: string; value: string | number; desc?: string; highlight?: boolean;
 }) {
     return (
-        <div className="flex items-center gap-4 px-5 py-3.5 border-b border-[#1a1a1a] last:border-0">
-            <span className="text-sm text-[#888] w-[220px] flex-shrink-0">{label}</span>
-            <span className={`text-[15px] font-bold min-w-[60px] ${highlight ? 'text-[#b8f000]' : 'text-white'}`}>{value}</span>
-            {desc && <span className="text-xs text-[#555]">{desc}</span>}
+        <div className="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-[#1a1a1a] last:border-0">
+            <span className="text-sm text-[#888] flex-1 min-w-[140px]">{label}</span>
+            <span className={`text-base font-bold w-14 flex-shrink-0 ${highlight ? 'text-[#b8f000]' : 'text-white'}`}>{value}</span>
+            {desc && <span className="text-xs text-[#555] flex-shrink-0 hidden sm:block">{desc}</span>}
         </div>
     );
 }
@@ -108,17 +108,17 @@ function CallRow({ call }: { call: CallLog }) {
     return (
         <div className="flex items-center gap-3 py-3 border-b border-[#1a1a1a] last:border-0">
             <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />
-            <span className={`text-sm flex-shrink-0 w-[130px] truncate ${isMono ? 'font-mono text-white' : 'font-medium text-white'}`}>{name}</span>
-            <span className="text-xs text-[#555] flex-1 truncate">{desc}</span>
+            <span className={`text-sm flex-1 truncate ${isMono ? 'font-mono text-white' : 'font-medium text-white'}`}>{name}</span>
+            <span className="text-xs text-[#555] flex-shrink-0 hidden sm:block truncate max-w-[160px]">{desc}</span>
         </div>
     );
 }
 
 function BookingRow({ booking }: { booking: Booking }) {
     return (
-        <div className="flex items-center gap-0 py-3 border-b border-[#1a1a1a] last:border-0">
-            <span className="text-[15px] font-bold w-[52px] flex-shrink-0" style={{ color: '#b8f000' }}>{fmtTime(booking)}</span>
-            <span className="text-[14px] text-white flex-1 truncate">{booking.guest_name || 'Client'}</span>
+        <div className="flex items-center gap-3 py-3 border-b border-[#1a1a1a] last:border-0">
+            <span className="text-sm font-bold w-12 flex-shrink-0" style={{ color: '#b8f000' }}>{fmtTime(booking)}</span>
+            <span className="text-sm text-white flex-1 truncate">{booking.guest_name || 'Client'}</span>
             <span className="text-xs text-[#888] flex-shrink-0">{booking.party_size || booking.covers || 0} {t('coversUnit') || 'couverts'}</span>
         </div>
     );
@@ -257,7 +257,7 @@ const Dashboard: React.FC = () => {
             {/* ── ACTIVITÉ ───────────────────────────────────────────── */}
             <div>
                 <p className="text-[10px] font-bold tracking-[.15em] uppercase text-[#555] mb-3">— {t('sectionActivity')}</p>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <StatTile
                         label={t('callsHandled')}
                         value={totalCalls}
@@ -310,7 +310,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* ── Bottom grid ────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Derniers appels */}
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
                     <div className="flex items-center justify-between mb-4">

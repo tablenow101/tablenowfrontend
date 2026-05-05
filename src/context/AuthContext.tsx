@@ -15,6 +15,7 @@ interface AuthContextType {
     user: User | null;
     loading: boolean;
     login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+    loginWithToken: (token: string) => Promise<void>;
     register: (data: any) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
@@ -86,6 +87,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         syncLanguageFromUser(u);
     };
 
+    const loginWithToken = async (token: string) => {
+        localStorage.setItem('token', token);
+        const res = await authAPI.getMe();
+        const u = res.data.restaurant;
+        setUser(u);
+        syncLanguageFromUser(u);
+        const slug = u.slug || u.id;
+        window.location.href = `/r/${slug}/dashboard`;
+    };
+
     const register = async (data: any) => {
         await authAPI.register(data);
     };
@@ -125,7 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser, setLanguage }}>
+        <AuthContext.Provider value={{ user, loading, login, loginWithToken, register, logout, refreshUser, setLanguage }}>
             {children}
         </AuthContext.Provider>
     );

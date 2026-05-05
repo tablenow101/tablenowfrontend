@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import CallLogs from './pages/CallLogs';
 import Settings from './pages/Settings';
+import AuthCallback from './pages/AuthCallback';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
 import { isDomainMarketingSite } from './lib/domain';
@@ -56,7 +57,7 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }

@@ -7,7 +7,7 @@ import NotificationsSettings from './settings/NotificationsSettings';
 import IdentifiantsSettings  from './settings/IdentifiantsSettings';
 import ParrainageSettings    from './settings/ParrainageSettings';
 
-type Tab = 'general' | 'horaires' | 'integrations' | 'systeme' | 'parrainage';
+type Tab = 'general' | 'horaires' | 'integrations' | 'parrainage';
 
 const Settings: React.FC = () => {
     const { t } = useLang();
@@ -17,7 +17,6 @@ const Settings: React.FC = () => {
         { key: 'general',      label: t('subGeneral')      },
         { key: 'horaires',     label: t('subHours')        },
         { key: 'integrations', label: t('subIntegrations') },
-        { key: 'systeme',      label: 'Système'            },
         { key: 'parrainage',   label: 'Parrainage'         },
     ];
 
@@ -42,7 +41,6 @@ const Settings: React.FC = () => {
             {tab === 'general'      && <GeneralSettings />}
             {tab === 'horaires'     && <HoraireSettings />}
             {tab === 'integrations' && <div className="space-y-4"><CalendarSettings /><NotificationsSettings /></div>}
-            {tab === 'systeme'      && <GeneralSettings />}
             {tab === 'parrainage'   && <ParrainageSettings />}
         </div>
     );
