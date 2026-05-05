@@ -67,4 +67,9 @@ export const emailAPI = {
     getBCCEmails: (params?: any) => api.get('/email/bcc', { params }),
 };
 
+export const referralAPI = {
+    getStats: () => api.get('/referral/stats'),
+    getCode:  () => api.get('/referral/code'),
+};
+
 export default api;
