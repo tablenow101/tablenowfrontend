@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import Onboarding from './pages/Onboarding';
+import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import CallLogs from './pages/CallLogs';
@@ -28,7 +29,6 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   return user ? <>{children}</> : <Navigate to="/login" />;
 };
 
-/** Redirects authenticated user to onboarding or their restaurant dashboard */
 const RedirectToDashboard: React.FC = () => {
   const { user, loading } = useAuth();
 
@@ -42,7 +42,6 @@ const RedirectToDashboard: React.FC = () => {
 
   if (!user) return <Navigate to="/login" />;
 
-  // Robust check: opening_hours must exist AND have at least one key
   const hoursEmpty =
     !user.opening_hours ||
     typeof user.opening_hours !== 'object' ||
@@ -76,6 +75,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
 
       <Route path="/onboarding" element={
         <PrivateRoute>
@@ -83,14 +83,12 @@ const AppRoutes = () => {
         </PrivateRoute>
       } />
 
-      {/* Redirect legacy routes */}
       <Route path="/" element={<RedirectToDashboard />} />
       <Route path="/dashboard" element={<RedirectToDashboard />} />
       <Route path="/bookings" element={<RedirectToDashboard />} />
       <Route path="/calls" element={<RedirectToDashboard />} />
       <Route path="/settings" element={<RedirectToDashboard />} />
 
-      {/* Restaurant-scoped routes */}
       <Route path="/r/:restaurantSlug" element={
         <PrivateRoute>
           <Layout />
