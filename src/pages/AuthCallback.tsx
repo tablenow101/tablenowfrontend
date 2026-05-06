@@ -11,22 +11,28 @@ const AuthCallback: React.FC = () => {
     useEffect(() => {
         const handle = async () => {
             try {
-                // Supabase parse automatiquement le hash — on attend la session via onAuthStateChange
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-                
-                if (sessionError || !session) {
-                    // Attendre que Supabase parse le hash (peut prendre un tick)
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    const { data: { session: session2 }, error: err2 } = await supabase.auth.getSession();
-                    if (err2 || !session2) {
-                        setError('Authentification échouée. Redirection...');
-                        setTimeout(() => navigate('/login'), 3000);
-                        return;
+                // Avec PKCE, Supabase échange le code automatiquement
+                // On écoute le changement d'état auth
+                const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+                    if (event === 'SIGNED_IN' && session) {
+                        subscription.unsubscribe();
+                        await exchangeToken(session.access_token);
+                    } else if (event === 'SIGNED_OUT') {
+                        subscription.unsubscribe();
+                        setError('Connexion annulée. Redirection...');
+                        setTimeout(() => navigate('/login'), 2000);
                     }
-                    return exchangeToken(session2.access_token);
-                }
-                
-                return exchangeToken(session.access_token);
+                });
+
+                // Timeout si rien ne se passe après 8 secondes
+                setTimeout(() => {
+                    subscription.unsubscribe();
+                    if (!error) {
+                        setError('Délai dépassé. Redirection...');
+                        setTimeout(() => navigate('/login'), 2000);
+                    }
+                }, 8000);
+
             } catch {
                 setError('Erreur inattendue. Redirection...');
                 setTimeout(() => navigate('/login'), 3000);
