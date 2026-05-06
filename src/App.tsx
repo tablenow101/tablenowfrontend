@@ -68,6 +68,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
 
       {/* Redirect legacy routes */}
       <Route path="/" element={<RedirectToDashboard />} />
