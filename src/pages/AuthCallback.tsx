@@ -1,104 +1,81 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { AlertCircle } from 'lucide-react';
 
 const AuthCallback: React.FC = () => {
-    const navigate = useNavigate();
-    const { loginWithToken } = useAuth();
-    const [status, setStatus] = useState('Connexion en cours...');
+  const navigate = useNavigate();
+  const { refreshUser } = useAuth();
+  const [error, setError] = useState('');
 
-    useEffect(() => {
-        const run = async () => {
-            try {
-                console.log('[Auth] URL:', window.location.href);
-                console.log('[Auth] hash:', window.location.hash.slice(0,80));
-                console.log('[Auth] search:', window.location.search.slice(0,80));
+  useEffect(() => {
+    const handleCallback = async () => {
+      try {
+        // Récupérer le code PKCE depuis l'URL
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-                const params = new URLSearchParams(window.location.search);
-                const hashParams = new URLSearchParams(window.location.hash.slice(1));
-                const code = params.get('code');
-                const accessTokenFromHash = hashParams.get('access_token');
-                const errorParam = params.get('error') || hashParams.get('error');
+        // Échanger le code PKCE contre une session Supabase
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-                if (errorParam) {
-                    navigate('/login?error=' + errorParam);
-                    return;
-                }
+        const tokenRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=pkce`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseAnonKey,
+          },
+          body: JSON.stringify({ auth_code: code }),
+        });
 
-                // Cas 1 : implicit flow — token dans le hash
-                if (accessTokenFromHash) {
-                    console.log('[Auth] implicit token found');
-                    await finish(accessTokenFromHash);
-                    return;
-                }
+        const tokenData = await tokenRes.json();
+        if (!tokenRes.ok || !tokenData.access_token) {
+          throw new Error(tokenData.error_description || 'Échec de l\'échange PKCE');
+        }
 
-                // Cas 2 : PKCE — code dans query params
-                if (code) {
-                    console.log('[Auth] PKCE code found, exchanging...');
-                    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-                    console.log('[Auth] exchange result:', !!data?.session, error?.message);
-                    if (data?.session) {
-                        await finish(data.session.access_token);
-                        return;
-                    }
-                }
+        // Échanger le token Supabase contre un JWT TableNow
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
+        const response = await fetch(`${apiUrl}/api/auth/google/supabase`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access_token: tokenData.access_token }),
+        });
 
-                // Cas 3 : session déjà active
-                const { data: { session } } = await supabase.auth.getSession();
-                console.log('[Auth] existing session:', !!session);
-                if (session) {
-                    await finish(session.access_token);
-                    return;
-                }
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Authentification échouée');
 
-                // Cas 4 : attendre onAuthStateChange
-                console.log('[Auth] waiting for SIGNED_IN event...');
-                const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-                    console.log('[Auth] event:', event, !!session);
-                    if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-                        subscription.unsubscribe();
-                        await finish(session.access_token);
-                    }
-                });
+        localStorage.setItem('token', data.token);
+        await refreshUser();
+        navigate('/', { replace: true });
+      } catch (err: any) {
+        console.error('Auth callback error:', err);
+        setError(err.message || 'Authentification échouée');
+        setTimeout(() => navigate('/login', { replace: true }), 3000);
+      }
+    };
 
-                setTimeout(() => {
-                    subscription.unsubscribe();
-                    setStatus('Délai dépassé. Redirection...');
-                    setTimeout(() => navigate('/login'), 1000);
-                }, 10000);
+    handleCallback();
+  }, [navigate, refreshUser]);
 
-            } catch (e) {
-                console.error('[Auth] fatal:', e);
-                setStatus('Erreur. Redirection...');
-                setTimeout(() => navigate('/login'), 2000);
-            }
-        };
-
-        const finish = async (accessToken: string) => {
-            setStatus('Finalisation...');
-            console.log('[Auth] finish, token:', accessToken.slice(0, 20));
-            const res = await fetch('https://api.tablenow.io/api/auth/google/supabase', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ access_token: accessToken }),
-            });
-            console.log('[Auth] backend:', res.status);
-            const json = await res.json();
-            console.log('[Auth] backend json:', JSON.stringify(json).slice(0,80));
-            if (!json.token) throw new Error('No token: ' + JSON.stringify(json));
-            await loginWithToken(json.token);
-        };
-
-        run();
-    }, []);
-
-    return (
-        <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4">
-            <div className="w-8 h-8 border-2 border-[#b8f000] border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-[#555]">{status}</p>
-        </div>
-    );
+  return (
+    <div className="min-h-screen bg-[#080912] flex items-center justify-center px-4">
+      <div className="max-w-md w-full text-center">
+        {error ? (
+          <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-2xl flex flex-col items-center space-y-3">
+            <AlertCircle className="text-red-400" size={36} />
+            <p className="text-red-400 font-medium text-sm">{error}</p>
+            <p className="text-xs text-[#555]">Redirection vers la page de connexion...</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-8 h-8 border-2 border-white/10 border-t-white rounded-full animate-spin" />
+            <p className="text-white font-medium text-sm">Finalisation de la connexion...</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default AuthCallback;

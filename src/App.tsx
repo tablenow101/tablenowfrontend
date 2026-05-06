@@ -1,16 +1,15 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { LangProvider } from './context/LangContext';
-import ChatWidget from './components/ChatWidget';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
+import Onboarding from './pages/Onboarding';
+import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import CallLogs from './pages/CallLogs';
 import Settings from './pages/Settings';
-import AuthCallback from './pages/AuthCallback';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
 import { isDomainMarketingSite } from './lib/domain';
@@ -30,6 +29,7 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   return user ? <>{children}</> : <Navigate to="/login" />;
 };
 
+/** Redirects authenticated user to onboarding or their restaurant dashboard */
 const RedirectToDashboard: React.FC = () => {
   const { user, loading } = useAuth();
 
@@ -42,6 +42,11 @@ const RedirectToDashboard: React.FC = () => {
   }
 
   if (!user) return <Navigate to="/login" />;
+
+  // Check if onboarding is incomplete
+  if (!user.setup_complete && !user.opening_hours) {
+    return <Navigate to="/onboarding" replace />;
+  }
 
   const slug = user.slug || user.id;
   return <Navigate to={`/r/${slug}/dashboard`} replace />;
@@ -57,7 +62,6 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -70,14 +74,18 @@ const AppRoutes = () => {
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
 
-      {/* Redirect legacy routes */}
+      <Route path="/onboarding" element={
+        <PrivateRoute>
+          <Onboarding />
+        </PrivateRoute>
+      } />
+
       <Route path="/" element={<RedirectToDashboard />} />
       <Route path="/dashboard" element={<RedirectToDashboard />} />
       <Route path="/bookings" element={<RedirectToDashboard />} />
       <Route path="/calls" element={<RedirectToDashboard />} />
       <Route path="/settings" element={<RedirectToDashboard />} />
 
-      {/* Restaurant-scoped routes */}
       <Route path="/r/:restaurantSlug" element={
         <PrivateRoute>
           <Layout />
@@ -96,12 +104,9 @@ const AppRoutes = () => {
 function App() {
   return (
     <BrowserRouter>
-      <LangProvider>
-        <AuthProvider>
-          <AppRoutes />
-          <ChatWidget />
-        </AuthProvider>
-      </LangProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </BrowserRouter>
   );
 }
