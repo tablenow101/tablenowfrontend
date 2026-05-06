@@ -12,12 +12,13 @@ import CallLogs from './pages/CallLogs';
 import Settings from './pages/Settings';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
-import { isDomainMarketingSite } from './lib/domain';
-import './index.css';
+
+function isDomainMarketingSite() {
+  return window.location.hostname === 'tablenow.io' || window.location.hostname === 'www.tablenow.io';
+}
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -25,11 +26,9 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       </div>
     );
   }
-
   return user ? <>{children}</> : <Navigate to="/login" />;
 };
 
-/** Redirects authenticated user to onboarding or their restaurant dashboard */
 const RedirectToDashboard: React.FC = () => {
   const { user, loading } = useAuth();
 
@@ -43,8 +42,12 @@ const RedirectToDashboard: React.FC = () => {
 
   if (!user) return <Navigate to="/login" />;
 
-  // Check if onboarding is incomplete
-  if (!user.setup_complete && !user.opening_hours) {
+  const hoursEmpty =
+    !user.opening_hours ||
+    typeof user.opening_hours !== 'object' ||
+    Object.keys(user.opening_hours).length === 0;
+
+  if (!user.setup_complete && hoursEmpty) {
     return <Navigate to="/onboarding" replace />;
   }
 

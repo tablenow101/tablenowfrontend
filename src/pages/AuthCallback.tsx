@@ -11,12 +11,10 @@ const AuthCallback: React.FC = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Récupérer le code PKCE depuis l'URL
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        // Échanger le code PKCE contre une session Supabase
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -34,7 +32,6 @@ const AuthCallback: React.FC = () => {
           throw new Error(tokenData.error_description || 'Échec de l\'échange PKCE');
         }
 
-        // Échanger le token Supabase contre un JWT TableNow
         const apiUrl = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
         const response = await fetch(`${apiUrl}/api/auth/google/supabase`, {
           method: 'POST',
@@ -47,7 +44,13 @@ const AuthCallback: React.FC = () => {
 
         localStorage.setItem('token', data.token);
         await refreshUser();
-        navigate('/', { replace: true });
+
+        // Première connexion → onboarding, sinon dashboard
+        if (data.is_new_user) {
+          navigate('/onboarding', { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
       } catch (err: any) {
         console.error('Auth callback error:', err);
         setError(err.message || 'Authentification échouée');
