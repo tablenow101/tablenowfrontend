@@ -11,38 +11,24 @@ const AuthCallback: React.FC = () => {
     useEffect(() => {
         const run = async () => {
             try {
-                // Vérifier d'abord les query params (PKCE)
-                const params = new URLSearchParams(window.location.search);
-                const errorParam = params.get('error');
-                if (errorParam) {
-                    setStatus('Erreur. Redirection...');
+                // Supabase PKCE : exchangeCodeForSession avec l'URL complète
+                // Le SDK lit le ?code= et le code_verifier depuis localStorage
+                const { data, error } = await supabase.auth.exchangeCodeForSession(
+                    window.location.href
+                );
+
+                if (error || !data.session) {
+                    console.error('exchangeCodeForSession error:', error);
+                    setStatus('Échec. Redirection...');
                     setTimeout(() => navigate('/login'), 2000);
                     return;
                 }
 
-                // Implicit flow : token dans le hash
-                // PKCE : code dans les query params
-                // Dans les deux cas, getSession() fonctionne après que Supabase ait parsé l'URL
-                let attempts = 0;
-                const tryGetSession = async (): Promise<void> => {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session) {
-                        await exchangeWithBackend(session.access_token);
-                        return;
-                    }
-                    if (attempts < 10) {
-                        attempts++;
-                        await new Promise(r => setTimeout(r, 300));
-                        return tryGetSession();
-                    }
-                    setStatus('Session introuvable. Redirection...');
-                    setTimeout(() => navigate('/login'), 2000);
-                };
+                await exchangeWithBackend(data.session.access_token);
 
-                await tryGetSession();
-
-            } catch {
-                setStatus('Erreur inattendue. Redirection...');
+            } catch (e) {
+                console.error('AuthCallback error:', e);
+                setStatus('Erreur. Redirection...');
                 setTimeout(() => navigate('/login'), 2000);
             }
         };
@@ -54,9 +40,9 @@ const AuthCallback: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ access_token: accessToken }),
             });
-            if (!res.ok) throw new Error('Backend error');
+            if (!res.ok) throw new Error('Backend error ' + res.status);
             const json = await res.json();
-            if (!json.token) throw new Error('No token');
+            if (!json.token) throw new Error('No token in response');
             await loginWithToken(json.token);
         };
 
