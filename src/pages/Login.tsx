@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
 import { AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import api from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 const T = {
   fr: {
@@ -268,7 +269,6 @@ const Login: React.FC = () => {
 
               <button
                 onClick={async () => {
-                  const { supabase } = await import('../lib/supabase');
                   await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: { redirectTo: 'https://app.tablenow.io/auth/callback' }
