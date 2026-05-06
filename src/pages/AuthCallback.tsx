@@ -16,17 +16,21 @@ const AuthCallback: React.FC = () => {
             done = true;
             setStatus('Finalisation...');
             try {
+                console.log('[Auth] token:', accessToken.slice(0,20));
                 const res = await fetch('https://api.tablenow.io/api/auth/google/supabase', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ access_token: accessToken }),
                 });
+                console.log('[Auth] backend status:', res.status);
                 const json = await res.json();
+                console.log('[Auth] backend json:', JSON.stringify(json).slice(0,100));
                 if (json.token) await loginWithToken(json.token);
-                else throw new Error('no token');
+                else throw new Error('no token: ' + JSON.stringify(json));
             } catch (e) {
-                console.error(e);
-                navigate('/login');
+                console.error('[Auth] error:', e);
+                setStatus('Erreur. Redirection...');
+                setTimeout(() => navigate('/login'), 3000);
             }
         };
 
