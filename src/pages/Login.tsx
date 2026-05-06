@@ -269,9 +269,14 @@ const Login: React.FC = () => {
 
               <button
                 onClick={async () => {
+                  // Supabase PKCE : le code_verifier est stocké automatiquement
+                  // On s'assure que le client est bien initialisé avant la redirection
                   await supabase.auth.signInWithOAuth({
                     provider: 'google',
-                    options: { redirectTo: 'https://app.tablenow.io/auth/callback' }
+                    options: {
+                      redirectTo: 'https://app.tablenow.io/auth/callback',
+                      skipBrowserRedirect: false,
+                    }
                   });
                 }}
                 className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
