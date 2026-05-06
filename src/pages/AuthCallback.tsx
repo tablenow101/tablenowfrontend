@@ -11,39 +11,37 @@ const AuthCallback: React.FC = () => {
     useEffect(() => {
         const run = async () => {
             try {
-                // PKCE : Supabase échange le code automatiquement via exchangeCodeForSession
+                // Vérifier d'abord les query params (PKCE)
                 const params = new URLSearchParams(window.location.search);
-                const code = params.get('code');
                 const errorParam = params.get('error');
-
                 if (errorParam) {
-                    setStatus('Erreur Google. Redirection...');
-                    setTimeout(() => navigate('/login?error=' + errorParam), 2000);
+                    setStatus('Erreur. Redirection...');
+                    setTimeout(() => navigate('/login'), 2000);
                     return;
                 }
 
-                if (code) {
-                    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-                    if (error || !data.session) {
-                        setStatus('Échec de connexion. Redirection...');
-                        setTimeout(() => navigate('/login'), 2000);
+                // Implicit flow : token dans le hash
+                // PKCE : code dans les query params
+                // Dans les deux cas, getSession() fonctionne après que Supabase ait parsé l'URL
+                let attempts = 0;
+                const tryGetSession = async (): Promise<void> => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session) {
+                        await exchangeWithBackend(session.access_token);
                         return;
                     }
-                    await exchangeWithBackend(data.session.access_token);
-                    return;
-                }
+                    if (attempts < 10) {
+                        attempts++;
+                        await new Promise(r => setTimeout(r, 300));
+                        return tryGetSession();
+                    }
+                    setStatus('Session introuvable. Redirection...');
+                    setTimeout(() => navigate('/login'), 2000);
+                };
 
-                // Pas de code — essayer getSession (fallback implicit flow)
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    await exchangeWithBackend(session.access_token);
-                    return;
-                }
+                await tryGetSession();
 
-                setStatus('Aucune session trouvée. Redirection...');
-                setTimeout(() => navigate('/login'), 2000);
-
-            } catch (e) {
+            } catch {
                 setStatus('Erreur inattendue. Redirection...');
                 setTimeout(() => navigate('/login'), 2000);
             }
