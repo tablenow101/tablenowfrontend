@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authAPI, settingsAPI } from '../lib/api';
-import { isSupportedLanguage, SupportedLanguage } from '../i18n';
+import { isSupportedLanguage, SupportedLanguage } from '../i18n/index';
 
 interface User {
     id: string;
