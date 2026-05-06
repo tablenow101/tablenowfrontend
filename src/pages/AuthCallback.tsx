@@ -9,44 +9,48 @@ const AuthCallback: React.FC = () => {
     const [status, setStatus] = useState('Connexion en cours...');
 
     useEffect(() => {
-        const run = async () => {
-            try {
-                // Supabase PKCE : exchangeCodeForSession avec l'URL complète
-                // Le SDK lit le ?code= et le code_verifier depuis localStorage
-                const { data, error } = await supabase.auth.exchangeCodeForSession(
-                    window.location.href
-                );
-
-                if (error || !data.session) {
-                    console.error('exchangeCodeForSession error:', error);
-                    setStatus('Échec. Redirection...');
-                    setTimeout(() => navigate('/login'), 2000);
-                    return;
+        // Supabase detectSessionInUrl gère automatiquement l'échange du code PKCE
+        // On écoute onAuthStateChange qui se déclenche quand la session est prête
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+                if (event === 'SIGNED_IN' && session) {
+                    subscription.unsubscribe();
+                    try {
+                        setStatus('Finalisation...');
+                        const res = await fetch('https://api.tablenow.io/api/auth/google/supabase', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ access_token: session.access_token }),
+                        });
+                        const json = await res.json();
+                        if (json.token) {
+                            await loginWithToken(json.token);
+                        } else {
+                            throw new Error('No token');
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        setStatus('Erreur backend. Redirection...');
+                        setTimeout(() => navigate('/login'), 2000);
+                    }
+                } else if (event === 'SIGNED_OUT') {
+                    subscription.unsubscribe();
+                    navigate('/login');
                 }
-
-                await exchangeWithBackend(data.session.access_token);
-
-            } catch (e) {
-                console.error('AuthCallback error:', e);
-                setStatus('Erreur. Redirection...');
-                setTimeout(() => navigate('/login'), 2000);
             }
-        };
+        );
 
-        const exchangeWithBackend = async (accessToken: string) => {
-            setStatus('Finalisation...');
-            const res = await fetch('https://api.tablenow.io/api/auth/google/supabase', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ access_token: accessToken }),
-            });
-            if (!res.ok) throw new Error('Backend error ' + res.status);
-            const json = await res.json();
-            if (!json.token) throw new Error('No token in response');
-            await loginWithToken(json.token);
-        };
+        // Timeout 15s
+        const timeout = setTimeout(() => {
+            subscription.unsubscribe();
+            setStatus('Délai dépassé. Redirection...');
+            setTimeout(() => navigate('/login'), 1000);
+        }, 15000);
 
-        run();
+        return () => {
+            subscription.unsubscribe();
+            clearTimeout(timeout);
+        };
     }, []);
 
     return (
