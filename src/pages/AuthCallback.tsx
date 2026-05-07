@@ -15,11 +15,30 @@ const AuthCallback: React.FC = () => {
       try {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
+
+        // Debug: log the full callback URL and verify code presence
+        console.log('🔵 Auth callback received:', {
+          url: window.location.href,
+          code: code?.slice(0, 20) + '...',
+          codeVerifierInStorage: !!window.localStorage.getItem('sb-code-verifier') || !!window.localStorage.getItem('sb-pkce-verifier'),
+          allStorageKeys: Object.keys(window.localStorage),
+        });
+
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
         // SDK reads code_verifier from localStorage automatically and sends it with the code
+        console.log('🔵 Exchanging code for session...');
         const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+
+        console.log('🔵 Exchange response:', {
+          error: sessionError?.message,
+          errorStatus: (sessionError as any)?.status,
+          hasAccessToken: !!sessionData?.session?.access_token,
+          accessTokenSlice: sessionData?.session?.access_token?.slice(0, 20) + '...',
+        });
+
         if (sessionError || !sessionData.session?.access_token) {
+          console.error('❌ PKCE exchange failed:', sessionError);
           throw new Error(sessionError?.message || 'Échec de l\'échange PKCE');
         }
 
