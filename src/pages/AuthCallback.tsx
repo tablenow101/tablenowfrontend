@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AlertCircle } from 'lucide-react';
 import { config } from '../config/env';
+import { supabase } from '../lib/supabase';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -16,28 +17,16 @@ const AuthCallback: React.FC = () => {
         const code = params.get('code');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        if (!config.supabaseUrl || !config.supabaseAnonKey) {
-          throw new Error('Supabase configuration missing');
-        }
-
-        const tokenRes = await fetch(`${config.supabaseUrl}/auth/v1/token?grant_type=pkce`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': config.supabaseAnonKey,
-          },
-          body: JSON.stringify({ auth_code: code }),
-        });
-
-        const tokenData = await tokenRes.json();
-        if (!tokenRes.ok || !tokenData.access_token) {
-          throw new Error(tokenData.error_description || 'Échec de l\'échange PKCE');
+        // SDK reads code_verifier from localStorage automatically and sends it with the code
+        const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+        if (sessionError || !sessionData.session?.access_token) {
+          throw new Error(sessionError?.message || 'Échec de l\'échange PKCE');
         }
 
         const response = await fetch(`${config.apiUrl}/api/auth/google/supabase`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ access_token: tokenData.access_token }),
+          body: JSON.stringify({ access_token: sessionData.session.access_token }),
         });
 
         const data = await response.json();
