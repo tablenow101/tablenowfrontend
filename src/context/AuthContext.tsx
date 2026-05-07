@@ -1,13 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { authAPI, settingsAPI } from '../lib/api';
-import { isSupportedLanguage, SupportedLanguage } from '../i18n/index';
+import { authAPI } from '../lib/api';
 
 interface User {
     id: string;
     email: string;
     name: string;
-    language?: 'fr' | 'en';
+    slug?: string;
     [key: string]: any;
 }
 
@@ -19,49 +17,31 @@ interface AuthContextType {
     register: (data: any) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
-    setLanguage: (lang: SupportedLanguage) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || 'https://api.tablenow.io';
 
-const getToken = () =>
-    localStorage.getItem('token') || sessionStorage.getItem('token');
+const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
-    const { i18n } = useTranslation();
 
-    useEffect(() => {
-        checkAuth();
-    }, []);
-
-    const syncLanguageFromUser = (u: User | null) => {
-        if (!u) return;
-        if (isSupportedLanguage(u.language) && u.language !== i18n.resolvedLanguage) {
-            i18n.changeLanguage(u.language);
-        }
-    };
+    useEffect(() => { checkAuth(); }, []);
 
     const checkAuth = async () => {
         const token = getToken();
-        if (!token) {
-            setLoading(false);
-            return;
-        }
-
+        if (!token) { setLoading(false); return; }
         try {
             const res = await fetch(`${API_BASE}/api/auth/me`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
             if (!res.ok) throw new Error('Unauthorized');
             const data = await res.json();
-            const u = data.restaurant;
-            setUser(u);
-            syncLanguageFromUser(u);
-        } catch (error) {
+            setUser(data.restaurant);
+        } catch {
             localStorage.removeItem('token');
             sessionStorage.removeItem('token');
         } finally {
@@ -72,8 +52,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = async (email: string, password: string, rememberMe = false) => {
         const response = await authAPI.login({ email, password });
         const token = response.data.token;
-
-        // Store token first so subsequent requests include it
         if (rememberMe) {
             localStorage.setItem('token', token);
             sessionStorage.removeItem('token');
@@ -81,10 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             sessionStorage.setItem('token', token);
             localStorage.removeItem('token');
         }
-
-        const u = response.data.restaurant;
-        setUser(u);
-        syncLanguageFromUser(u);
+        setUser(response.data.restaurant);
     };
 
     const loginWithToken = async (token: string) => {
@@ -92,9 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const res = await authAPI.getMe();
         const u = res.data.restaurant;
         setUser(u);
-        syncLanguageFromUser(u);
-        const slug = u.slug || u.id;
-        window.location.href = `/r/${slug}/dashboard`;
+        window.location.href = `/r/${u.slug || u.id}/dashboard`;
     };
 
     const register = async (data: any) => {
@@ -117,26 +90,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
             if (!res.ok) return;
             const data = await res.json();
-            const u = data.restaurant;
-            setUser(u);
-            syncLanguageFromUser(u);
+            setUser(data.restaurant);
         } catch { /* silent */ }
     };
 
-    const setLanguage = async (lang: SupportedLanguage) => {
-        await i18n.changeLanguage(lang);
-        if (user) {
-            try {
-                await settingsAPI.update({ language: lang });
-                setUser({ ...user, language: lang });
-            } catch (err) {
-                console.warn('Failed to sync language with backend:', err);
-            }
-        }
-    };
-
     return (
-        <AuthContext.Provider value={{ user, loading, login, loginWithToken, register, logout, refreshUser, setLanguage }}>
+        <AuthContext.Provider value={{ user, loading, login, loginWithToken, register, logout, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );
@@ -144,8 +103,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within AuthProvider');
-    }
+    if (!context) throw new Error('useAuth must be used within AuthProvider');
     return context;
 };

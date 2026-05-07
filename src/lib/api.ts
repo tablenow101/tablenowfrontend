@@ -4,21 +4,15 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
 
 const api = axios.create({
     baseURL: `${API_URL}/api`,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
 });
 
-// Add auth token to requests - check both localStorage AND sessionStorage
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
 });
 
-// Handle auth errors - clean both storages
 api.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -40,28 +34,29 @@ export const authAPI = {
 };
 
 export const dashboardAPI = {
-    getStats: (params?: any) => api.get('/dashboard/stats', { params }),
-    getCalls: (params?: any) => api.get('/dashboard/calls', { params }),
+    getStats:    (params?: any) => api.get('/dashboard/stats', { params }),
+    getCalls:    (params?: any) => api.get('/dashboard/calls', { params }),
+    getInsights: (date: string) => api.get('/dashboard/insights', { params: { date } }),
 };
 
 export const bookingsAPI = {
-    getAll: (params?: any) => api.get('/bookings', { params }),
-    getOne: (id: string) => api.get(`/bookings/${id}`),
-    create: (data: any) => api.post('/bookings', data),
+    getAll: (params?: any)          => api.get('/bookings', { params }),
+    getOne: (id: string)            => api.get(`/bookings/${id}`),
+    create: (data: any)             => api.post('/bookings', data),
     update: (id: string, data: any) => api.put(`/bookings/${id}`, data),
-    cancel: (id: string) => api.delete(`/bookings/${id}`),
+    cancel: (id: string)            => api.delete(`/bookings/${id}`),
 };
 
 export const settingsAPI = {
-    get: () => api.get('/settings'),
-    update: (data: any) => api.put('/settings', data),
-    retryVapi: () => api.post('/settings/retry-vapi'),
+    get:       ()          => api.get('/settings'),
+    update:    (data: any) => api.put('/settings', data),
+    retryVapi: ()          => api.post('/settings/retry-vapi'),
 };
 
 export const calendarAPI = {
-    getAuthUrl: () => api.get('/calendar/auth-url'),
-    callback: (code: string) => api.post('/calendar/callback', { code }),
-    disconnect: () => api.post('/calendar/disconnect'),
+    getAuthUrl: ()             => api.get('/calendar/auth-url'),
+    callback:   (code: string) => api.post('/calendar/callback', { code }),
+    disconnect: ()             => api.post('/calendar/disconnect'),
 };
 
 export const emailAPI = {

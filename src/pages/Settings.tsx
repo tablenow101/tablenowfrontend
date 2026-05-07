@@ -4,7 +4,6 @@ import GeneralSettings       from './settings/GeneralSettings';
 import HoraireSettings       from './settings/HoraireSettings';
 import CalendarSettings      from './settings/CalendarSettings';
 import NotificationsSettings from './settings/NotificationsSettings';
-import IdentifiantsSettings  from './settings/IdentifiantsSettings';
 import ParrainageSettings    from './settings/ParrainageSettings';
 
 type Tab = 'general' | 'horaires' | 'integrations' | 'parrainage';
@@ -17,7 +16,7 @@ const Settings: React.FC = () => {
         { key: 'general',      label: t('subGeneral')      },
         { key: 'horaires',     label: t('subHours')        },
         { key: 'integrations', label: t('subIntegrations') },
-        { key: 'parrainage',   label: t('subParrainage') },
+        { key: 'parrainage',   label: t('subParrainage')   },
     ];
 
     return (
