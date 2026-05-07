@@ -81,6 +81,8 @@ const Onboarding: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [copied, setCopied]   = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
+    const [provStatus, setProvStatus] = useState<'pending' | 'provisioning' | 'active' | 'error' | null>(null);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Step 0 — Google Places prefill
     const [suggestions, setSuggestions]         = useState<any[]>([]);
@@ -114,10 +116,27 @@ const Onboarding: React.FC = () => {
                 if (s.confirmation_email) setConfirmationEmail(s.confirmation_email);
                 else if (s.email)         setConfirmationEmail(s.email);
                 if (s.name) { setPrefillDone(true); setPrefillQuery(s.name); }
+                setProvStatus(s.status || null);
             } catch {}
             setLoading(false);
         })();
     }, []);
+
+    // Poll provisioning status until active or error
+    useEffect(() => {
+        if (provStatus === 'active' || provStatus === 'error') return;
+        pollRef.current = setInterval(async () => {
+            try {
+                const res = await settingsAPI.get();
+                const status = res.data.settings?.status;
+                if (status && status !== provStatus) setProvStatus(status);
+                if (status === 'active' || status === 'error') {
+                    if (pollRef.current) clearInterval(pollRef.current);
+                }
+            } catch { /* silent */ }
+        }, 3000);
+        return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    }, [provStatus]);
 
     // ── Google Places autocomplete ──────────────────────────────────────────
     async function handlePrefillQueryChange(value: string) {
@@ -241,6 +260,31 @@ const Onboarding: React.FC = () => {
 
                 {/* Card */}
                 <div className="bg-[#0d0d1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+
+                    {(provStatus === 'pending' || provStatus === 'provisioning') && (
+                        <div className="flex items-center gap-2 px-6 py-3 bg-[#b8f000]/5 border-b border-[#b8f000]/20 text-[#b8f000] text-sm">
+                            <span className="w-3.5 h-3.5 border-2 border-[#b8f000]/30 border-t-[#b8f000] rounded-full animate-spin flex-shrink-0" />
+                            Configuration de votre assistant IA en cours…
+                        </div>
+                    )}
+
+                    {provStatus === 'error' && (
+                        <div className="flex items-center justify-between px-6 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-sm">
+                            <span>⚠ Erreur de configuration VAPI — cliquez pour réessayer</span>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    try {
+                                        await settingsAPI.retryVapi();
+                                        setProvStatus('provisioning');
+                                    } catch { /* stays on error */ }
+                                }}
+                                className="ml-4 px-3 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-xs font-semibold transition-colors flex-shrink-0"
+                            >
+                                Réessayer
+                            </button>
+                        </div>
+                    )}
 
                     {saveError && (
                         <div className="flex items-center gap-2 px-6 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-sm">
@@ -443,14 +487,14 @@ const Onboarding: React.FC = () => {
                             <div className="space-y-5">
                                 <h2 className="flex items-center gap-2 text-base font-semibold text-white mb-5">
                                     <Mail size={18} className="text-[#b8f000] flex-shrink-0" />
-                                    Email de confirmation
+                                    Notifications restaurant
                                 </h2>
                                 <div>
-                                    <FieldLabel>Email pour recevoir les réservations *</FieldLabel>
+                                    <FieldLabel>Email de notification (optionnel)</FieldLabel>
                                     <input type="email" className={inputCls} value={confirmationEmail}
                                         onChange={e => setConfirmationEmail(e.target.value)}
                                         placeholder="reservations@votre-restaurant.fr" />
-                                    <p className="text-xs text-[#555] mt-1.5">Les confirmations seront envoyées à cette adresse.</p>
+                                    <p className="text-xs text-[#555] mt-1.5">Vous recevrez un email à chaque nouvelle réservation (vocale ou manuelle). Le client reçoit toujours sa confirmation séparément.</p>
                                 </div>
                                 {user?.bcc_email && (
                                     <div className="rounded-xl bg-[#0a0a16] border border-white/8 p-4 space-y-2">
@@ -510,8 +554,8 @@ const Onboarding: React.FC = () => {
                                         />
                                     </RecapBlock>
 
-                                    <RecapBlock title="Notifications">
-                                        <RecapRow label="Email" value={confirmationEmail || '—'} />
+                                    <RecapBlock title="Notifications restaurant">
+                                        <RecapRow label="Email notif." value={confirmationEmail || '—'} />
                                         {user?.bcc_email && <RecapRow label="BCC" value={<span className="font-mono text-xs break-all">{user.bcc_email}</span>} />}
                                     </RecapBlock>
                                 </div>
