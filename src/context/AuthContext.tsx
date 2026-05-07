@@ -13,7 +13,7 @@ interface AuthContextType {
     user: User | null;
     loading: boolean;
     login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-    loginWithToken: (token: string) => Promise<void>;
+    loginWithToken: (token: string, restaurant: User) => void;
     register: (data: any) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
@@ -62,12 +62,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(response.data.restaurant);
     };
 
-    const loginWithToken = async (token: string) => {
+    // Synchronous — no API call. Caller is responsible for navigation.
+    const loginWithToken = (token: string, restaurant: User): void => {
         localStorage.setItem('token', token);
-        const res = await authAPI.getMe();
-        const u = res.data.restaurant;
-        setUser(u);
-        window.location.href = `/r/${u.slug || u.id}/dashboard`;
+        setUser(restaurant);
     };
 
     const register = async (data: any) => {

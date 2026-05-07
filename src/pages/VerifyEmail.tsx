@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { authAPI } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 
 const VerifyEmail: React.FC = () => {
@@ -8,6 +9,7 @@ const VerifyEmail: React.FC = () => {
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
+    const { loginWithToken } = useAuth();
 
     useEffect(() => {
         verifyEmail();
@@ -24,18 +26,23 @@ const VerifyEmail: React.FC = () => {
 
         try {
             const response = await authAPI.verifyEmail(token);
-            const { token: jwt, restaurant } = response.data;
+            const { token: authToken, restaurant } = response.data;
 
-            // Auto-login: store JWT so the user lands in onboarding authenticated
-            if (jwt) {
-                localStorage.setItem('token', jwt);
+            if (authToken && restaurant) {
+                loginWithToken(authToken, restaurant);
+            } else if (authToken) {
+                // Fallback: store token even if restaurant missing
+                localStorage.setItem('token', authToken);
             }
 
             setStatus('success');
             setMessage(response.data.message || 'Email vérifié avec succès !');
 
-            // Redirect to onboarding (not login) — user is now authenticated
-            setTimeout(() => navigate('/onboarding', { replace: true }), 1500);
+            const dest = restaurant?.slug || restaurant?.id
+                ? `/r/${restaurant.slug || restaurant.id}/dashboard`
+                : '/onboarding';
+
+            setTimeout(() => navigate(dest, { replace: true }), 1500);
         } catch (error: any) {
             setStatus('error');
             setMessage(error.response?.data?.error || 'La vérification a échoué');
@@ -83,7 +90,7 @@ const VerifyEmail: React.FC = () => {
 
                     <p className="text-sm" style={{ color: 'var(--text-secondary, #888)' }}>
                         {status === 'loading' && 'Un instant…'}
-                        {status === 'success' && 'Redirection vers la configuration de votre restaurant…'}
+                        {status === 'success' && 'Redirection vers votre tableau de bord…'}
                         {status === 'error' && message}
                     </p>
 
