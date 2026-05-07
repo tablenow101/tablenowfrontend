@@ -85,19 +85,18 @@ function InsightRow({ label, value, desc, highlight = false }: {
 }
 
 function CallRow({ call }: { call: CallLog }) {
+    const { t } = useLang();
     const dotColor = call.status === 'completed' ? '#b8f000'
         : call.status === 'missed' ? '#f59e0b' : '#ef4444';
     const name = call.guest_name || call.caller_number || 'Inconnu';
     const isMono = !call.guest_name;
     const dur = call.duration ? fmtDuration(call.duration) : null;
 
-    // Description ligne : "Réservation X couverts · Xmin" ou "Information · Xmin" ou "Non abouti · Xmin"
     let desc = '';
     if (call.status === 'completed' && call.reservation_booked) {
-        desc = t('callResaDesc') || 'Réservation';
-        // covers non disponible dans CallLog — on affiche juste "Réservation · Xmin"
+        desc = t('callResaDesc');
     } else if (call.status === 'completed') {
-        desc = t('callInfoDesc') || 'Information';
+        desc = t('callInfoDesc');
     } else if (call.status === 'missed') {
         desc = t('statusMissed');
     } else {
@@ -115,11 +114,12 @@ function CallRow({ call }: { call: CallLog }) {
 }
 
 function BookingRow({ booking }: { booking: Booking }) {
+    const { t } = useLang();
     return (
         <div className="flex items-center gap-3 py-3 border-b border-[#1a1a1a] last:border-0">
             <span className="text-sm font-bold w-12 flex-shrink-0" style={{ color: '#b8f000' }}>{fmtTime(booking)}</span>
             <span className="text-sm text-white flex-1 truncate">{booking.guest_name || 'Client'}</span>
-            <span className="text-xs text-[#888] flex-shrink-0">{booking.party_size || booking.covers || 0} {t('coversUnit') || 'couverts'}</span>
+            <span className="text-xs text-[#888] flex-shrink-0">{booking.party_size || booking.covers || 0} {t('coversUnit')}</span>
         </div>
     );
 }
@@ -128,7 +128,7 @@ function BookingRow({ booking }: { booking: Booking }) {
 
 const Dashboard: React.FC = () => {
     const { user } = useAuth();
-    const { lang, t } = useLang();
+    const { t } = useLang();
     const { restaurantSlug } = useParams();
     const slug = restaurantSlug || user?.slug || '';
 
