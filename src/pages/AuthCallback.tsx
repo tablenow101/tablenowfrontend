@@ -43,12 +43,16 @@ const AuthCallback: React.FC = () => {
         if (!response.ok) throw new Error(data.error || 'Authentification échouée');
 
         localStorage.setItem('token', data.token);
+        if (data.google_profile) {
+          sessionStorage.setItem('google_profile', JSON.stringify(data.google_profile));
+        }
         await refreshUser();
 
-        // Première connexion → onboarding, sinon dashboard
+        // Nouvelle inscription → onboarding avec auto-provisioning
         if (data.is_new_user) {
           navigate('/onboarding', { replace: true });
         } else {
+          // Utilisateur existant → dashboard direct
           navigate('/', { replace: true });
         }
       } catch (err: any) {
