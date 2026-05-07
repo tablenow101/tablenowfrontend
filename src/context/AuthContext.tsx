@@ -13,7 +13,6 @@ interface AuthContextType {
     user: User | null;
     loading: boolean;
     login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-    loginWithToken: (token: string) => Promise<void>;
     register: (data: any) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
@@ -62,14 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(response.data.restaurant);
     };
 
-    const loginWithToken = async (token: string) => {
-        localStorage.setItem('token', token);
-        const res = await authAPI.getMe();
-        const u = res.data.restaurant;
-        setUser(u);
-        window.location.href = `/r/${u.slug || u.id}/dashboard`;
-    };
-
     const register = async (data: any) => {
         await authAPI.register(data);
     };
@@ -95,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, loginWithToken, register, logout, refreshUser }}>
+        <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

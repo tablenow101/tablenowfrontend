@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AlertCircle } from 'lucide-react';
+import { config } from '../config/env';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -15,14 +16,15 @@ const AuthCallback: React.FC = () => {
         const code = params.get('code');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        if (!config.supabaseUrl || !config.supabaseAnonKey) {
+          throw new Error('Supabase configuration missing');
+        }
 
-        const tokenRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=pkce`, {
+        const tokenRes = await fetch(`${config.supabaseUrl}/auth/v1/token?grant_type=pkce`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': supabaseAnonKey,
+            'apikey': config.supabaseAnonKey,
           },
           body: JSON.stringify({ auth_code: code }),
         });
@@ -32,8 +34,7 @@ const AuthCallback: React.FC = () => {
           throw new Error(tokenData.error_description || 'Échec de l\'échange PKCE');
         }
 
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
-        const response = await fetch(`${apiUrl}/api/auth/google/supabase`, {
+        const response = await fetch(`${config.apiUrl}/api/auth/google/supabase`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ access_token: tokenData.access_token }),
@@ -42,18 +43,26 @@ const AuthCallback: React.FC = () => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Authentification échouée');
 
-        localStorage.setItem('token', data.token);
+        const rememberMe = sessionStorage.getItem('oauth_remember_me') === 'true';
+        if (rememberMe) {
+          localStorage.setItem('token', data.token);
+          sessionStorage.removeItem('token');
+        } else {
+          sessionStorage.setItem('token', data.token);
+          localStorage.removeItem('token');
+        }
+        sessionStorage.removeItem('oauth_remember_me');
+
         if (data.google_profile) {
           sessionStorage.setItem('google_profile', JSON.stringify(data.google_profile));
         }
+
         await refreshUser();
 
-        // Nouvelle inscription → onboarding avec auto-provisioning
         if (data.is_new_user) {
           navigate('/onboarding', { replace: true });
         } else {
-          // Utilisateur existant → dashboard direct
-          navigate('/', { replace: true });
+          navigate('/r/' + (data.restaurant?.slug || data.restaurant?.id) + '/dashboard', { replace: true });
         }
       } catch (err: any) {
         console.error('Auth callback error:', err);
