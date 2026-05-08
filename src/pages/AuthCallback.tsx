@@ -5,6 +5,9 @@ import { AlertCircle } from 'lucide-react';
 import { config } from '../config/env';
 import { supabase } from '../lib/supabase';
 
+// Track which codes have been processed to prevent React StrictMode double execution
+const processedCodes = new Set<string>();
+
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
@@ -15,33 +18,19 @@ const AuthCallback: React.FC = () => {
       try {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
-
-        // Debug: log the full callback URL and verify code presence
-        console.log('🔵 Auth callback received:', {
-          url: window.location.href,
-          code: code?.slice(0, 20) + '...',
-          codeVerifierInStorage: !!window.localStorage.getItem('sb-code-verifier') || !!window.localStorage.getItem('sb-pkce-verifier'),
-          allStorageKeys: Object.keys(window.localStorage),
-        });
-
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        // SDK reads code_verifier from localStorage automatically and sends it with the code
-        console.log('🔵 Exchanging code for session...');
+        // Prevent double execution (React 18 StrictMode mounts effects twice in dev)
+        if (processedCodes.has(code)) return;
+        processedCodes.add(code);
+
+        // SDK reads code_verifier from localStorage and exchanges code for session
         const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
-
-        console.log('🔵 Exchange response:', {
-          error: sessionError?.message,
-          errorStatus: (sessionError as any)?.status,
-          hasAccessToken: !!sessionData?.session?.access_token,
-          accessTokenSlice: sessionData?.session?.access_token?.slice(0, 20) + '...',
-        });
-
         if (sessionError || !sessionData.session?.access_token) {
-          console.error('❌ PKCE exchange failed:', sessionError);
           throw new Error(sessionError?.message || 'Échec de l\'échange PKCE');
         }
 
+        // Exchange Supabase access_token for our custom JWT
         const response = await fetch(`${config.apiUrl}/api/auth/google/supabase`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -51,6 +40,7 @@ const AuthCallback: React.FC = () => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Authentification échouée');
 
+        // Persist token according to Remember Me preference
         const rememberMe = sessionStorage.getItem('oauth_remember_me') === 'true';
         if (rememberMe) {
           localStorage.setItem('token', data.token);
