@@ -9,10 +9,10 @@ const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
   const [error, setError] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
   const handled = useRef(false);
 
   useEffect(() => {
-    // Guard against React StrictMode double execution
     if (handled.current) return;
     handled.current = true;
 
@@ -49,30 +49,48 @@ const AuthCallback: React.FC = () => {
       }
     };
 
-    // detectSessionInUrl: true (default) — SDK auto-exchanges the ?code= for a session.
-    // We listen for SIGNED_IN and then call our backend.
+    // Debug info
+    const allKeys = Object.keys(localStorage);
+    const codeVerifierKeys = allKeys.filter(k => k.includes('verifier') || k.includes('pkce') || k.includes('sb-'));
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+
+    const debugMsg = `code: ${!!code}, state: ${!!state}, localStorage keys: ${allKeys.length}, verifier keys: ${JSON.stringify(codeVerifierKeys)}`;
+    setDebugInfo(debugMsg);
+    console.log('🔵 AuthCallback debug:', { code, state, allKeys, codeVerifierKeys, supabaseUrl: config.supabaseUrl });
+
+    let mounted = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔵 Auth state:', { event, hasSession: !!session, hasToken: !!session?.access_token });
+
+      if (!mounted) return;
+
       if (event === 'SIGNED_IN' && session?.access_token) {
         try {
           await processSession(session.access_token);
         } catch (err: any) {
-          setError(err.message || 'Authentification échouée');
+          console.error('❌ Error:', err?.message || err);
+          setError(err?.message || 'Authentification échouée');
           setTimeout(() => navigate('/login', { replace: true }), 3000);
+        }
+      } else if (event === 'INITIAL_SESSION') {
+        if (session?.access_token) {
+          try {
+            await processSession(session.access_token);
+          } catch (err: any) {
+            console.error('❌ Error:', err?.message || err);
+            setError(err?.message || 'Authentification échouée');
+            setTimeout(() => navigate('/login', { replace: true }), 3000);
+          }
         }
       }
     });
 
-    // Fallback: if session is already established (page reload case)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.access_token) {
-        processSession(session.access_token).catch((err: any) => {
-          setError(err.message || 'Authentification échouée');
-          setTimeout(() => navigate('/login', { replace: true }), 3000);
-        });
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate, refreshUser]);
 
   return (
@@ -82,12 +100,14 @@ const AuthCallback: React.FC = () => {
           <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-2xl flex flex-col items-center space-y-3">
             <AlertCircle className="text-red-400" size={36} />
             <p className="text-red-400 font-medium text-sm">{error}</p>
+            {debugInfo && <p className="text-xs text-[#777]">{debugInfo}</p>}
             <p className="text-xs text-[#555]">Redirection vers la page de connexion...</p>
           </div>
         ) : (
           <div className="flex flex-col items-center space-y-4">
             <div className="w-8 h-8 border-2 border-white/10 border-t-white rounded-full animate-spin" />
             <p className="text-white font-medium text-sm">Finalisation de la connexion...</p>
+            {debugInfo && <p className="text-xs text-[#777]">{debugInfo}</p>}
           </div>
         )}
       </div>
