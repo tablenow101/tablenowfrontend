@@ -1,75 +1,78 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AlertCircle } from 'lucide-react';
 import { config } from '../config/env';
 import { supabase } from '../lib/supabase';
 
-// Track which codes have been processed to prevent React StrictMode double execution
-const processedCodes = new Set<string>();
-
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
   const [error, setError] = useState('');
+  const handled = useRef(false);
 
   useEffect(() => {
-    const handleCallback = async () => {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        if (!code) throw new Error('Aucun code OAuth dans l\'URL');
+    // Guard against React StrictMode double execution
+    if (handled.current) return;
+    handled.current = true;
 
-        // Prevent double execution (React 18 StrictMode mounts effects twice in dev)
-        if (processedCodes.has(code)) return;
-        processedCodes.add(code);
+    const processSession = async (accessToken: string) => {
+      const response = await fetch(`${config.apiUrl}/api/auth/google/supabase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: accessToken }),
+      });
 
-        // SDK reads code_verifier from localStorage and exchanges code for session
-        const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
-        if (sessionError || !sessionData.session?.access_token) {
-          throw new Error(sessionError?.message || 'Échec de l\'échange PKCE');
-        }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Authentification échouée');
 
-        // Exchange Supabase access_token for our custom JWT
-        const response = await fetch(`${config.apiUrl}/api/auth/google/supabase`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ access_token: sessionData.session.access_token }),
-        });
+      const rememberMe = sessionStorage.getItem('oauth_remember_me') === 'true';
+      if (rememberMe) {
+        localStorage.setItem('token', data.token);
+        sessionStorage.removeItem('token');
+      } else {
+        sessionStorage.setItem('token', data.token);
+        localStorage.removeItem('token');
+      }
+      sessionStorage.removeItem('oauth_remember_me');
 
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Authentification échouée');
+      if (data.google_profile) {
+        sessionStorage.setItem('google_profile', JSON.stringify(data.google_profile));
+      }
 
-        // Persist token according to Remember Me preference
-        const rememberMe = sessionStorage.getItem('oauth_remember_me') === 'true';
-        if (rememberMe) {
-          localStorage.setItem('token', data.token);
-          sessionStorage.removeItem('token');
-        } else {
-          sessionStorage.setItem('token', data.token);
-          localStorage.removeItem('token');
-        }
-        sessionStorage.removeItem('oauth_remember_me');
+      await refreshUser();
 
-        if (data.google_profile) {
-          sessionStorage.setItem('google_profile', JSON.stringify(data.google_profile));
-        }
-
-        await refreshUser();
-
-        if (data.is_new_user) {
-          navigate('/onboarding', { replace: true });
-        } else {
-          navigate('/r/' + (data.restaurant?.slug || data.restaurant?.id) + '/dashboard', { replace: true });
-        }
-      } catch (err: any) {
-        console.error('Auth callback error:', err);
-        setError(err.message || 'Authentification échouée');
-        setTimeout(() => navigate('/login', { replace: true }), 3000);
+      if (data.is_new_user) {
+        navigate('/onboarding', { replace: true });
+      } else {
+        navigate('/r/' + (data.restaurant?.slug || data.restaurant?.id) + '/dashboard', { replace: true });
       }
     };
 
-    handleCallback();
+    // detectSessionInUrl: true (default) — SDK auto-exchanges the ?code= for a session.
+    // We listen for SIGNED_IN and then call our backend.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.access_token) {
+        try {
+          await processSession(session.access_token);
+        } catch (err: any) {
+          setError(err.message || 'Authentification échouée');
+          setTimeout(() => navigate('/login', { replace: true }), 3000);
+        }
+      }
+    });
+
+    // Fallback: if session is already established (page reload case)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        processSession(session.access_token).catch((err: any) => {
+          setError(err.message || 'Authentification échouée');
+          setTimeout(() => navigate('/login', { replace: true }), 3000);
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate, refreshUser]);
 
   return (
