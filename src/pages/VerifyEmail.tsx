@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { authAPI } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
+import { getPostAuthRedirect } from '../lib/postAuthRedirect';
+import { AuthUser } from '../context/authContext';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 
 const VerifyEmail: React.FC = () => {
@@ -27,18 +29,13 @@ const VerifyEmail: React.FC = () => {
             if (authToken && restaurant) {
                 loginWithToken(authToken, restaurant);
             } else if (authToken) {
-                // Fallback: store token even if restaurant missing
                 localStorage.setItem('token', authToken);
             }
 
             setStatus('success');
             setMessage(response.data.message || 'Email vérifié avec succès !');
 
-            const dest = restaurant?.slug || restaurant?.id
-                ? `/r/${restaurant.slug || restaurant.id}/dashboard`
-                : '/onboarding';
-
-            setTimeout(() => navigate(dest, { replace: true }), 1500);
+            setTimeout(() => navigate(getPostAuthRedirect(restaurant as unknown as AuthUser | null), { replace: true }), 1500);
         } catch (error: unknown) {
             setStatus('error');
             setMessage(error.response?.data?.error || 'La vérification a échoué');
