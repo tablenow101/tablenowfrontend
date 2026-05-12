@@ -1,7 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase credentials. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+}
+
 export const supabase = createClient(
-    'https://kvxujqgaaongkoczjyhc.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2eHVqcWdhYW9uZ2tvY3pqeWhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxOTU1ODQsImV4cCI6MjA4MDc3MTU4NH0.o5CLEM00nC_cZNEjYgZPvGnnxqS1Wu9PFrpw64fIdrs',
+    supabaseUrl,
+    supabaseAnonKey,
     { auth: { flowType: 'pkce', detectSessionInUrl: false, persistSession: true, storage: window.localStorage } }
 );
