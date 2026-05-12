@@ -45,7 +45,7 @@ const AuthCallback: React.FC = () => {
         localStorage.setItem('token', data.token);
         await refreshUser();
 
-        navigate(getPostAuthRedirect(data.user || null), { replace: true });
+        navigate(getPostAuthRedirect(data.restaurant || null), { replace: true });
       } catch (err: unknown) {
         console.error('Auth callback error:', err);
         setError((err instanceof Error ? err.message : String(err)) || 'Authentification échouée');

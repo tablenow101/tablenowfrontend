@@ -1,11 +1,11 @@
 import { AuthUser } from '../context/authContext';
 
-export function getPostAuthRedirect(user: AuthUser | null): string {
-  if (!user) return '/login';
+export function getPostAuthRedirect(restaurant: AuthUser | null): string {
+  if (!restaurant) return '/login';
 
-  const slug = user.slug || user.id;
-  if (slug && slug !== user.id) {
-    return `/r/${slug}/dashboard`;
+  const restaurantSlug = restaurant.slug;
+  if (restaurantSlug) {
+    return `/r/${restaurantSlug}/dashboard`;
   }
 
   return '/setup/restaurant';
