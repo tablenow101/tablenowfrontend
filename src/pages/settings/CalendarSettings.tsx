@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { calendarAPI } from '../../lib/api';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { Calendar, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
-import { useLang } from '../../context/LangContext';
+import { useLang } from '../../hooks/useLang';
 
 const CalendarSettings: React.FC = () => {
   const { user } = useAuth();
   const { t } = useLang();
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
-  const isConnected = !!(user as any)?.google_calendar_connected;
+  const isConnected = !!(user as unknown as Record<string, unknown>)?.google_calendar_connected;
 
   const connect = async () => {
     setConnecting(true);
@@ -25,8 +25,6 @@ const CalendarSettings: React.FC = () => {
     try { await calendarAPI.disconnect(); window.location.reload(); }
     catch { setDisconnecting(false); }
   };
-
-  const inp = "w-full h-11 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white focus:outline-none focus:border-[#444] transition-colors";
 
   return (
     <div className="max-w-2xl space-y-4">

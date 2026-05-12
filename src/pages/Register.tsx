@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useLang } from '../context/LangContext';
+import { useLang } from '../hooks/useLang';
 import { AlertCircle, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
 
 interface Suggestion {
@@ -26,7 +26,7 @@ const planPrices: Record<string, string> = {
 
 
 const Register: React.FC = () => {
-  const { lang, setLang } = useLang();
+  const { lang } = useLang();
   const navigate = useNavigate();
 
   const sessionToken = useRef(crypto.randomUUID());
@@ -39,7 +39,7 @@ const Register: React.FC = () => {
   const [googlePlaceId, setGooglePlaceId] = useState('');
   const placeFieldRef = useRef<HTMLDivElement>(null);
   const [googleMapsUrl, setGoogleMapsUrl] = useState('');
-  const [openingHoursGoogle, setOpeningHoursGoogle] = useState<any>(null);
+  const [openingHoursGoogle, setOpeningHoursGoogle] = useState<Record<string, unknown> | null>(null);
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
 
@@ -104,7 +104,7 @@ const Register: React.FC = () => {
       setLng(data.lng ?? null);
       setGoogleMapsUrl(data.mapsUrl || '');
       setOpeningHoursGoogle(data.openingHours || null);
-    } catch (e) {
+    } catch {
       // Network failure — never block the user.
       setName(description.split(',')[0]?.trim() || '');
     }
@@ -366,6 +366,7 @@ const Register: React.FC = () => {
               <label className={labelCls}>E-MAIL *</label>
               <input
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder={lang === 'fr' ? 'vous@restaurant.fr' : 'you@restaurant.com'}
@@ -383,6 +384,7 @@ const Register: React.FC = () => {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
@@ -405,6 +407,7 @@ const Register: React.FC = () => {
                 <div className="relative">
                   <input
                     type={showConfirm ? 'text' : 'password'}
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"

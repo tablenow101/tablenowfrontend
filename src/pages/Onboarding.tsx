@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { settingsAPI } from '../lib/api';
 import {
     Store, Clock, Mail, ClipboardList,
@@ -83,7 +83,7 @@ const Onboarding: React.FC = () => {
     const [saveError, setSaveError] = useState<string | null>(null);
 
     // Step 0 — Google Places prefill
-    const [suggestions, setSuggestions]         = useState<any[]>([]);
+    const [suggestions, setSuggestions]         = useState<Record<string, unknown>[]>([]);
     const [showDropdown, setShowDropdown]       = useState(false);
     const [loadingSuggest, setLoadingSuggest]   = useState(false);
     const [prefillLoading, setPrefillLoading]   = useState(false);
@@ -114,7 +114,9 @@ const Onboarding: React.FC = () => {
                 if (s.confirmation_email) setConfirmationEmail(s.confirmation_email);
                 else if (s.email)         setConfirmationEmail(s.email);
                 if (s.name) { setPrefillDone(true); setPrefillQuery(s.name); }
-            } catch {}
+            } catch (error) {
+                void error;
+            }
             setLoading(false);
         })();
     }, []);
@@ -169,7 +171,7 @@ const Onboarding: React.FC = () => {
     }
 
     // ── Save & navigation ───────────────────────────────────────────────────
-    async function saveStep(data: Record<string, any>) {
+    async function saveStep(data: Record<string, unknown>) {
         setSaving(true);
         setSaveError(null);
         try {

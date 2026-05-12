@@ -26,30 +26,30 @@ api.interceptors.response.use(
 );
 
 export const authAPI = {
-    register:       (data: any)    => api.post('/auth/register', data),
-    login:          (data: any)    => api.post('/auth/login', data),
+    register:       (data: Record<string, unknown>)    => api.post('/auth/register', data),
+    login:          (data: Record<string, unknown>)    => api.post('/auth/login', data),
     verifyEmail:    (token: string)=> api.post('/auth/verify-email', { token }),
     getMe:          ()             => api.get('/auth/me'),
     googleCallback: (token: string)=> api.post('/auth/google/token', { access_token: token }),
 };
 
 export const dashboardAPI = {
-    getStats:    (params?: any) => api.get('/dashboard/stats', { params }),
-    getCalls:    (params?: any) => api.get('/dashboard/calls', { params }),
+    getStats:    (params?: Record<string, unknown>) => api.get('/dashboard/stats', { params }),
+    getCalls:    (params?: Record<string, unknown>) => api.get('/dashboard/calls', { params }),
     getInsights: (date: string) => api.get('/dashboard/insights', { params: { date } }),
 };
 
 export const bookingsAPI = {
-    getAll: (params?: any)          => api.get('/bookings', { params }),
+    getAll: (params?: Record<string, unknown>)          => api.get('/bookings', { params }),
     getOne: (id: string)            => api.get(`/bookings/${id}`),
-    create: (data: any)             => api.post('/bookings', data),
-    update: (id: string, data: any) => api.put(`/bookings/${id}`, data),
+    create: (data: Record<string, unknown>)             => api.post('/bookings', data),
+    update: (id: string, data: Record<string, unknown>) => api.put(`/bookings/${id}`, data),
     cancel: (id: string)            => api.delete(`/bookings/${id}`),
 };
 
 export const settingsAPI = {
     get:       ()          => api.get('/settings'),
-    update:    (data: any) => api.put('/settings', data),
+    update:    (data: Record<string, unknown>) => api.put('/settings', data),
     retryVapi: ()          => api.post('/settings/retry-vapi'),
 };
 
@@ -60,7 +60,7 @@ export const calendarAPI = {
 };
 
 export const emailAPI = {
-    getBCCEmails: (params?: any) => api.get('/email/bcc', { params }),
+    getBCCEmails: (params?: Record<string, unknown>) => api.get('/email/bcc', { params }),
 };
 
 export const referralAPI = {

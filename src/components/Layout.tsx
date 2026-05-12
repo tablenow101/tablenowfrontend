@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useLang } from '../context/LangContext';
+import { useAuth } from '../hooks/useAuth';
+import { useLang } from '../hooks/useLang';
 import { LayoutDashboard, Calendar, Phone, Settings, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
 
 const Layout: React.FC = () => {
@@ -23,14 +23,6 @@ const Layout: React.FC = () => {
         { key: 'navSettings',    href: `${base}/settings`,  icon: Settings         },
     ];
 
-    const segment = location.pathname.split('/').pop() || '';
-    const breadcrumbMap: Record<string, string> = {
-        dashboard: t('navDashboard').toUpperCase(),
-        bookings:  t('navReservations').toUpperCase(),
-        calls:     t('navCalls').toUpperCase(),
-        settings:  t('navSettings').toUpperCase(),
-    };
-    const breadcrumb = breadcrumbMap[segment] || '';
     const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
 
     const toggleTheme = () => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { settingsAPI } from '../../lib/api';
-import { useLang } from '../../context/LangContext';
+import { useLang } from '../../hooks/useLang';
 
 interface NotifPrefs { new_reservation: boolean; cancellation: boolean; reminder_24h: boolean; }
 const DEFAULT: NotifPrefs = { new_reservation: true, cancellation: true, reminder_24h: false };
@@ -23,7 +23,9 @@ const NotificationsSettings: React.FC = () => {
   const save = async () => {
     setSaving(true);
     try { await settingsAPI.update({ notification_prefs: prefs }); setDirty(false); }
-    catch {}
+    catch (error) {
+      void error;
+    }
     finally { setSaving(false); }
   };
 

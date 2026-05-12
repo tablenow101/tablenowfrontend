@@ -1,42 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
 import { AlertCircle } from 'lucide-react';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
   const [error, setError] = useState('');
+  // Guard against StrictMode double-invocation in dev (which would double-exchange the code)
+  const ranRef = useRef(false);
 
   useEffect(() => {
+    if (ranRef.current) return;
+    ranRef.current = true;
+
     const handleCallback = async () => {
       try {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        // Use Supabase JS client to perform PKCE exchange — it reads the
+        // code_verifier from localStorage (set during signInWithOAuth) and
+        // sends the correct headers. Manual fetch bypasses this and fails.
+        const { data: sessionData, error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(code);
 
-        const tokenRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=pkce`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': supabaseAnonKey,
-          },
-          body: JSON.stringify({ auth_code: code }),
-        });
-
-        const tokenData = await tokenRes.json();
-        if (!tokenRes.ok || !tokenData.access_token) {
-          throw new Error(tokenData.error_description || 'Échec de l\'échange PKCE');
+        if (exchangeError || !sessionData.session?.access_token) {
+          throw new Error(exchangeError?.message || 'Échec de l\'échange PKCE');
         }
 
         const apiUrl = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
         const response = await fetch(`${apiUrl}/api/auth/google/supabase`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ access_token: tokenData.access_token }),
+          body: JSON.stringify({ access_token: sessionData.session.access_token }),
         });
 
         const data = await response.json();
@@ -45,15 +44,14 @@ const AuthCallback: React.FC = () => {
         localStorage.setItem('token', data.token);
         await refreshUser();
 
-        // Première connexion → onboarding, sinon dashboard
         if (data.is_new_user) {
           navigate('/onboarding', { replace: true });
         } else {
           navigate('/', { replace: true });
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Auth callback error:', err);
-        setError(err.message || 'Authentification échouée');
+        setError((err instanceof Error ? err.message : String(err)) || 'Authentification échouée');
         setTimeout(() => navigate('/login', { replace: true }), 3000);
       }
     };

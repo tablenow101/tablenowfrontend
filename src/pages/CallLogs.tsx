@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { dashboardAPI } from '../lib/api';
-import { useLang } from '../context/LangContext';
+import { useLang } from '../hooks/useLang';
 import { X } from 'lucide-react';
 
 interface CallLog {
@@ -237,7 +237,6 @@ const CallLogs: React.FC = () => {
                         const statusLabel = call.status === 'completed' ? t('statusCompleted')
                             : call.status === 'missed' ? t('statusMissed') : t('statusFailed');
                         const number = call.caller_number || '—';
-                        const name = call.guest_name || null;
 
                         return (
                             <div

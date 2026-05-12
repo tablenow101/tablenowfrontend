@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { bookingsAPI } from '../lib/api';
-import { Calendar, Users, Clock, Mail, Phone, Search, XCircle, AlertTriangle, X } from 'lucide-react';
-import { useLang } from '../context/LangContext';
+import { Calendar, Search, AlertTriangle, X } from 'lucide-react';
+import { useLang } from '../hooks/useLang';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,12 +99,6 @@ const getStatusConfig = (t: (k: string) => string): Record<string, { label: stri
     pending:   { label: t('pending'),          cls: 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/20' },
 });
 
-const sourceLabel: Record<string, string> = {
-    vapi:   '📞 Téléphone',
-    phone:  '📞 Téléphone',
-    manual: '✍️ Manuel',
-    web:    '🌐 Web',
-};
 
 
 // ─── Booking detail drawer ────────────────────────────────────────────────────

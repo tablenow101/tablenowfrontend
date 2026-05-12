@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MessageSquare, X, Send } from 'lucide-react';
-import { useLang } from '../context/LangContext';
+import { useLang } from '../hooks/useLang';
 import api from '../lib/api';
 
 interface ChatMessage {

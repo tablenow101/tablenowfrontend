@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { authAPI } from '../lib/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 
 const VerifyEmail: React.FC = () => {
@@ -11,11 +11,7 @@ const VerifyEmail: React.FC = () => {
     const navigate = useNavigate();
     const { loginWithToken } = useAuth();
 
-    useEffect(() => {
-        verifyEmail();
-    }, []);
-
-    const verifyEmail = async () => {
+    const verifyEmail = useCallback(async () => {
         const token = searchParams.get('token');
 
         if (!token) {
@@ -43,11 +39,15 @@ const VerifyEmail: React.FC = () => {
                 : '/onboarding';
 
             setTimeout(() => navigate(dest, { replace: true }), 1500);
-        } catch (error: any) {
+        } catch (error: unknown) {
             setStatus('error');
             setMessage(error.response?.data?.error || 'La vérification a échoué');
         }
-    };
+    }, [searchParams, loginWithToken, navigate]);
+
+    useEffect(() => {
+        verifyEmail();
+    }, [verifyEmail]);
 
     return (
         <div className="min-h-screen flex items-center justify-center px-4"

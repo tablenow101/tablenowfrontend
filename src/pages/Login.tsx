@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useLang } from '../context/LangContext';
+import { useAuth } from '../hooks/useAuth';
+import { useLang } from '../hooks/useLang';
 import { AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import api from '../lib/api';
 import { supabase } from '../lib/supabase';
@@ -87,8 +87,9 @@ const Login: React.FC = () => {
     try {
       await login(email, password, rememberMe);
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.error || t.errorDefault);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(((error as Record<string, unknown>).response as Record<string, unknown> | undefined)?.data?.error || t.errorDefault);
     } finally {
       setLoading(false);
     }
@@ -161,6 +162,7 @@ const Login: React.FC = () => {
                       </label>
                       <input
                         type="email"
+                        autoComplete="email"
                         value={forgotEmail}
                         onChange={e => setForgotEmail(e.target.value)}
                         placeholder={t.emailPlaceholder}
@@ -199,6 +201,7 @@ const Login: React.FC = () => {
                   </label>
                   <input
                     type="email"
+                    autoComplete="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder={t.emailPlaceholder}
@@ -213,6 +216,7 @@ const Login: React.FC = () => {
                   </label>
                   <input
                     type="password"
+                    autoComplete="current-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder={t.passwordPlaceholder}

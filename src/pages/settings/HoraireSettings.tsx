@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { settingsAPI } from '../../lib/api';
-import { useLang } from '../../context/LangContext';
+import { useLang } from '../../hooks/useLang';
 
 const DAYS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
 
@@ -54,8 +54,9 @@ const HoraireSettings: React.FC = () => {
   });
 
   const setField = (di: number, si: number, field: keyof Service, val: string | number) => update(d => {
-    const copy = JSON.parse(JSON.stringify(d));
-    (copy[di].services[si] as any)[field] = val;
+    const copy = JSON.parse(JSON.stringify(d)) as unknown;
+    ((copy as Record<string, unknown>)[di] as Record<string, unknown>).services = ((copy as Record<string, unknown>)[di] as Record<string, unknown>).services || [];
+    (((copy as Record<string, unknown>)[di] as Record<string, unknown>).services as Record<string, unknown>[])[si][field] = val;
     return copy;
   });
 
