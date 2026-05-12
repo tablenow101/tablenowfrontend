@@ -3,10 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './hooks/useAuth';
 import { LangProvider } from './context/LangProvider';
+import { getPostAuthRedirect } from './lib/postAuthRedirect';
+import Start from './pages/Start';
 import Login from './pages/Login';
-import Register from './pages/Register';
+import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
-import Onboarding from './pages/Onboarding';
+import SetupRestaurant from './pages/SetupRestaurant';
 import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
@@ -44,17 +46,7 @@ const RedirectToDashboard: React.FC = () => {
 
   if (!user) return <Navigate to="/login" />;
 
-  const hoursEmpty =
-    !user.opening_hours ||
-    typeof user.opening_hours !== 'object' ||
-    Object.keys(user.opening_hours).length === 0;
-
-  if (!user.setup_complete && hoursEmpty) {
-    return <Navigate to="/onboarding" replace />;
-  }
-
-  const slug = user.slug || user.id;
-  return <Navigate to={`/r/${slug}/dashboard`} replace />;
+  return <Navigate to={getPostAuthRedirect(user)} replace />;
 };
 
 const AppRoutes = () => {
@@ -64,8 +56,9 @@ const AppRoutes = () => {
     return (
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/start" element={<Start />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -74,16 +67,19 @@ const AppRoutes = () => {
 
   return (
     <Routes>
+      <Route path="/start" element={<Start />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/signup" element={<Signup />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
 
-      <Route path="/onboarding" element={
+      <Route path="/setup/restaurant" element={
         <PrivateRoute>
-          <Onboarding />
+          <SetupRestaurant />
         </PrivateRoute>
       } />
+
+      <Route path="/onboarding" element={<Navigate to="/start" replace />} />
 
       <Route path="/" element={<RedirectToDashboard />} />
       <Route path="/dashboard" element={<RedirectToDashboard />} />

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
+import { getPostAuthRedirect } from '../lib/postAuthRedirect';
 import { AlertCircle } from 'lucide-react';
 
 const AuthCallback: React.FC = () => {
@@ -44,11 +45,7 @@ const AuthCallback: React.FC = () => {
         localStorage.setItem('token', data.token);
         await refreshUser();
 
-        if (data.is_new_user) {
-          navigate('/onboarding', { replace: true });
-        } else {
-          navigate('/', { replace: true });
-        }
+        navigate(getPostAuthRedirect(data.restaurant || null), { replace: true });
       } catch (err: unknown) {
         console.error('Auth callback error:', err);
         setError((err instanceof Error ? err.message : String(err)) || 'Authentification échouée');
