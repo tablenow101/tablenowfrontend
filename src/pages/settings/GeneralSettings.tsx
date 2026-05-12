@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { settingsAPI } from '../../lib/api';
-import { useLang } from '../../context/LangContext';
+import { useLang } from '../../hooks/useLang';
 
 type FormState = {
   name: string; owner_name: string; phone: string; cuisine_type: string;
@@ -39,15 +39,15 @@ const GeneralSettings: React.FC = () => {
 
   useEffect(() => {
     const fromUser: FormState = {
-      name:                (user as any)?.name                ?? '',
-      owner_name:          (user as any)?.owner_name          ?? '',
-      phone:               (user as any)?.phone               ?? '',
-      cuisine_type:        (user as any)?.cuisine_type        ?? '',
-      address:             (user as any)?.address             ?? '',
-      confirmation_email:  (user as any)?.confirmation_email  ?? '',
-      website:             (user as any)?.website             ?? '',
-      cancellation_policy: (user as any)?.cancellation_policy ?? '',
-      special_features:    (user as any)?.special_features    ?? '',
+      name:                (user as unknown)?.name                ?? '',
+      owner_name:          (user as unknown)?.owner_name          ?? '',
+      phone:               (user as unknown)?.phone               ?? '',
+      cuisine_type:        (user as unknown)?.cuisine_type        ?? '',
+      address:             (user as unknown)?.address             ?? '',
+      confirmation_email:  (user as unknown)?.confirmation_email  ?? '',
+      website:             (user as unknown)?.website             ?? '',
+      cancellation_policy: (user as unknown)?.cancellation_policy ?? '',
+      special_features:    (user as unknown)?.special_features    ?? '',
     };
     settingsAPI.get()
       .then(res => {
@@ -67,7 +67,7 @@ const GeneralSettings: React.FC = () => {
         setForm(loaded);
       })
       .catch(() => { original.current = fromUser; setForm(fromUser); });
-  }, []);
+  }, [user]);
 
   const set = (k: keyof FormState, v: string) => {
     setForm(s => ({ ...s, [k]: v }));
@@ -82,8 +82,9 @@ const GeneralSettings: React.FC = () => {
       original.current = { ...form };
       await refreshUser();
       setDirty(false);
-    } catch (e: any) {
-      setError(e.response?.data?.error || 'Erreur lors de la sauvegarde.');
+    } catch (e: unknown) {
+      const error = e as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Erreur lors de la sauvegarde.');
     } finally { setSaving(false); }
   };
 
@@ -128,7 +129,7 @@ const GeneralSettings: React.FC = () => {
       {/* Politique annulation */}
       <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-4">
         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">{t('cancelPolicyLabel')}</p>
-        {/* @ts-ignore */}
+        {/* @ts-expect-error Field component typing not strict */}
         <Field label={t('cancelPolicyField')} hint={t('cancelPolicyHint')}>
           <textarea className={ta} rows={3} value={form.cancellation_policy} onChange={e => set('cancellation_policy', e.target.value)}
             placeholder={t('cancelPolicyPlaceholder')}/>
@@ -138,7 +139,7 @@ const GeneralSettings: React.FC = () => {
       {/* Spécificités */}
       <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-4">
         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">{t('specificities')}</p>
-        {/* @ts-ignore */}
+        {/* @ts-expect-error Field component typing not strict */}
         <Field label={t('specificitiesField')} hint={t('specificitiesHint')}>
           <textarea className={ta} rows={3} value={form.special_features} onChange={e => set('special_features', e.target.value)}
             placeholder={t('specificitiesPlaceholder')}/>
@@ -153,9 +154,9 @@ const GeneralSettings: React.FC = () => {
         </div>
         <div className="space-y-3">
           {[
-            { label: t('tableNowNumber'), value: (user as any)?.vapi_phone_number || '—', accent: true },
-            { label: t('bccAddress'),     value: (user as any)?.bcc_email          || '—' },
-            { label: t('assistantId'),    value: (user as any)?.vapi_assistant_id  ? `${((user as any).vapi_assistant_id as string).slice(0,8)}…` : '—' },
+            { label: t('tableNowNumber'), value: (user as unknown)?.vapi_phone_number || '—', accent: true },
+            { label: t('bccAddress'),     value: (user as unknown)?.bcc_email          || '—' },
+            { label: t('assistantId'),    value: (user as unknown)?.vapi_assistant_id  ? `${((user as Record<string, unknown>).vapi_assistant_id as string).slice(0,8)}…` : '—' },
           ].map(({ label, value, accent }) => (
             <div key={label} className="flex items-center justify-between py-2 border-b border-[#1a1a1a] last:border-0">
               <span className="text-xs text-[#555]">{label}</span>

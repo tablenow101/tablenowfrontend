@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { AlertCircle } from 'lucide-react';
 
 const AuthCallback: React.FC = () => {
@@ -51,9 +51,9 @@ const AuthCallback: React.FC = () => {
         } else {
           navigate('/', { replace: true });
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Auth callback error:', err);
-        setError(err.message || 'Authentification échouée');
+        setError((err instanceof Error ? err.message : String(err)) || 'Authentification échouée');
         setTimeout(() => navigate('/login', { replace: true }), 3000);
       }
     };

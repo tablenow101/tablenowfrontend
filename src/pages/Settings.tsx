@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLang } from '../context/LangContext';
+import { useLang } from '../hooks/useLang';
 import GeneralSettings       from './settings/GeneralSettings';
 import HoraireSettings       from './settings/HoraireSettings';
 import CalendarSettings      from './settings/CalendarSettings';

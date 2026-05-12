@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+// @refresh reset
+import React, { createContext, useState } from 'react';
 
 export type Lang = 'fr' | 'en';
 
@@ -72,7 +73,6 @@ const translations: Record<Lang, Record<string, string>> = {
         // Settings
         settingsTitle: 'Paramètres', subGeneral: 'Général', subHours: 'Horaires & Services',
         subIntegrations: 'Intégrations', subParrainage: 'Parrainage',
-        restaurantInfo: 'Informations du restaurant',
         cancelPolicyLabel: 'Politique d\'annulation',
         cancelPolicyField: 'Texte de la politique',
         cancelPolicyHint: 'Transmis à l\'assistant pour répondre aux clients',
@@ -106,9 +106,9 @@ const translations: Record<Lang, Record<string, string>> = {
         cancelResaBtn: 'Annuler la réservation',
         statusConfirmed: 'Confirmé', statusCompleted2: 'Terminé', statusCancelled2: 'Annulé', statusNoShow: 'No-show',
         loginError: 'Identifiants incorrects.',
-        tableNowNumber: 'Numéro TableNow IA', bccAddress: 'Adresse BCC', assistantId: 'Assistant ID',
-        systemInfo: 'Informations système', readOnly: 'Lecture seule',
-        restaurantInfo: 'Informations du restaurant', restaurantName: 'Nom du restaurant', website: 'Site web',
+        bccAddress: 'Adresse BCC', assistantId: 'Assistant ID',
+        systemInfo: 'Informations système',
+        restaurantName: 'Nom du restaurant', website: 'Site web',
         aiNotes: "Notes & commentaires pour l'IA",
         aiNotesDesc: "Transmises à l'assistant pour personnaliser les réponses (allergies, demandes spéciales, politique maison…)",
         save: 'Sauvegarder',
@@ -188,7 +188,6 @@ const translations: Record<Lang, Record<string, string>> = {
         resaCreated: 'Reservation ✓',
         settingsTitle: 'Settings', subGeneral: 'General', subHours: 'Hours & Services',
         subIntegrations: 'Integrations', subParrainage: 'Referral',
-        restaurantInfo: 'Restaurant information',
         cancelPolicyLabel: 'Cancellation policy',
         cancelPolicyField: 'Policy text',
         cancelPolicyHint: 'Shared with your AI assistant to handle guest enquiries',
@@ -222,9 +221,9 @@ const translations: Record<Lang, Record<string, string>> = {
         cancelResaBtn: 'Cancel reservation',
         statusConfirmed: 'Confirmed', statusCompleted2: 'Completed', statusCancelled2: 'Cancelled', statusNoShow: 'No-show',
         loginError: 'Invalid credentials.',
-        tableNowNumber: 'TableNow AI number', bccAddress: 'BCC address', assistantId: 'Assistant ID',
-        systemInfo: 'System information', readOnly: 'Read only',
-        restaurantInfo: 'Restaurant information', restaurantName: 'Restaurant name', website: 'Website',
+        bccAddress: 'BCC address', assistantId: 'Assistant ID',
+        systemInfo: 'System information',
+        restaurantName: 'Restaurant name', website: 'Website',
         aiNotes: 'Notes & comments for AI',
         aiNotesDesc: 'Shared with the assistant to personalise responses (allergies, special requests, house policy…)',
         save: 'Save',
@@ -276,4 +275,3 @@ export const LangProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 };
 
-export const useLang = () => useContext(LangContext);

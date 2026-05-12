@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { dashboardAPI } from '../lib/api';
-import { useAuth } from '../context/AuthContext';
-import { useLang } from '../context/LangContext';
+import { useAuth } from '../hooks/useAuth';
+import { useLang } from '../hooks/useLang';
 import { ArrowUpRight } from 'lucide-react';
 
 type Range = 'today' | '7j' | '30j' | 'all';
@@ -132,8 +132,8 @@ const Dashboard: React.FC = () => {
     const { restaurantSlug } = useParams();
     const slug = restaurantSlug || user?.slug || '';
 
-    const [stats, setStats]       = useState<any>(null);
-    const [todayStats, setTodayStats] = useState<any>(null);
+    const [stats, setStats]       = useState<Record<string, unknown> | null>(null);
+    const [todayStats, setTodayStats] = useState<Record<string, unknown> | null>(null);
     const [insights, setInsights] = useState<Insights | null>(null);
     const [loading, setLoading]   = useState(true);
     const [range, setRange]       = useState<Range>('30j');

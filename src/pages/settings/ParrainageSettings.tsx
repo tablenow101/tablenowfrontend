@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { referralAPI } from '../../lib/api';
-import { useLang } from '../../context/LangContext';
+import { useLang } from '../../hooks/useLang';
 import { Copy, Check } from 'lucide-react';
 
 const ParrainageSettings: React.FC = () => {
   const { user } = useAuth();
   const { t } = useLang();
   const [copied, setCopied] = useState(false);
-  const [stats, setStats] = useState({ active: 0, pending: 0, minutes: 0, referrals: [] as any[] });
+  const [stats, setStats] = useState({ active: 0, pending: 0, minutes: 0, referrals: [] as unknown[] });
 
-  const code = (user as any)?.referral_code
-    || `${((user as any)?.name || 'RESTO').toUpperCase().replace(/\s+/g, '-')}-RAD`;
+  const code = (user as unknown as Record<string, unknown> | null)?.referral_code
+    || `${(((user as unknown as Record<string, unknown> | null)?.name || 'RESTO') as string).toUpperCase().replace(/\s+/g, '-')}-RAD`;
   const link = `https://app.tablenow.io/register?ref=${code}`;
 
   useEffect(() => {
@@ -98,7 +98,7 @@ const ParrainageSettings: React.FC = () => {
           <span className="text-xs text-[#555]">{stats.referrals?.length ?? 0} {t('totalReferrals')}</span>
         </div>
         {stats.referrals?.length > 0 ? (
-          stats.referrals.map((r: any, i: number) => (
+          stats.referrals.map((r: unknown, i: number) => (
             <div key={i} className="flex items-center justify-between py-2 border-b border-[#1a1a1a] last:border-0">
               <span className="text-sm text-white">{r.name || r.email}</span>
               <span className="text-xs text-[#b8f000]">{r.status}</span>

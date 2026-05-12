@@ -1,27 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+// @refresh reset
+import React, { useState, useEffect } from 'react';
 import { authAPI } from '../lib/api';
+import { AuthContext } from './authContext';
 
 interface User {
     id: string;
     email: string;
     name: string;
     slug?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
-interface AuthContextType {
-    user: User | null;
-    loading: boolean;
-    login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-    loginWithToken: (token: string, restaurant: User) => void;
-    register: (data: any) => Promise<void>;
-    logout: () => void;
-    refreshUser: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const API_BASE = (import.meta as any).env?.VITE_API_URL || 'https://api.tablenow.io';
+const API_BASE = (import.meta as Record<string, unknown>).env?.VITE_API_URL || 'https://api.tablenow.io';
 
 const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
@@ -62,13 +52,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(response.data.restaurant);
     };
 
-    // Synchronous — no API call. Caller is responsible for navigation.
     const loginWithToken = (token: string, restaurant: User): void => {
         localStorage.setItem('token', token);
         setUser(restaurant);
     };
 
-    const register = async (data: any) => {
+    const register = async (data: Record<string, unknown>) => {
         await authAPI.register(data);
     };
 
@@ -97,10 +86,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             {children}
         </AuthContext.Provider>
     );
-};
-
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) throw new Error('useAuth must be used within AuthProvider');
-    return context;
 };
