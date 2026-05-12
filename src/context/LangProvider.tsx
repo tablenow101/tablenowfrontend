@@ -1,15 +1,6 @@
 // @refresh reset
-import React, { createContext, useState } from 'react';
-
-export type Lang = 'fr' | 'en';
-
-interface LangContextValue {
-    lang: Lang;
-    setLang: (lang: Lang) => void;
-    t: (key: string) => string;
-}
-
-// ─── Translations ─────────────────────────────────────────────────────────────
+import React, { useState } from 'react';
+import { LangContext, type Lang } from './langContext';
 
 const translations: Record<Lang, Record<string, string>> = {
     fr: {
@@ -250,14 +241,6 @@ const translations: Record<Lang, Record<string, string>> = {
     },
 };
 
-// ─── Context ──────────────────────────────────────────────────────────────────
-
-const LangContext = createContext<LangContextValue>({
-    lang: 'fr',
-    setLang: () => {},
-    t: (k) => k,
-});
-
 export const LangProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [lang, setLangState] = useState<Lang>('fr');
 
@@ -274,4 +257,3 @@ export const LangProvider: React.FC<{ children: React.ReactNode }> = ({ children
         </LangContext.Provider>
     );
 };
-
