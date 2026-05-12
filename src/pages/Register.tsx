@@ -366,6 +366,7 @@ const Register: React.FC = () => {
               <label className={labelCls}>E-MAIL *</label>
               <input
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder={lang === 'fr' ? 'vous@restaurant.fr' : 'you@restaurant.com'}
@@ -383,6 +384,7 @@ const Register: React.FC = () => {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
@@ -405,6 +407,7 @@ const Register: React.FC = () => {
                 <div className="relative">
                   <input
                     type={showConfirm ? 'text' : 'password'}
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
