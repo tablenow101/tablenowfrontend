@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../hooks/useLang';
+import { useAuth } from '../hooks/useAuth';
 import { AlertCircle, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
+import { authAPI } from '../lib/api';
+import { getPostAuthRedirect } from '../lib/postAuthRedirect';
 
 interface Suggestion {
   placeId: string;
@@ -28,6 +31,7 @@ const planPrices: Record<string, string> = {
 const Register: React.FC = () => {
   const { lang } = useLang();
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
   const sessionToken = useRef(crypto.randomUUID());
   const [selectedPlan] = useState(() => new URLSearchParams(window.location.search).get('plan') || '');
@@ -135,35 +139,32 @@ const Register: React.FC = () => {
     if (!validate()) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          confirmPassword,
-          restaurantName: name,
-          ownerName,
-          phone,
-          address,
-          cuisineType,
-          website,
-          language: lang,
-          lat,
-          lng,
-          google_place_id: googlePlaceId || undefined,
-          google_maps_url: googleMapsUrl || undefined,
-          opening_hours_google: openingHoursGoogle || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setGlobalError(data.error || (lang === 'fr' ? 'Une erreur est survenue.' : 'Something went wrong.'));
-        return;
-      }
+      const payload = {
+        email,
+        password,
+        confirmPassword,
+        restaurantName: name,
+        ownerName,
+        phone,
+        address,
+        cuisineType,
+        website,
+        language: lang,
+        lat,
+        lng,
+        google_place_id: googlePlaceId || undefined,
+        google_maps_url: googleMapsUrl || undefined,
+        opening_hours_google: openingHoursGoogle || undefined,
+      };
+
+      const response = await authAPI.register(payload);
+      const data = response.data;
+
       if (data.token) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('restaurant_slug', data.slug);
+        await refreshUser();
+
         if (selectedPlan) {
           localStorage.setItem('pending_plan', selectedPlan);
           const stripeRes = await fetch('/api/stripe/create-checkout-session', {
@@ -180,14 +181,20 @@ const Register: React.FC = () => {
             return;
           }
         }
-        // No plan or Stripe failed → go to dashboard
-        navigate(`/r/${data.slug}/dashboard`);
+        // No plan or Stripe failed → use intelligent redirect
+        if (data.restaurant) {
+          navigate(getPostAuthRedirect(data.restaurant), { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
       } else {
         // Email verification required — show success screen
         setEmailSent(true);
       }
-    } catch {
-      setGlobalError(lang === 'fr' ? 'Une erreur est survenue.' : 'Something went wrong.');
+    } catch (err: unknown) {
+      const errorMsg = (err instanceof Error ? err : new Error(String(err)));
+      const errorData = (errorMsg as Record<string, unknown>).response as Record<string, unknown> | undefined;
+      setGlobalError((errorData?.data as Record<string, unknown> | undefined)?.error as string || (lang === 'fr' ? 'Une erreur est survenue.' : 'Something went wrong.'));
     } finally {
       setLoading(false);
     }
@@ -225,7 +232,7 @@ const Register: React.FC = () => {
               ))}
             </div>
             <button
-              onClick={() => window.location.href = '/login'}
+              onClick={() => navigate('/login')}
               className="w-full py-3 rounded-xl text-sm font-bold text-black mb-4"
               style={{ background: '#b8f000' }}
             >
