@@ -68,4 +68,8 @@ export const referralAPI = {
     getCode:  () => api.get('/referral/code'),
 };
 
+export const stripeAPI = {
+    createCheckoutSession: (plan: string) => api.post('/stripe/create-checkout-session', { plan }),
+};
+
 export default api;

@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import SetupRestaurant from './pages/SetupRestaurant';
+import SetupPlan from './pages/SetupPlan';
 import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
@@ -71,6 +72,12 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+
+      <Route path="/setup/plan" element={
+        <PrivateRoute>
+          <SetupPlan />
+        </PrivateRoute>
+      } />
 
       <Route path="/setup/restaurant" element={
         <PrivateRoute>
