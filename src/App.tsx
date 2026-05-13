@@ -4,9 +4,8 @@ import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './hooks/useAuth';
 import { LangProvider } from './context/LangProvider';
 import { getPostAuthRedirect } from './lib/postAuthRedirect';
-import Start from './pages/Start';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
+import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import SetupRestaurant from './pages/SetupRestaurant';
 import AuthCallback from './pages/AuthCallback';
@@ -56,10 +55,11 @@ const AppRoutes = () => {
     return (
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/start" element={<Start />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/start" element={<Navigate to="/login" replace />} />
+        <Route path="/signup" element={<Navigate to="/register" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -67,9 +67,8 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/start" element={<Start />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
 
@@ -78,8 +77,6 @@ const AppRoutes = () => {
           <SetupRestaurant />
         </PrivateRoute>
       } />
-
-      <Route path="/onboarding" element={<Navigate to="/start" replace />} />
 
       <Route path="/" element={<RedirectToDashboard />} />
       <Route path="/dashboard" element={<RedirectToDashboard />} />
@@ -98,6 +95,10 @@ const AppRoutes = () => {
         <Route path="calls" element={<CallLogs />} />
         <Route path="settings" element={<Settings />} />
       </Route>
+
+      <Route path="/start" element={<Navigate to="/login" replace />} />
+      <Route path="/signup" element={<Navigate to="/register" replace />} />
+      <Route path="/onboarding" element={<Navigate to="/setup/restaurant" replace />} />
     </Routes>
   );
 };
