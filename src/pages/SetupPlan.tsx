@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { stripeAPI } from '../lib/api';
 import { AlertCircle, Loader2, Check } from 'lucide-react';
 
@@ -33,6 +33,7 @@ const plans: PlanOption[] = [
 
 const SetupPlan: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,7 +43,11 @@ const SetupPlan: React.FC = () => {
     if (pendingPlan && plans.some(p => p.id === pendingPlan)) {
       setSelectedPlan(pendingPlan);
     }
-  }, []);
+
+    if (searchParams.get('checkout') === 'cancelled') {
+      setError('Paiement annulé. Vous pouvez réessayer.');
+    }
+  }, [searchParams]);
 
   const handleContinue = async () => {
     if (!selectedPlan) {
