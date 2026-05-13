@@ -160,28 +160,17 @@ const Register: React.FC = () => {
       const response = await authAPI.register(payload);
       const data = response.data;
 
+      if (selectedPlan) {
+        localStorage.setItem('pending_plan', selectedPlan);
+      }
+
       if (data.token) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('restaurant_slug', data.slug);
-        await refreshUser();
-
-        if (selectedPlan) {
-          localStorage.setItem('pending_plan', selectedPlan);
-          const stripeRes = await fetch('/api/stripe/create-checkout-session', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${data.token}`,
-            },
-            body: JSON.stringify({ plan: selectedPlan }),
-          });
-          const stripeData = await stripeRes.json();
-          if (stripeData.url) {
-            window.location.href = stripeData.url;
-            return;
-          }
+        if (data.slug) {
+          localStorage.setItem('restaurant_slug', data.slug);
         }
-        // No plan or Stripe failed → use intelligent redirect
+        await refreshUser();
+        // Use intelligent redirect
         if (data.restaurant) {
           navigate(getPostAuthRedirect(data.restaurant), { replace: true });
         } else {
