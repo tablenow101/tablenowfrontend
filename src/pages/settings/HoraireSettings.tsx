@@ -116,26 +116,54 @@ const HoraireSettings: React.FC = () => {
                   <span className="text-sm text-white w-28 mt-2.5 flex-shrink-0">{dayName}</span>
                   <div className="flex flex-col gap-2 flex-1 min-w-0">
                     {day.services.map((svc, si) => (
-                      <div key={si} className="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span className="text-xs text-[#555] w-14 flex-shrink-0">{svc.name}</span>
-                        <input type="time" value={svc.start} className={timeInp}
-                          onChange={e => setField(di, si, 'start', e.target.value)}/>
-                        <input type="time" value={svc.end} className={timeInp}
-                          onChange={e => setField(di, si, 'end', e.target.value)}/>
-                        <input type="number" value={svc.covers} min={1} className={covInp}
-                          onChange={e => setField(di, si, 'covers', parseInt(e.target.value) || 0)}/>
-                        {/* Croix × sur TOUS les services */}
-                        <button onClick={() => removeService(di, si)}
-                          className="w-7 h-7 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-[#555] hover:text-red-400 hover:border-red-400/30 transition-colors text-sm flex-shrink-0">
-                          ×
-                        </button>
-                        {/* + Ajouter uniquement sur le dernier */}
-                        {si === day.services.length - 1 && (
-                          <button onClick={() => addService(di)}
-                            className="px-3 py-1.5 bg-[#b8f000] text-black text-xs font-bold rounded-lg hover:opacity-90 transition-opacity flex-shrink-0">
-                            + Ajouter
+                      <div key={si}>
+                        {/* Desktop (≥640px) */}
+                        <div className="hidden sm:flex sm:flex-row sm:items-center gap-2">
+                          <span className="text-xs text-[#555] w-14 flex-shrink-0">{svc.name}</span>
+                          <input type="time" value={svc.start} className={timeInp}
+                            onChange={e => setField(di, si, 'start', e.target.value)}/>
+                          <input type="time" value={svc.end} className={timeInp}
+                            onChange={e => setField(di, si, 'end', e.target.value)}/>
+                          <input type="number" value={svc.covers} min={1} className={covInp}
+                            onChange={e => setField(di, si, 'covers', parseInt(e.target.value) || 0)}/>
+                          <button onClick={() => removeService(di, si)}
+                            className="w-7 h-7 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-[#555] hover:text-red-400 hover:border-red-400/30 transition-colors text-sm flex-shrink-0">
+                            ×
                           </button>
-                        )}
+                          {si === day.services.length - 1 && (
+                            <button onClick={() => addService(di)}
+                              className="px-3 py-1.5 bg-[#b8f000] text-black text-xs font-bold rounded-lg hover:opacity-90 transition-opacity flex-shrink-0">
+                              + Ajouter
+                            </button>
+                          )}
+                        </div>
+                        {/* Mobile (<640px) */}
+                        <div className="sm:hidden flex flex-col gap-2">
+                          <div className="text-xs text-[#555]">{svc.name}</div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input type="time" value={svc.start}
+                              className="h-9 px-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-sm text-white text-center focus:outline-none focus:border-[#444] transition-colors"
+                              onChange={e => setField(di, si, 'start', e.target.value)}/>
+                            <input type="time" value={svc.end}
+                              className="h-9 px-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-sm text-white text-center focus:outline-none focus:border-[#444] transition-colors"
+                              onChange={e => setField(di, si, 'end', e.target.value)}/>
+                          </div>
+                          <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                            <input type="number" value={svc.covers} min={1}
+                              className="h-9 px-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-sm text-white text-center focus:outline-none focus:border-[#444] transition-colors"
+                              onChange={e => setField(di, si, 'covers', parseInt(e.target.value) || 0)}/>
+                            <button onClick={() => removeService(di, si)}
+                              className="w-7 h-7 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-[#555] hover:text-red-400 hover:border-red-400/30 transition-colors text-sm flex-shrink-0">
+                              ×
+                            </button>
+                          </div>
+                          {si === day.services.length - 1 && (
+                            <button onClick={() => addService(di)}
+                              className="w-full px-3 py-1.5 bg-[#b8f000] text-black text-xs font-bold rounded-lg hover:opacity-90 transition-opacity">
+                              + Ajouter
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
