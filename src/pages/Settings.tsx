@@ -22,7 +22,7 @@ const Settings: React.FC = () => {
     return (
         <div>
             <h1 className="text-2xl font-bold text-white mb-5">{t('settingsTitle')}</h1>
-            <div className="flex border-b border-[#2a2a2a] mb-6">
+            <div className="flex overflow-x-auto border-b border-[#2a2a2a] mb-6">
                 {TABS.map(({ key, label }) => (
                     <button
                         key={key}
