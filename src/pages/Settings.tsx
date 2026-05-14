@@ -21,13 +21,13 @@ const Settings: React.FC = () => {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-white mb-5">{t('settingsTitle')}</h1>
-            <div className="flex overflow-x-auto border-b border-[#2a2a2a] mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-5">{t('settingsTitle')}</h1>
+            <div className="flex overflow-x-auto border-b border-[#2a2a2a] mb-4 sm:mb-6">
                 {TABS.map(({ key, label }) => (
                     <button
                         key={key}
                         onClick={() => setTab(key)}
-                        className="px-5 py-3 text-sm transition-colors border-b-2 -mb-px whitespace-nowrap"
+                        className="px-3 sm:px-5 py-2 sm:py-3 text-sm transition-colors border-b-2 -mb-px whitespace-nowrap"
                         style={tab === key
                             ? { color: '#fff', borderBottomColor: '#b8f000' }
                             : { color: '#888', borderBottomColor: 'transparent' }

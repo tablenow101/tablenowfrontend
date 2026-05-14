@@ -51,10 +51,10 @@ function CancelModal({ booking, onConfirm, onClose }: {
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={onClose}>
             <div
-                className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6 max-w-sm w-full"
+                className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-4 sm:p-6 max-w-sm w-full"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-2 sm:mb-4">
                     <div className="p-2 rounded-xl bg-red-500/10">
                         <AlertTriangle size={18} className="text-red-400" />
                     </div>
@@ -67,7 +67,7 @@ function CancelModal({ booking, onConfirm, onClose }: {
                     <span className="text-white font-medium">{getBookingName(booking)}</span>
                     {' '}— {getBookingDate(booking)} à {getBookingTime(booking)}
                 </p>
-                <p className="text-xs text-gray-500 mb-5">Cette action est irréversible.</p>
+                <p className="text-xs text-gray-500 mb-3 sm:mb-5">Cette action est irréversible.</p>
                 <div className="flex gap-3">
                     <button
                         onClick={onClose}
@@ -122,18 +122,18 @@ function BookingDetailDrawer({ booking, onClose, onCancel }: { booking: Booking;
         <div className="fixed inset-0 bg-black/70 z-50 flex items-end md:items-center justify-center p-4" onClick={onClose}>
             <div className="w-full max-w-sm bg-[#111] border border-[#2a2a2a] rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
                 {/* Header */}
-                <div className="flex items-center justify-between p-5 border-b border-[#1a1a1a]">
+                <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#1a1a1a]">
                     <h2 className="text-base font-bold text-white">Détails réservation</h2>
                     <button onClick={onClose} className="text-[#555] hover:text-white">
                         <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div className="p-5 space-y-4">
+                <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
                     {/* Infos résa */}
                     <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4">
-                        <p className="text-base font-bold text-white mb-3">{booking.guest_name || 'Client'}</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <p className="text-base font-bold text-white mb-2 sm:mb-3">{booking.guest_name || 'Client'}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                             <div>
                                 <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">DATE</p>
                                 <p className="text-sm text-white">{date}</p>

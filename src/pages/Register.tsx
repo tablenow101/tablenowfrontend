@@ -195,22 +195,22 @@ const Register: React.FC = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4 py-8 sm:py-0">
       <div className="w-full max-w-md text-center">
-          <div className="text-4xl font-bold text-white mb-10">
+          <div className="text-3xl sm:text-4xl font-bold text-white mb-6 sm:mb-10">
             Table<span style={{ color: '#b8f000' }}>Now</span>
           </div>
-          <div className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-10">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-black mx-auto mb-6" style={{ background: '#b8f000' }}>✓</div>
+          <div className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 sm:p-10">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-black mx-auto mb-4 sm:mb-6" style={{ background: '#b8f000' }}>✓</div>
             <h2 className="text-xl font-bold text-white mb-3">
               {lang === 'fr' ? 'Vérifiez votre email' : 'Check your email'}
             </h2>
-            <p className="text-sm text-[#888] mb-6 leading-relaxed">
+            <p className="text-sm text-[#888] mb-4 sm:mb-6 leading-relaxed">
               {lang === 'fr' ? 'Un lien de vérification a été envoyé à' : 'A verification link was sent to'}{' '}
               <span className="text-white font-semibold">{email}</span>
             </p>
-            <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 text-left mb-6 space-y-3">
-              <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-3">
+            <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 text-left mb-4 sm:mb-6 space-y-2 sm:space-y-3">
+              <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2 sm:mb-3">
                 {lang === 'fr' ? 'UNE FOIS ACTIVÉ' : 'ONCE ACTIVATED'}
               </p>
               {[
@@ -226,7 +226,7 @@ const Register: React.FC = () => {
             </div>
             <button
               onClick={() => window.location.href = '/login'}
-              className="w-full py-3 rounded-xl text-sm font-bold text-black mb-4"
+              className="w-full py-2 sm:py-3 rounded-xl text-sm font-bold text-black mb-3 sm:mb-4"
               style={{ background: '#b8f000' }}
             >
               {lang === 'fr' ? "J'ai vérifié mon email →" : 'I verified my email →'}
@@ -243,8 +243,8 @@ const Register: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0a0a0a] px-4">
       {/* Logo */}
-      <div className="flex flex-col items-center mb-10 gap-3 pt-12">
-        <span className="text-4xl font-black tracking-tight text-white">
+      <div className="flex flex-col items-center mb-6 sm:mb-10 gap-3 pt-8 sm:pt-12">
+        <span className="text-3xl sm:text-4xl font-black tracking-tight text-white">
           Table<span className="text-[#b8f000]">Now</span>
         </span>
         <span className="text-sm text-[#555] tracking-wide">
@@ -253,17 +253,17 @@ const Register: React.FC = () => {
       </div>
 
       <div
-        className="w-full max-w-2xl mx-auto mb-12 bg-[#111] border border-[#2a2a2a] rounded-2xl p-12"
+        className="w-full max-w-2xl mx-auto mb-8 sm:mb-12 bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 sm:p-12"
         style={{ borderTop: '4px solid #b8f000' }}
       >
         {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-black text-white mb-2">
+        <div className="mb-6 sm:mb-10">
+          <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">
             {lang === 'fr' ? 'Créer votre compte' : 'Create your account'}
           </h1>
           <p className="text-[#555] text-sm">{subtitle}</p>
           {selectedPlan && (
-            <div className="flex items-center gap-2 mt-4 bg-[#1a1a1a] border border-[#b8f000]/30 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2 mt-3 sm:mt-4 bg-[#1a1a1a] border border-[#b8f000]/30 rounded-xl px-3 sm:px-4 py-2 sm:py-3">
               <div className="w-2 h-2 bg-[#b8f000] rounded-full flex-shrink-0" />
               <span className="text-sm text-white">
                 {lang === 'fr' ? 'Plan sélectionné :' : 'Selected plan:'}{' '}
