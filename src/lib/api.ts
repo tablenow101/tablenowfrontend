@@ -54,7 +54,7 @@ export const settingsAPI = {
 };
 
 export const calendarAPI = {
-    getAuthUrl: ()             => api.get('/calendar/auth-url'),
+    getAuthUrl: (returnTo?: 'setup' | 'settings') => api.get('/calendar/auth-url', { params: returnTo ? { return_to: returnTo } : undefined }),
     callback:   (code: string) => api.post('/calendar/callback', { code }),
     skip:       ()             => api.post('/calendar/skip'),
     disconnect: ()             => api.post('/calendar/disconnect'),

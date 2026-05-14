@@ -7,9 +7,10 @@ import { Calendar, Loader2, CheckCircle } from 'lucide-react';
 const SetupCalendar: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [connecting, setConnecting] = useState(false);
   const [skipping, setSkipping] = useState(false);
+  const [exchanging, setExchanging] = useState(false);
   const [error, setError] = useState('');
 
   const isConnected = user?.calendar_status === 'connected';
@@ -23,11 +24,40 @@ const SetupCalendar: React.FC = () => {
     return '/setup/restaurant';
   };
 
+  // Handle OAuth callback - exchange code for tokens
+  useEffect(() => {
+    const code = searchParams.get('code');
+    const queryError = searchParams.get('error');
+
+    if (queryError) {
+      setError(`Erreur Google Calendar: ${queryError}`);
+      return;
+    }
+
+    if (code && !isConnected && !exchanging) {
+      exchangeCode(code);
+    }
+  }, [searchParams, isConnected]);
+
+  const exchangeCode = async (code: string) => {
+    setExchanging(true);
+    try {
+      await calendarAPI.callback(code);
+      await refreshUser();
+      // Clean up URL
+      window.history.replaceState({}, '', '/setup/calendar');
+    } catch (err: unknown) {
+      const errorMsg = (err instanceof Error ? err.message : String(err));
+      setError(errorMsg || 'Erreur lors de la connexion Google Calendar');
+      setExchanging(false);
+    }
+  };
+
   const handleConnect = async () => {
     setConnecting(true);
     setError('');
     try {
-      const response = await calendarAPI.getAuthUrl();
+      const response = await calendarAPI.getAuthUrl('setup');
       const authUrl = response.data?.authUrl ?? response.data?.url ?? response.data?.auth_url;
 
       if (typeof authUrl === 'string') {
@@ -87,7 +117,22 @@ const SetupCalendar: React.FC = () => {
 
         {/* Main content card */}
         <div className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-12 text-center">
-          {isConnected ? (
+          {exchanging ? (
+            // Exchanging state
+            <>
+              <div className="flex justify-center mb-6">
+                <div className="p-4 rounded-full bg-[#b8f000]/10">
+                  <Loader2 size={40} className="text-[#b8f000] animate-spin" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-3">
+                Connexion en cours…
+              </h2>
+              <p className="text-[#888] text-sm">
+                Finalisation de votre connexion Google Calendar.
+              </p>
+            </>
+          ) : isConnected ? (
             // Connected state
             <>
               <div className="flex justify-center mb-6">
