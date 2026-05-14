@@ -116,7 +116,7 @@ const HoraireSettings: React.FC = () => {
                   <span className="text-sm text-white w-28 mt-2.5 flex-shrink-0">{dayName}</span>
                   <div className="flex flex-col gap-2 flex-1 min-w-0">
                     {day.services.map((svc, si) => (
-                      <div key={si} className="flex items-center gap-2">
+                      <div key={si} className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <span className="text-xs text-[#555] w-14 flex-shrink-0">{svc.name}</span>
                         <input type="time" value={svc.start} className={timeInp}
                           onChange={e => setField(di, si, 'start', e.target.value)}/>

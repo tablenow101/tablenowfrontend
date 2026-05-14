@@ -173,7 +173,7 @@ function BookingDetailDrawer({ booking, onClose, onCancel }: { booking: Booking;
                                 <p className="text-xs text-[#888] leading-relaxed">Transcript disponible dans le journal des appels</p>
                             </div>
                             {/* Download buttons */}
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <button className="px-3 py-2 rounded-xl text-xs text-[#888] bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#444] transition-colors">
                                     {t('downloadTranscriptBtn')}
                                 </button>
