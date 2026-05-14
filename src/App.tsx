@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import SetupRestaurant from './pages/SetupRestaurant';
 import SetupPlan from './pages/SetupPlan';
+import SetupCalendar from './pages/SetupCalendar';
 import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
@@ -76,6 +77,12 @@ const AppRoutes = () => {
       <Route path="/setup/plan" element={
         <PrivateRoute>
           <SetupPlan />
+        </PrivateRoute>
+      } />
+
+      <Route path="/setup/calendar" element={
+        <PrivateRoute>
+          <SetupCalendar />
         </PrivateRoute>
       } />
 
