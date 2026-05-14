@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { settingsAPI } from '../lib/api';
-import { getPostAuthRedirect } from '../lib/postAuthRedirect';
 import {
     Store, Clock, Mail, ClipboardList,
     ChevronRight, ChevronLeft, Save, Copy, Check, Rocket,
@@ -494,7 +493,7 @@ const SetupRestaurant: React.FC = () => {
                                 </div>
 
                                 <button
-                                    onClick={() => navigate(getPostAuthRedirect(user))}
+                                    onClick={() => navigate('/setup/success')}
                                     className="w-full h-14 mt-2 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-colors"
                                     style={{ background: '#b8f000', color: '#000' }}
                                 >
