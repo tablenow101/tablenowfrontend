@@ -70,7 +70,7 @@ function CallDrawer({ call, onClose, t }: { call: CallLog; onClose: () => void; 
                 {/* Meta */}
                 <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 mb-5">
                     <p className={`text-base font-bold mb-3 ${call.guest_name ? 'text-white' : 'text-white font-mono'}`}>{name}</p>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">{t('status')}</p>
                             <div className="flex items-center gap-1.5">
@@ -224,60 +224,122 @@ const CallLogs: React.FC = () => {
 
             {/* List */}
             <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
-                <div className="overflow-x-auto">
-                <div className="px-5 py-4 border-b border-[#1a1a1a]">
-                    <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('history')}</p>
-                </div>
-                {calls.length === 0 ? (
-                    <div className="py-12 text-center text-xs text-[#555]">—</div>
-                ) : (
-                    calls.map(call => {
-                        const dotColor = call.status === 'completed' ? '#b8f000'
-                            : call.status === 'missed' ? '#f59e0b' : '#ef4444';
-                        const statusLabel = call.status === 'completed' ? t('statusCompleted')
-                            : call.status === 'missed' ? t('statusMissed') : t('statusFailed');
-                        const number = call.caller_number || '—';
+                {/* Desktop table view */}
+                <div className="hidden sm:block overflow-x-auto">
+                    <div className="px-5 py-4 border-b border-[#1a1a1a]">
+                        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('history')}</p>
+                    </div>
+                    {calls.length === 0 ? (
+                        <div className="py-12 text-center text-xs text-[#555]">—</div>
+                    ) : (
+                        calls.map(call => {
+                            const dotColor = call.status === 'completed' ? '#b8f000'
+                                : call.status === 'missed' ? '#f59e0b' : '#ef4444';
+                            const statusLabel = call.status === 'completed' ? t('statusCompleted')
+                                : call.status === 'missed' ? t('statusMissed') : t('statusFailed');
+                            const number = call.caller_number || '—';
 
-                        return (
-                            <div
-                                key={call.id}
-                                className="grid items-center px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 cursor-pointer hover:bg-[#0f0f0f] transition-colors"
-                                style={{ gridTemplateColumns: '12px 1fr 95px 115px 55px 115px 90px', minWidth: '650px' }}
-                                onClick={() => setSelected(call)}
-                            >
-                                <div className="w-2.5 h-2.5 rounded-full" style={{ background: dotColor }} />
-                                <span className="font-mono text-sm text-white truncate pr-3">{number}</span>
-                                <span className={`text-[11px] px-2.5 py-1 rounded font-bold w-fit ${
-                                    call.status === 'completed' ? 'bg-[#1a2a00] text-[#b8f000]'
-                                    : call.status === 'missed'  ? 'bg-[#2a1a00] text-[#f59e0b]'
-                                    : 'bg-[#2a0a0a] text-[#ef4444]'
-                                }`}>{statusLabel}</span>
-                                <span className="text-xs text-[#888]">{fmtTimestamp(call.created_at || call.started_at)}</span>
-                                <span className="text-xs text-[#555]">{fmtDuration(call.duration)}</span>
-                                <span>
-                                    {call.reservation_booked && (
-                                        <span className="text-[11px] px-2 py-0.5 rounded bg-[#1a2a00] text-[#b8f000]">
-                                            {t('resaCreated')}
-                                        </span>
-                                    )}
-                                </span>
-                                <span className="flex justify-end">
-                                    {call.status === 'completed' ? (
+                            return (
+                                <div
+                                    key={call.id}
+                                    className="grid items-center px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 cursor-pointer hover:bg-[#0f0f0f] transition-colors"
+                                    style={{ gridTemplateColumns: '12px 1fr 95px 115px 55px 115px 90px', minWidth: '650px' }}
+                                    onClick={() => setSelected(call)}
+                                >
+                                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: dotColor }} />
+                                    <span className="font-mono text-sm text-white truncate pr-3">{number}</span>
+                                    <span className={`text-[11px] px-2.5 py-1 rounded font-bold w-fit ${
+                                        call.status === 'completed' ? 'bg-[#1a2a00] text-[#b8f000]'
+                                        : call.status === 'missed'  ? 'bg-[#2a1a00] text-[#f59e0b]'
+                                        : 'bg-[#2a0a0a] text-[#ef4444]'
+                                    }`}>{statusLabel}</span>
+                                    <span className="text-xs text-[#888]">{fmtTimestamp(call.created_at || call.started_at)}</span>
+                                    <span className="text-xs text-[#555]">{fmtDuration(call.duration)}</span>
+                                    <span>
+                                        {call.reservation_booked && (
+                                            <span className="text-[11px] px-2 py-0.5 rounded bg-[#1a2a00] text-[#b8f000]">
+                                                {t('resaCreated')}
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span className="flex justify-end">
+                                        {call.status === 'completed' ? (
+                                            <button
+                                                onClick={e => { e.stopPropagation(); setSelected(call); }}
+                                                className="px-3 py-1.5 border border-[#2a2a2a] rounded-lg text-xs text-[#888] hover:border-[#b8f000] hover:text-white transition-colors"
+                                            >
+                                                Écouter
+                                            </button>
+                                        ) : (
+                                            <span className="text-[#555] text-sm">—</span>
+                                        )}
+                                    </span>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+
+                {/* Mobile card view */}
+                <div className="sm:hidden">
+                    <div className="px-5 py-4 border-b border-[#1a1a1a]">
+                        <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('history')}</p>
+                    </div>
+                    {calls.length === 0 ? (
+                        <div className="py-12 text-center text-xs text-[#555]">—</div>
+                    ) : (
+                        calls.map(call => {
+                            const dotColor = call.status === 'completed' ? '#b8f000'
+                                : call.status === 'missed' ? '#f59e0b' : '#ef4444';
+                            const statusLabel = call.status === 'completed' ? t('statusCompleted')
+                                : call.status === 'missed' ? t('statusMissed') : t('statusFailed');
+                            const number = call.caller_number || '—';
+
+                            return (
+                                <div
+                                    key={call.id}
+                                    className="border-b border-[#1a1a1a] last:border-0 p-4 cursor-pointer active:bg-[#0f0f0f] transition-colors"
+                                    onClick={() => setSelected(call)}
+                                >
+                                    <div className="flex items-start gap-3 mb-3">
+                                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5" style={{ background: dotColor }} />
+                                        <span className="font-mono text-sm text-white flex-1 truncate">{number}</span>
+                                        <span className={`text-[11px] px-2.5 py-1 rounded font-bold flex-shrink-0 ${
+                                            call.status === 'completed' ? 'bg-[#1a2a00] text-[#b8f000]'
+                                            : call.status === 'missed'  ? 'bg-[#2a1a00] text-[#f59e0b]'
+                                            : 'bg-[#2a0a0a] text-[#ef4444]'
+                                        }`}>{statusLabel}</span>
+                                    </div>
+                                    <div className="space-y-2 text-xs text-[#888] mb-3">
+                                        <div className="flex justify-between">
+                                            <span>DATE:</span>
+                                            <span className="text-white">{fmtTimestamp(call.created_at || call.started_at)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>DURÉE:</span>
+                                            <span className="text-[#555]">{fmtDuration(call.duration)}</span>
+                                        </div>
+                                        {call.reservation_booked && (
+                                            <div className="flex justify-between">
+                                                <span className="text-[11px] px-2 py-0.5 rounded bg-[#1a2a00] text-[#b8f000]">
+                                                    {t('resaCreated')}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {call.status === 'completed' && (
                                         <button
                                             onClick={e => { e.stopPropagation(); setSelected(call); }}
-                                            className="px-3 py-1.5 border border-[#2a2a2a] rounded-lg text-xs text-[#888] hover:border-[#b8f000] hover:text-white transition-colors"
+                                            className="w-full px-3 py-1.5 border border-[#2a2a2a] rounded-lg text-xs text-[#888] hover:border-[#b8f000] hover:text-white transition-colors"
                                         >
                                             Écouter
                                         </button>
-                                    ) : (
-                                        <span className="text-[#555] text-sm">—</span>
                                     )}
-                                </span>
-                            </div>
-                        );
-                    })
-                )}
-            </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
             </div>
         </div>
     );

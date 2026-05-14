@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { settingsAPI } from '../lib/api';
-import { getPostAuthRedirect } from '../lib/postAuthRedirect';
 import {
     Store, Clock, Mail, ClipboardList,
     ChevronRight, ChevronLeft, Save, Copy, Check, Rocket,
@@ -318,7 +317,7 @@ const SetupRestaurant: React.FC = () => {
                                     <FieldLabel>Adresse</FieldLabel>
                                     <input className={inputCls} value={info.address} onChange={e => setInfo({ ...info, address: e.target.value })} placeholder="123 Rue Principale, 75001 Paris" />
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <FieldLabel>Téléphone</FieldLabel>
                                         <input className={inputCls} type="tel" value={info.phone} onChange={e => setInfo({ ...info, phone: e.target.value })} placeholder="+33 1 23 45 67 89" />
@@ -379,7 +378,7 @@ const SetupRestaurant: React.FC = () => {
                                                 onToggle={() => setServices(sv => ({ ...sv, lunch: { ...sv.lunch, active: !sv.lunch.active } }))} />
                                         </div>
                                         {services.lunch.active && (
-                                            <div className="grid grid-cols-3 gap-2">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                 <div><FieldLabel>Début</FieldLabel>
                                                     <input type="time" className={`${timeCls} w-full`} value={services.lunch.from}
                                                         onChange={e => setServices(sv => ({ ...sv, lunch: { ...sv.lunch, from: e.target.value } }))} /></div>
@@ -400,7 +399,7 @@ const SetupRestaurant: React.FC = () => {
                                                 onToggle={() => setServices(sv => ({ ...sv, dinner: { ...sv.dinner, active: !sv.dinner.active } }))} />
                                         </div>
                                         {services.dinner.active && (
-                                            <div className="grid grid-cols-3 gap-2">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                 <div><FieldLabel>Début</FieldLabel>
                                                     <input type="time" className={`${timeCls} w-full`} value={services.dinner.from}
                                                         onChange={e => setServices(sv => ({ ...sv, dinner: { ...sv.dinner, from: e.target.value } }))} /></div>
@@ -494,7 +493,7 @@ const SetupRestaurant: React.FC = () => {
                                 </div>
 
                                 <button
-                                    onClick={() => navigate(getPostAuthRedirect(user))}
+                                    onClick={() => navigate('/setup/success')}
                                     className="w-full h-14 mt-2 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-colors"
                                     style={{ background: '#b8f000', color: '#000' }}
                                 >
