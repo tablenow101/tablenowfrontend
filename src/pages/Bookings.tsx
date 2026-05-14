@@ -324,53 +324,102 @@ const Bookings: React.FC = () => {
                 />
             </div>
 
-            <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] overflow-hidden"><div className="overflow-x-auto">
-                {/* Table header */}
-                <div className="grid items-center px-5 py-3 border-b border-[#1f1f1f]"
-                    style={{ gridTemplateColumns: "1.8fr 1.2fr 90px 70px 110px 90px", minWidth: "580px" }}>
-                    {[t('client'), t('date'), t('time'), 'COUV.', t('status'), ''].map(h => (
-                        <span key={h} className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{h}</span>
-                    ))}
+            <div className="rounded-2xl bg-[#111] border border-[#1f1f1f] overflow-hidden">
+                {/* Desktop table view */}
+                <div className="hidden sm:block overflow-x-auto">
+                    <div className="grid items-center px-5 py-3 border-b border-[#1f1f1f]"
+                        style={{ gridTemplateColumns: "1.8fr 1.2fr 90px 70px 110px 90px", minWidth: "580px" }}>
+                        {[t('client'), t('date'), t('time'), 'COUV.', t('status'), ''].map(h => (
+                            <span key={h} className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{h}</span>
+                        ))}
+                    </div>
+                    {filteredBookings.length === 0 ? (
+                        <div className="text-center py-12">
+                            <Calendar size={32} className="mx-auto text-gray-700 mb-3" />
+                            <p className="text-sm text-gray-500">{t('noResas')}</p>
+                        </div>
+                    ) : (() => {
+                        const statusConfig = getStatusConfig(t);
+                        return filteredBookings.map((booking) => {
+                            const st = statusConfig[booking.status] || statusConfig.confirmed;
+                            return (
+                                <div
+                                    key={booking.id}
+                                    className="grid items-center px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 hover:bg-[#161616] transition-colors cursor-pointer"
+                                    style={{ gridTemplateColumns: "1.8fr 1.2fr 90px 70px 110px 90px", minWidth: "580px" }}
+                                    onClick={() => setSelectedBooking(booking)}
+                                >
+                                    <span className="text-sm font-medium text-white truncate pr-3">{getBookingName(booking)}</span>
+                                    <span className="text-sm text-[#888]">{getBookingDate(booking)}</span>
+                                    <span className="text-sm font-bold" style={{ color: '#b8f000' }}>{getBookingTime(booking)}</span>
+                                    <span className="text-sm text-white">{getGuestCount(booking)}</span>
+                                    <span>
+                                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border ${st.cls}`}>{st.label}</span>
+                                    </span>
+                                    <span>
+                                        {booking.status === 'confirmed' && (
+                                            <button
+                                                onClick={e => { e.stopPropagation(); setCancelTarget(booking); }}
+                                                className="px-2.5 py-1 rounded-lg text-xs text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-colors"
+                                            >
+                                                Annuler
+                                            </button>
+                                        )}
+                                    </span>
+                                </div>
+                            );
+                        });
+                    })()}
                 </div>
 
-                {filteredBookings.length === 0 ? (
-                    <div className="text-center py-12">
-                        <Calendar size={32} className="mx-auto text-gray-700 mb-3" />
-                        <p className="text-sm text-gray-500">{t('noResas')}</p>
-                    </div>
-                ) : (() => {
-                    const statusConfig = getStatusConfig(t);
-                    return filteredBookings.map((booking) => {
-                        const st = statusConfig[booking.status] || statusConfig.confirmed;
-                        return (
-                            <div
-                                key={booking.id}
-                                className="grid items-center px-5 py-3.5 border-b border-[#1a1a1a] last:border-0 hover:bg-[#161616] transition-colors cursor-pointer"
-                                style={{ gridTemplateColumns: "1.8fr 1.2fr 90px 70px 110px 90px", minWidth: "580px" }}
-                                onClick={() => setSelectedBooking(booking)}
-                            >
-                                <span className="text-sm font-medium text-white truncate pr-3">{getBookingName(booking)}</span>
-                                <span className="text-sm text-[#888]">{getBookingDate(booking)}</span>
-                                <span className="text-sm font-bold" style={{ color: '#b8f000' }}>{getBookingTime(booking)}</span>
-                                <span className="text-sm text-white">{getGuestCount(booking)}</span>
-                                <span>
-                                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border ${st.cls}`}>{st.label}</span>
-                                </span>
-                                <span>
+                {/* Mobile card view */}
+                <div className="sm:hidden">
+                    {filteredBookings.length === 0 ? (
+                        <div className="text-center py-12">
+                            <Calendar size={32} className="mx-auto text-gray-700 mb-3" />
+                            <p className="text-sm text-gray-500">{t('noResas')}</p>
+                        </div>
+                    ) : (() => {
+                        const statusConfig = getStatusConfig(t);
+                        return filteredBookings.map((booking) => {
+                            const st = statusConfig[booking.status] || statusConfig.confirmed;
+                            return (
+                                <div
+                                    key={booking.id}
+                                    className="border-b border-[#1a1a1a] last:border-0 p-4 cursor-pointer active:bg-[#161616] transition-colors"
+                                    onClick={() => setSelectedBooking(booking)}
+                                >
+                                    <div className="flex items-start justify-between mb-3">
+                                        <span className="text-sm font-bold text-white">{getBookingName(booking)}</span>
+                                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border flex-shrink-0 ml-2 ${st.cls}`}>{st.label}</span>
+                                    </div>
+                                    <div className="space-y-2 text-xs text-[#888]">
+                                        <div className="flex justify-between">
+                                            <span>{t('date')}:</span>
+                                            <span className="text-white">{getBookingDate(booking)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>{t('time')}:</span>
+                                            <span className="text-[#b8f000] font-bold">{getBookingTime(booking)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>COUV.:</span>
+                                            <span className="text-white">{getGuestCount(booking)}</span>
+                                        </div>
+                                    </div>
                                     {booking.status === 'confirmed' && (
                                         <button
                                             onClick={e => { e.stopPropagation(); setCancelTarget(booking); }}
-                                            className="px-2.5 py-1 rounded-lg text-xs text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-colors"
+                                            className="mt-3 w-full px-2.5 py-1.5 rounded-lg text-xs text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-colors"
                                         >
                                             Annuler
                                         </button>
                                     )}
-                                </span>
-                            </div>
-                        );
-                    });
-                })()}
-            </div>
+                                </div>
+                            );
+                        });
+                    })()}
+                </div>
             </div>
         </div>
     );
