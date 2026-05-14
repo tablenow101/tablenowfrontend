@@ -70,7 +70,7 @@ function CallDrawer({ call, onClose, t }: { call: CallLog; onClose: () => void; 
                 {/* Meta */}
                 <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4 mb-5">
                     <p className={`text-base font-bold mb-3 ${call.guest_name ? 'text-white' : 'text-white font-mono'}`}>{name}</p>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">{t('status')}</p>
                             <div className="flex items-center gap-1.5">

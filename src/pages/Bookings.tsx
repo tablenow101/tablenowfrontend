@@ -133,7 +133,7 @@ function BookingDetailDrawer({ booking, onClose, onCancel }: { booking: Booking;
                     {/* Infos résa */}
                     <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-4">
                         <p className="text-base font-bold text-white mb-3">{booking.guest_name || 'Client'}</p>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">DATE</p>
                                 <p className="text-sm text-white">{date}</p>
