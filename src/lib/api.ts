@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getAccessToken } from './authToken';
+import { supabase } from './supabase';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
 
@@ -9,10 +9,10 @@ const api = axios.create({
     withCredentials: true,
 });
 
-api.interceptors.request.use((config) => {
-    const token = getAccessToken();
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(async (config) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
     }
     return config;
 });
