@@ -1,96 +1,75 @@
 import axios from 'axios';
-import { supabase } from './supabase';
+import { getAccessToken } from './authToken';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
 
-const api = axios.create({
-    baseURL: `${API_URL}/api`,
-    headers: { 'Content-Type': 'application/json' },
-    withCredentials: true,
+export const api = axios.create({
+  baseURL: `${API_URL}/api`,
+  withCredentials: true,
 });
 
-api.interceptors.request.use(async (config) => {
-    // Try to get token from Supabase session first (async)
-    let accessToken: string | undefined;
-    try {
-        const { data } = await supabase.auth.getSession();
-        accessToken = data?.session?.access_token;
-    } catch (err) {
-        console.warn('Failed to get Supabase session:', err);
-    }
-
-    // Fallback: read from localStorage where Supabase persists the session
-    if (!accessToken) {
-        const stored = localStorage.getItem('sb-auth-token') || localStorage.getItem('sb-token');
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                accessToken = parsed.session?.access_token || parsed.access_token;
-            } catch (e) {
-                // ignore parse error
-            }
-        }
-    }
-
-    if (accessToken) {
-        config.headers = config.headers ?? {};
-        (config.headers as any).Authorization = `Bearer ${accessToken}`;
-    }
-
-    return config;
+// Request: injection SYNCHRONE du Bearer depuis la mémoire
+api.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token) {
+    config.headers = config.headers ?? {};
+    (config.headers as any).Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
+// Response: NE JAMAIS auto-logout ici
 api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        // Do NOT auto-logout on 401/403. This causes "connect then disconnect" loops.
-        // Let the component handle the error (show "session expired" + offer "Reconnect" button).
-        return Promise.reject(error);
-    }
+  (res) => res,
+  (error) => {
+    // Laisser les composants gérer les 401/403 (affichage / reconnect)
+    return Promise.reject(error);
+  }
 );
 
+// API wrappers
 export const authAPI = {
-    register:       (data: Record<string, unknown>)    => api.post('/auth/register', data),
-    login:          (data: Record<string, unknown>)    => api.post('/auth/login', data),
-    verifyEmail:    (token: string)=> api.post('/auth/verify-email', { token }),
-    getMe:          ()             => api.get('/auth/me'),
-    googleCallback: (token: string)=> api.post('/auth/google/token', { access_token: token }),
+  register: (data: Record<string, unknown>) => api.post('/auth/register', data),
+  login: (data: Record<string, unknown>) => api.post('/auth/login', data),
+  verifyEmail: (token: string) => api.post('/auth/verify-email', { token }),
+  getMe: () => api.get('/auth/me'),
+  googleCallback: (token: string) => api.post('/auth/google/token', { access_token: token }),
 };
 
 export const dashboardAPI = {
-    getStats:    (params?: Record<string, unknown>) => api.get('/dashboard/stats', { params }),
-    getCalls:    (params?: Record<string, unknown>) => api.get('/dashboard/calls', { params }),
-    getInsights: (date: string) => api.get('/dashboard/insights', { params: { date } }),
+  getStats: (params?: Record<string, unknown>) => api.get('/dashboard/stats', { params }),
+  getCalls: (params?: Record<string, unknown>) => api.get('/dashboard/calls', { params }),
+  getInsights: (date: string) => api.get('/dashboard/insights', { params: { date } }),
 };
 
 export const bookingsAPI = {
-    getAll: (params?: Record<string, unknown>)          => api.get('/bookings', { params }),
-    getOne: (id: string)            => api.get(`/bookings/${id}`),
-    create: (data: Record<string, unknown>)             => api.post('/bookings', data),
-    update: (id: string, data: Record<string, unknown>) => api.put(`/bookings/${id}`, data),
-    cancel: (id: string)            => api.delete(`/bookings/${id}`),
+  getAll: (params?: Record<string, unknown>) => api.get('/bookings', { params }),
+  getOne: (id: string) => api.get(`/bookings/${id}`),
+  create: (data: Record<string, unknown>) => api.post('/bookings', data),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/bookings/${id}`, data),
+  cancel: (id: string) => api.delete(`/bookings/${id}`),
 };
 
 export const settingsAPI = {
-    get:       ()          => api.get('/settings'),
-    update:    (data: Record<string, unknown>) => api.put('/settings', data),
-    retryVapi: ()          => api.post('/settings/retry-vapi'),
+  get: () => api.get('/settings'),
+  update: (data: Record<string, unknown>) => api.put('/settings', data),
+  retryVapi: () => api.post('/settings/retry-vapi'),
 };
 
 export const calendarAPI = {
-    getAuthUrl: (params?: Record<string, unknown>) => api.get('/calendar/auth-url', { params }),
-    callback:   (code: string)                    => api.post('/calendar/callback', { code }),
-    disconnect: ()                                => api.post('/calendar/disconnect'),
-    skip:       ()                                => api.post('/calendar/skip'),
+  getAuthUrl: (params?: Record<string, unknown>) => api.get('/calendar/auth-url', { params }),
+  callback: (code: string) => api.post('/calendar/callback', { code }),
+  disconnect: () => api.post('/calendar/disconnect'),
+  skip: () => api.post('/calendar/skip'),
 };
 
 export const emailAPI = {
-    getBCCEmails: (params?: Record<string, unknown>) => api.get('/email/bcc', { params }),
+  getBCCEmails: (params?: Record<string, unknown>) => api.get('/email/bcc', { params }),
 };
 
 export const referralAPI = {
-    getStats: () => api.get('/referral/stats'),
-    getCode:  () => api.get('/referral/code'),
+  getStats: () => api.get('/referral/stats'),
+  getCode: () => api.get('/referral/code'),
 };
 
 export default api;

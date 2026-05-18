@@ -5,7 +5,7 @@ import { Calendar, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import { useLang } from '../../hooks/useLang';
 
 const CalendarSettings: React.FC = () => {
-  const { user, refreshUser } = useAuth();
+  const { user, authReady, refreshUser } = useAuth();
   const { t } = useLang();
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -92,9 +92,9 @@ const CalendarSettings: React.FC = () => {
               className="px-4 py-2 bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-red-400 rounded-xl hover:border-red-400/40 transition-colors">
               {disconnecting ? '…' : 'Disconnect'}
             </button>
-          : <button onClick={connect} disabled={connecting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#b8f000] text-black text-sm font-bold rounded-xl hover:opacity-90 transition-opacity">
-              <ExternalLink size={14}/> {connecting ? '…' : t('connectCal')}
+          : <button onClick={connect} disabled={connecting || !authReady}
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#b8f000] text-black text-sm font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
+              <ExternalLink size={14}/> {connecting ? '…' : authReady ? t('connectCal') : 'Chargement…'}
             </button>
         }
       </div>
