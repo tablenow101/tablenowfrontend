@@ -7,6 +7,7 @@ type AuthState = {
   session: any | null;
   authReady: boolean;
   refreshUser: () => Promise<void>;
+  login: (email: string, password: string, rememberMe: boolean) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -53,8 +54,16 @@ export function AuthProvider({ children }: { children: any }) {
     }
   };
 
+  const login = async (email: string, password: string, rememberMe: boolean) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+  };
+
   const value = useMemo(
-    () => ({ user, session, authReady, refreshUser }),
+    () => ({ user, session, authReady, refreshUser, login }),
     [user, session, authReady]
   );
 

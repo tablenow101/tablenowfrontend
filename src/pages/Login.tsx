@@ -86,10 +86,10 @@ const Login: React.FC = () => {
     setLoading(true);
     try {
       await login(email, password, rememberMe);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: unknown) {
       const error = err instanceof Error ? err : new Error(String(err));
-      setError(((error as Record<string, unknown>).response as Record<string, unknown> | undefined)?.data?.error || t.errorDefault);
+      setError(t.errorDefault);
     } finally {
       setLoading(false);
     }
