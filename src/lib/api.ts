@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getAccessToken } from './authToken';
+import { supabase } from './supabase';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
 
@@ -8,21 +8,19 @@ export const api = axios.create({
   withCredentials: true,
 });
 
-// Request: injection SYNCHRONE du Bearer depuis la mémoire
-api.interceptors.request.use((config) => {
-  const token = getAccessToken();
-  if (token) {
-    config.headers = config.headers ?? {};
-    (config.headers as any).Authorization = `Bearer ${token}`;
+// Request: inject Supabase JWT from session
+api.interceptors.request.use(async (config) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    config.headers.Authorization = `Bearer ${session.access_token}`;
   }
   return config;
 });
 
-// Response: NE JAMAIS auto-logout ici
+// Response: let components handle auth errors
 api.interceptors.response.use(
   (res) => res,
   (error) => {
-    // Laisser les composants gérer les 401/403 (affichage / reconnect)
     return Promise.reject(error);
   }
 );
