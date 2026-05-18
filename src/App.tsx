@@ -71,11 +71,8 @@ const AppRoutes = () => {
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
 
-      <Route path="/setup/restaurant" element={
-        <PrivateRoute>
-          <SetupRestaurant />
-        </PrivateRoute>
-      } />
+      <Route path="/setup" element={<RedirectToDashboard />} />
+      <Route path="/setup/restaurant" element={<RedirectToDashboard />} />
 
       <Route path="/setup/success" element={
         <PrivateRoute>
@@ -83,9 +80,9 @@ const AppRoutes = () => {
         </PrivateRoute>
       } />
 
-      <Route path="/start" element={<Navigate to="/login" replace />} />
-      <Route path="/signup" element={<Navigate to="/login" replace />} />
-      <Route path="/onboarding" element={<Navigate to="/login" replace />} />
+      <Route path="/start" element={<RedirectToDashboard />} />
+      <Route path="/signup" element={<RedirectToDashboard />} />
+      <Route path="/onboarding" element={<RedirectToDashboard />} />
 
       <Route path="/" element={<RedirectToDashboard />} />
       <Route path="/dashboard" element={<RedirectToDashboard />} />
