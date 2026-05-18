@@ -32,20 +32,8 @@ const AuthCallback: React.FC = () => {
           throw new Error(exchangeError?.message || 'Échec de l\'échange PKCE');
         }
 
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
-        const response = await fetch(`${apiUrl}/api/auth/google/supabase`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ access_token: sessionData.session.access_token }),
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Authentification échouée');
-
-        localStorage.setItem('token', data.token);
         await refreshUser();
-
-        navigate(getPostAuthRedirect(data.restaurant || null), { replace: true });
+        navigate(getPostAuthRedirect(sessionData.session?.user as any || null), { replace: true });
       } catch (err: unknown) {
         console.error('Auth callback error:', err);
         setError((err instanceof Error ? err.message : String(err)) || 'Authentification échouée');
