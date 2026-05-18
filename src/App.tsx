@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './hooks/useAuth';
 import { LangProvider } from './context/LangProvider';
-import { getPostAuthRedirect } from './lib/postAuthRedirect';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
@@ -13,29 +12,29 @@ import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import CallLogs from './pages/CallLogs';
 import Settings from './pages/Settings';
+import NotLinked from './pages/NotLinked';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
-import DashboardRedirect from './components/DashboardRedirect';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function isDomainMarketingSite() {
   return window.location.hostname === 'tablenow.io' || window.location.hostname === 'www.tablenow.io';
 }
 
+// Public routes - always accessible
+const PublicRoutes = () => (
+  <Routes>
+    <Route path="/" element={<Landing />} />
+    <Route path="/login" element={<Login />} />
+    <Route path="/register" element={<Register />} />
+    <Route path="/verify-email" element={<VerifyEmail />} />
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes>
+);
+
+// Canonical private routes + guards
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, authReady } = useAuth();
-  if (!authReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="loading w-12 h-12"></div>
-      </div>
-    );
-  }
-  return user ? <>{children}</> : <Navigate to="/login" />;
-};
-
-const RedirectToDashboard: React.FC = () => {
-  const { user, authReady } = useAuth();
+  const { restaurant, authReady } = useAuth();
 
   if (!authReady) {
     return (
@@ -45,67 +44,165 @@ const RedirectToDashboard: React.FC = () => {
     );
   }
 
-  if (!user) return <Navigate to="/login" />;
+  // Restaurant linked: show content
+  if (restaurant?.id) {
+    return <>{children}</>;
+  }
 
-  return <Navigate to={getPostAuthRedirect(user)} replace />;
+  // No restaurant linked: show 403 page
+  return <NotLinked />;
 };
 
+// Guard for authenticated users
+const AuthenticatedGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { session, authReady } = useAuth();
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="loading w-12 h-12"></div>
+      </div>
+    );
+  }
+
+  return session ? <>{children}</> : <Navigate to="/login" replace />;
+};
+
+// App routes for authenticated users
 const AppRoutes = () => {
   const isMarketing = isDomainMarketingSite();
 
   if (isMarketing) {
-    return (
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    );
+    return <PublicRoutes />;
   }
 
   return (
     <Routes>
+      {/* Public routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
 
-      <Route path="/setup" element={<RedirectToDashboard />} />
-      <Route path="/setup/restaurant" element={<RedirectToDashboard />} />
+      {/* Legacy alias routes - redirect to canonical routes */}
+      <Route path="/setup" element={<LegacyRedirect />} />
+      <Route path="/setup/restaurant" element={<LegacyRedirect />} />
+      <Route path="/start" element={<LegacyRedirect />} />
+      <Route path="/signup" element={<LegacyRedirect />} />
+      <Route path="/onboarding" element={<LegacyRedirect />} />
 
-      <Route path="/setup/success" element={
-        <PrivateRoute>
-          <SetupSuccess />
-        </PrivateRoute>
-      } />
+      {/* Optional setup success page */}
+      <Route
+        path="/setup/success"
+        element={
+          <AuthenticatedGuard>
+            <SetupSuccess />
+          </AuthenticatedGuard>
+        }
+      />
 
-      <Route path="/start" element={<RedirectToDashboard />} />
-      <Route path="/signup" element={<RedirectToDashboard />} />
-      <Route path="/onboarding" element={<RedirectToDashboard />} />
+      {/* Canonical private routes */}
+      <Route
+        path="/dashboard"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
 
-      <Route path="/" element={<RedirectToDashboard />} />
-      <Route path="/dashboard" element={<DashboardRedirect />} />
-      <Route path="/bookings" element={<RedirectToDashboard />} />
-      <Route path="/calls" element={<RedirectToDashboard />} />
-      <Route path="/settings" element={<RedirectToDashboard />} />
+      <Route
+        path="/bookings"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Bookings />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
 
-      <Route path="/r/:restaurantSlug" element={
-        <PrivateRoute>
-          <Layout />
-        </PrivateRoute>
-      }>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="bookings" element={<Bookings />} />
-        <Route path="calls" element={<CallLogs />} />
-        <Route path="settings" element={<Settings />} />
-      </Route>
+      <Route
+        path="/calls"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <CallLogs />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
 
-      <Route path="*" element={<RedirectToDashboard />} />
+      <Route
+        path="/settings"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Settings />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+
+      {/* Legacy /r/:slug/... routes - redirect to canonical */}
+      <Route path="/r/:restaurantSlug" element={<LegacySlugRedirect />} />
+      <Route path="/r/:restaurantSlug/dashboard" element={<LegacySlugRedirect />} />
+      <Route path="/r/:restaurantSlug/bookings" element={<LegacySlugRedirect />} />
+      <Route path="/r/:restaurantSlug/calls" element={<LegacySlugRedirect />} />
+      <Route path="/r/:restaurantSlug/settings" element={<LegacySlugRedirect />} />
+
+      {/* Catch-all: redirect to canonical dashboard */}
+      <Route path="/" element={<RootRedirect />} />
+      <Route path="*" element={<RootRedirect />} />
     </Routes>
   );
+};
+
+// Redirect legacy /setup, /start, /signup to canonical route
+const LegacyRedirect: React.FC = () => {
+  const { session, authReady } = useAuth();
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="loading w-12 h-12"></div>
+      </div>
+    );
+  }
+
+  return <Navigate to={session ? '/dashboard' : '/login'} replace />;
+};
+
+// Redirect legacy /r/:slug/ routes to canonical
+const LegacySlugRedirect: React.FC = () => {
+  const { session, authReady } = useAuth();
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="loading w-12 h-12"></div>
+      </div>
+    );
+  }
+
+  return <Navigate to={session ? '/dashboard' : '/login'} replace />;
+};
+
+// Root redirect
+const RootRedirect: React.FC = () => {
+  const { session, authReady } = useAuth();
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="loading w-12 h-12"></div>
+      </div>
+    );
+  }
+
+  return <Navigate to={session ? '/dashboard' : '/login'} replace />;
 };
 
 function App() {

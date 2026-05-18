@@ -1,26 +1,24 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation, useParams } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLang } from '../hooks/useLang';
 import { LayoutDashboard, Calendar, Phone, Settings, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
 
-const Layout: React.FC = () => {
-    const { user, logout } = useAuth();
+const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+    const { logout } = useAuth();
     const { lang, setLang, t } = useLang();
     const location = useLocation();
-    const { restaurantSlug } = useParams();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [darkMode, setDarkMode] = useState(() => {
         return localStorage.getItem('theme') !== 'light';
     });
 
-    const base = `/r/${restaurantSlug}`;
-
+    // Canonical routes - no slug needed
     const nav = [
-        { key: 'navDashboard', href: `${base}/dashboard`, icon: LayoutDashboard },
-        { key: 'navReservations', href: `${base}/bookings`,  icon: Calendar        },
-        { key: 'navCalls',       href: `${base}/calls`,     icon: Phone            },
-        { key: 'navSettings',    href: `${base}/settings`,  icon: Settings         },
+        { key: 'navDashboard', href: '/dashboard', icon: LayoutDashboard },
+        { key: 'navReservations', href: '/bookings',  icon: Calendar        },
+        { key: 'navCalls',       href: '/calls',     icon: Phone            },
+        { key: 'navSettings',    href: '/settings',  icon: Settings         },
     ];
 
     const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
@@ -41,7 +39,7 @@ const Layout: React.FC = () => {
 
                     {/* Left */}
                     <div className="flex items-center gap-3 min-w-0">
-                        <Link to={`${base}/dashboard`} className="text-sm font-bold text-white tracking-tight whitespace-nowrap">
+                        <Link to="/dashboard" className="text-sm font-bold text-white tracking-tight whitespace-nowrap">
                             Table<span style={{ color: '#b8f000' }}>Now</span>
                         </Link>
                         {user?.name && (
@@ -164,7 +162,7 @@ const Layout: React.FC = () => {
 
             {/* ── Main content ──────────────────────────────────────────── */}
             <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: '80px' }}>
-                <Outlet />
+                {children || <Outlet />}
             </main>
         </div>
     );
