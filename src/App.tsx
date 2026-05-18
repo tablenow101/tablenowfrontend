@@ -7,7 +7,6 @@ import { getPostAuthRedirect } from './lib/postAuthRedirect';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
-import SetupRestaurant from './pages/SetupRestaurant';
 import SetupSuccess from './pages/SetupSuccess';
 import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
@@ -16,6 +15,8 @@ import CallLogs from './pages/CallLogs';
 import Settings from './pages/Settings';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
+import DashboardRedirect from './components/DashboardRedirect';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function isDomainMarketingSite() {
   return window.location.hostname === 'tablenow.io' || window.location.hostname === 'www.tablenow.io';
@@ -85,7 +86,7 @@ const AppRoutes = () => {
       <Route path="/onboarding" element={<RedirectToDashboard />} />
 
       <Route path="/" element={<RedirectToDashboard />} />
-      <Route path="/dashboard" element={<RedirectToDashboard />} />
+      <Route path="/dashboard" element={<DashboardRedirect />} />
       <Route path="/bookings" element={<RedirectToDashboard />} />
       <Route path="/calls" element={<RedirectToDashboard />} />
       <Route path="/settings" element={<RedirectToDashboard />} />
@@ -101,19 +102,23 @@ const AppRoutes = () => {
         <Route path="calls" element={<CallLogs />} />
         <Route path="settings" element={<Settings />} />
       </Route>
+
+      <Route path="*" element={<RedirectToDashboard />} />
     </Routes>
   );
 };
 
 function App() {
   return (
-    <BrowserRouter>
-      <LangProvider>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </LangProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <LangProvider>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </LangProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
