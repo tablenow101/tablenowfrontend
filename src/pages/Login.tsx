@@ -80,22 +80,21 @@ const Login: React.FC = () => {
   const [forgotError, setForgotError]     = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await login(email, password, rememberMe);
+      await login(email, password);
       navigate('/dashboard');
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
+    } catch {
       setError(t.errorDefault);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleForgot = async (e: React.FormEvent) => {
+  const handleForgot = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setForgotError('');
     setForgotLoading(true);

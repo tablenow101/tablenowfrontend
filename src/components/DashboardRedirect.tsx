@@ -28,7 +28,7 @@ const DashboardRedirect: React.FC = () => {
         }
 
         navigate(`/r/${restaurant.slug}/dashboard`, { replace: true });
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to fetch restaurant:', err);
         setError('Failed to load restaurant. Please try again.');
       }

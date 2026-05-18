@@ -33,7 +33,7 @@ const AuthCallback: React.FC = () => {
         }
 
         await refreshUser();
-        navigate(getPostAuthRedirect(sessionData.session?.user as any || null), { replace: true });
+        navigate(getPostAuthRedirect(sessionData.session?.user ?? null), { replace: true });
       } catch (err: unknown) {
         console.error('Auth callback error:', err);
         setError((err instanceof Error ? err.message : String(err)) || 'Authentification échouée');

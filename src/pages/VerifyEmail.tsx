@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { authAPI } from '../lib/api';
-import { useAuth } from '../hooks/useAuth';
-import { getPostAuthRedirect, AuthUser } from '../lib/postAuthRedirect';
+import { getPostAuthRedirect, type AuthUser } from '../lib/postAuthRedirect';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 
 const VerifyEmail: React.FC = () => {
@@ -11,7 +10,7 @@ const VerifyEmail: React.FC = () => {
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
 
-    const verifyEmail = useCallback(async () => {
+    const verifyEmail = useCallback(async (): Promise<void> => {
         const token = searchParams.get('token');
 
         if (!token) {
@@ -30,9 +29,14 @@ const VerifyEmail: React.FC = () => {
             setTimeout(() => navigate(getPostAuthRedirect(restaurant as unknown as AuthUser | null), { replace: true }), 1500);
         } catch (error: unknown) {
             setStatus('error');
-            setMessage(error.response?.data?.error || 'La vérification a échoué');
+            let errorMessage = 'La vérification a échoué';
+            if (error && typeof error === 'object' && 'response' in error) {
+              const axiosError = error as { response?: { data?: { error?: string } } };
+              errorMessage = axiosError.response?.data?.error || errorMessage;
+            }
+            setMessage(errorMessage);
         }
-    }, [searchParams, navigate]);
+    }, [searchParams, navigate]) as () => Promise<void>;
 
     useEffect(() => {
         verifyEmail();
