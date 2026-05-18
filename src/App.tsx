@@ -7,7 +7,6 @@ import { getPostAuthRedirect } from './lib/postAuthRedirect';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
-import SetupRestaurant from './pages/SetupRestaurant';
 import SetupSuccess from './pages/SetupSuccess';
 import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
