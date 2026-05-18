@@ -10,8 +10,27 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
-    const { data } = await supabase.auth.getSession();
-    const accessToken = data?.session?.access_token;
+    // Try to get token from Supabase session first (async)
+    let accessToken: string | undefined;
+    try {
+        const { data } = await supabase.auth.getSession();
+        accessToken = data?.session?.access_token;
+    } catch (err) {
+        console.warn('Failed to get Supabase session:', err);
+    }
+
+    // Fallback: read from localStorage where Supabase persists the session
+    if (!accessToken) {
+        const stored = localStorage.getItem('sb-auth-token') || localStorage.getItem('sb-token');
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                accessToken = parsed.session?.access_token || parsed.access_token;
+            } catch (e) {
+                // ignore parse error
+            }
+        }
+    }
 
     if (accessToken) {
         config.headers = config.headers ?? {};

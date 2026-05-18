@@ -20,11 +20,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Initialize auth state from Supabase session
         const initAuth = async () => {
             try {
+                // Give Supabase a moment to hydrate from localStorage
+                await new Promise(resolve => setTimeout(resolve, 100));
+
                 const { data } = await supabase.auth.getSession();
                 if (data?.session?.access_token) {
                     // Session exists, fetch user from backend
-                    const res = await authAPI.getMe();
-                    setUser(res.data?.restaurant || null);
+                    try {
+                        const res = await authAPI.getMe();
+                        setUser(res.data?.restaurant || null);
+                    } catch (err) {
+                        console.error('Failed to fetch user:', err);
+                        setUser(null);
+                    }
                 } else {
                     // No Supabase session
                     setUser(null);
