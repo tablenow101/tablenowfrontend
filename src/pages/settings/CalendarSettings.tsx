@@ -14,10 +14,13 @@ const CalendarSettings: React.FC = () => {
   const connect = async () => {
     setConnecting(true);
     try {
-      const res = await calendarAPI.getAuthUrl();
+      const res = await calendarAPI.getAuthUrl({ returnTo: '/settings' });
       const url = res.data?.authUrl ?? res.data?.url ?? res.data?.auth_url ?? res.data;
       if (typeof url === 'string') window.location.href = url;
-    } catch { setConnecting(false); }
+    } catch (error) {
+      console.error('Failed to get calendar auth URL:', error);
+      setConnecting(false);
+    }
   };
 
   const disconnect = async () => {

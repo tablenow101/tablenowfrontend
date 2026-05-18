@@ -5,6 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
 const api = axios.create({
     baseURL: `${API_URL}/api`,
     headers: { 'Content-Type': 'application/json' },
+    withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
@@ -54,9 +55,10 @@ export const settingsAPI = {
 };
 
 export const calendarAPI = {
-    getAuthUrl: ()             => api.get('/calendar/auth-url'),
-    callback:   (code: string) => api.post('/calendar/callback', { code }),
-    disconnect: ()             => api.post('/calendar/disconnect'),
+    getAuthUrl: (params?: Record<string, unknown>) => api.get('/calendar/auth-url', { params }),
+    callback:   (code: string)                    => api.post('/calendar/callback', { code }),
+    disconnect: ()                                => api.post('/calendar/disconnect'),
+    skip:       ()                                => api.post('/calendar/skip'),
 };
 
 export const emailAPI = {
