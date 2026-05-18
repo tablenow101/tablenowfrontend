@@ -5,7 +5,7 @@ import { Calendar, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import { useLang } from '../../hooks/useLang';
 
 const CalendarSettings: React.FC = () => {
-  const { user, refetch } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { t } = useLang();
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -30,8 +30,8 @@ const CalendarSettings: React.FC = () => {
       try {
         await calendarAPI.callback(code);
         // Reload user context to update calendar_status
-        if (typeof refetch === 'function') {
-          await refetch();
+        if (typeof refreshUser === 'function') {
+          await refreshUser();
         } else {
           window.location.reload();
         }

@@ -16,6 +16,7 @@ export interface AuthContextType {
     register: (data: Record<string, unknown>) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
+    refetch?: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
