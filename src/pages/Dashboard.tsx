@@ -127,7 +127,7 @@ function BookingRow({ booking }: { booking: Booking }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 const Dashboard: React.FC = () => {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const { t } = useLang();
     const { restaurantSlug } = useParams();
     const slug = restaurantSlug || user?.slug || '';
@@ -175,7 +175,11 @@ const Dashboard: React.FC = () => {
         }
     }, [range]);
 
-    useEffect(() => { fetchTodayStats(); fetchInsights(); }, [fetchTodayStats, fetchInsights]);
+    useEffect(() => {
+        if (authLoading) return;
+        fetchTodayStats();
+        fetchInsights();
+    }, [authLoading, fetchTodayStats, fetchInsights]);
     useEffect(() => { fetchStats(); }, [fetchStats]);
 
     const greeting = () => {
