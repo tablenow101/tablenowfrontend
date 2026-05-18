@@ -1,68 +1,107 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { setAccessToken } from '../lib/authToken';
+import React, { useState, useEffect } from 'react';
+import { authAPI } from '../lib/api';
+import { setAccessToken, getAccessToken } from '../lib/authToken';
+import { AuthContext } from './authContext';
 
-type AuthState = {
-  user: any | null;
-  session: any | null;
-  authReady: boolean;
-  refreshUser: () => Promise<void>;
-};
+interface User {
+    id: string;
+    email: string;
+    name: string;
+    slug?: string;
+    [key: string]: unknown;
+}
 
-const AuthContext = createContext<AuthState | undefined>(undefined);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [authReady, setAuthReady] = useState(false);
 
-export function AuthProvider({ children }: { children: any }) {
-  const [session, setSession] = useState<any | null>(null);
-  const [user, setUser] = useState<any | null>(null);
-  const [authReady, setAuthReady] = useState(false);
+    useEffect(() => {
+        let mounted = true;
 
-  useEffect(() => {
-    let mounted = true;
+        const initAuth = async () => {
+            try {
+                // Restore token from localStorage
+                const savedToken = localStorage.getItem('backend_token');
+                if (savedToken) {
+                    setAccessToken(savedToken);
+                }
 
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
+                // Validate token with /api/auth/me
+                const token = getAccessToken();
+                if (token) {
+                    try {
+                        const response = await authAPI.getMe();
+                        if (mounted) {
+                            setUser(response.data);
+                        }
+                    } catch {
+                        // Token invalid, clear it
+                        localStorage.removeItem('backend_token');
+                        setAccessToken(null);
+                        setUser(null);
+                    }
+                }
+            } catch (err) {
+                console.error('Auth init error:', err);
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                    setAuthReady(true);
+                }
+            }
+        };
 
-      setSession(data.session ?? null);
-      setUser(data.session?.user ?? null);
-      setAccessToken(data.session?.access_token ?? null);
-      setAuthReady(true);
-    })();
+        initAuth();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      setAccessToken(newSession?.access_token ?? null);
-      setAuthReady(true);
-    });
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
-    return () => {
-      mounted = false;
-      sub?.subscription?.unsubscribe();
+    const login = async (email: string, password: string, rememberMe = false) => {
+        const response = await authAPI.login({ email, password });
+        const token = response.data.access_token || response.data.token;
+
+        if (token) {
+            setAccessToken(token);
+            localStorage.setItem('backend_token', token);
+            const userResponse = await authAPI.getMe();
+            setUser(userResponse.data);
+        }
     };
-  }, []);
 
-  const refreshUser = async () => {
-    try {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session ?? null);
-      setUser(data.session?.user ?? null);
-      setAccessToken(data.session?.access_token ?? null);
-    } catch (err) {
-      console.error('Failed to refresh user:', err);
-    }
-  };
+    const loginWithToken = (token: string, restaurant: User): void => {
+        setAccessToken(token);
+        localStorage.setItem('backend_token', token);
+        setUser(restaurant);
+    };
 
-  const value = useMemo(
-    () => ({ user, session, authReady, refreshUser }),
-    [user, session, authReady]
-  );
+    const register = async (data: Record<string, unknown>) => {
+        await authAPI.register(data);
+    };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+    const logout = () => {
+        setAccessToken(null);
+        localStorage.removeItem('backend_token');
+        setUser(null);
+        setAuthReady(false);
+        window.location.href = '/login';
+    };
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
-}
+    const refreshUser = async () => {
+        try {
+            const response = await authAPI.getMe();
+            setUser(response.data);
+        } catch (err) {
+            console.error('Refresh user error:', err);
+            await logout();
+        }
+    };
+
+    return (
+        <AuthContext.Provider value={{ user, loading, authReady, login, loginWithToken, register, logout, refreshUser }}>
+            {children}
+        </AuthContext.Provider>
+    );
+};

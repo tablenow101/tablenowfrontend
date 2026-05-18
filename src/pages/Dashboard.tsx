@@ -180,7 +180,11 @@ const Dashboard: React.FC = () => {
         fetchTodayStats();
         fetchInsights();
     }, [authReady, fetchTodayStats, fetchInsights]);
-    useEffect(() => { fetchStats(); }, [fetchStats]);
+
+    useEffect(() => {
+        if (!authReady) return;
+        fetchStats();
+    }, [authReady, fetchStats]);
 
     const greeting = () => {
         const h = new Date().getHours();
