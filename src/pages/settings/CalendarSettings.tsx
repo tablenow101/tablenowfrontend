@@ -59,8 +59,18 @@ const CalendarSettings: React.FC = () => {
 
   const disconnect = async () => {
     setDisconnecting(true);
-    try { await calendarAPI.disconnect(); window.location.reload(); }
-    catch { setDisconnecting(false); }
+    try {
+      await calendarAPI.disconnect();
+      // Refresh user context to update calendar_status
+      if (typeof refreshUser === 'function') {
+        await refreshUser();
+      } else {
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error('Calendar disconnect failed:', err);
+      setDisconnecting(false);
+    }
   };
 
   return (
