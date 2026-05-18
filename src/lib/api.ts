@@ -24,11 +24,8 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            localStorage.removeItem('token');
-            sessionStorage.removeItem('token');
-            window.location.href = '/login';
-        }
+        // Do NOT auto-logout on 401/403. This causes "connect then disconnect" loops.
+        // Let the component handle the error (show "session expired" + offer "Reconnect" button).
         return Promise.reject(error);
     }
 );
