@@ -22,8 +22,8 @@ function isDomainMarketingSite() {
 }
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) {
+  const { user, authReady } = useAuth();
+  if (!authReady) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading w-12 h-12"></div>
@@ -34,9 +34,9 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 };
 
 const RedirectToDashboard: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, authReady } = useAuth();
 
-  if (loading) {
+  if (!authReady) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading w-12 h-12"></div>

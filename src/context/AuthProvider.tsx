@@ -12,6 +12,8 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
+export { AuthContext };
+
 export function AuthProvider({ children }: { children: any }) {
   const [session, setSession] = useState<any | null>(null);
   const [user, setUser] = useState<any | null>(null);

@@ -1,4 +1,7 @@
-import { AuthUser } from '../context/authContext';
+export interface AuthUser {
+  slug?: string;
+  [key: string]: unknown;
+}
 
 export function getPostAuthRedirect(restaurant: AuthUser | null): string {
   if (!restaurant) return '/login';

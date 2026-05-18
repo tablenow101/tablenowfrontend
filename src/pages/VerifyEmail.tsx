@@ -2,8 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { authAPI } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
-import { getPostAuthRedirect } from '../lib/postAuthRedirect';
-import { AuthUser } from '../context/authContext';
+import { getPostAuthRedirect, AuthUser } from '../lib/postAuthRedirect';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 
 const VerifyEmail: React.FC = () => {
@@ -11,7 +10,6 @@ const VerifyEmail: React.FC = () => {
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
-    const { loginWithToken } = useAuth();
 
     const verifyEmail = useCallback(async () => {
         const token = searchParams.get('token');
@@ -24,13 +22,7 @@ const VerifyEmail: React.FC = () => {
 
         try {
             const response = await authAPI.verifyEmail(token);
-            const { token: authToken, restaurant } = response.data;
-
-            if (authToken && restaurant) {
-                loginWithToken(authToken, restaurant);
-            } else if (authToken) {
-                localStorage.setItem('token', authToken);
-            }
+            const { restaurant } = response.data;
 
             setStatus('success');
             setMessage(response.data.message || 'Email vérifié avec succès !');
@@ -40,7 +32,7 @@ const VerifyEmail: React.FC = () => {
             setStatus('error');
             setMessage(error.response?.data?.error || 'La vérification a échoué');
         }
-    }, [searchParams, loginWithToken, navigate]);
+    }, [searchParams, navigate]);
 
     useEffect(() => {
         verifyEmail();
