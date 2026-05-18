@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { getPostAuthRedirect } from '../lib/postAuthRedirect';
-import { setAccessToken } from '../lib/authToken';
-import { authAPI } from '../lib/api';
 import { AlertCircle } from 'lucide-react';
 
 const AuthCallback: React.FC = () => {
@@ -24,6 +22,9 @@ const AuthCallback: React.FC = () => {
         const code = params.get('code');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
+        // Use Supabase JS client to perform PKCE exchange — it reads the
+        // code_verifier from localStorage (set during signInWithOAuth) and
+        // sends the correct headers. Manual fetch bypasses this and fails.
         const { data: sessionData, error: exchangeError } =
           await supabase.auth.exchangeCodeForSession(code);
 
@@ -31,16 +32,20 @@ const AuthCallback: React.FC = () => {
           throw new Error(exchangeError?.message || 'Échec de l\'échange PKCE');
         }
 
-        const response = await authAPI.googleCallback(sessionData.session.access_token);
-        const token = response.data.access_token || response.data.token;
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
+        const response = await fetch(`${apiUrl}/api/auth/google/supabase`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access_token: sessionData.session.access_token }),
+        });
 
-        if (!token) throw new Error('Pas de token reçu du backend');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Authentification échouée');
 
-        setAccessToken(token);
-        localStorage.setItem('backend_token', token);
+        localStorage.setItem('token', data.token);
         await refreshUser();
 
-        navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
+        navigate(getPostAuthRedirect(data.restaurant || null), { replace: true });
       } catch (err: unknown) {
         console.error('Auth callback error:', err);
         setError((err instanceof Error ? err.message : String(err)) || 'Authentification échouée');

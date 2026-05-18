@@ -1,6 +1,6 @@
 import { createContext } from 'react';
 
-export interface User {
+interface User {
     id: string;
     email: string;
     name: string;
@@ -8,12 +8,9 @@ export interface User {
     [key: string]: unknown;
 }
 
-export type AuthUser = User;
-
 export interface AuthContextType {
     user: User | null;
     loading: boolean;
-    authReady: boolean;
     login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
     loginWithToken: (token: string, restaurant: User) => void;
     register: (data: Record<string, unknown>) => Promise<void>;

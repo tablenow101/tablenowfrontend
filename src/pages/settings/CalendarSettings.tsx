@@ -13,8 +13,6 @@ const CalendarSettings: React.FC = () => {
 
   // Handle OAuth callback: exchange code for tokens
   useEffect(() => {
-    if (!authReady) return;
-
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const error = params.get('error');
@@ -31,6 +29,7 @@ const CalendarSettings: React.FC = () => {
     (async () => {
       try {
         await calendarAPI.callback(code);
+        // Reload user context to update calendar_status
         if (typeof refreshUser === 'function') {
           await refreshUser();
         } else {
@@ -38,11 +37,13 @@ const CalendarSettings: React.FC = () => {
         }
       } catch (err) {
         console.error('Calendar callback failed:', err);
+        // Clean up URL even on error
         params.delete('code');
         window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
       }
     })();
-  }, [authReady, refreshUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const connect = async () => {
     setConnecting(true);
@@ -60,13 +61,14 @@ const CalendarSettings: React.FC = () => {
     setDisconnecting(true);
     try {
       await calendarAPI.disconnect();
+      // Refresh user context to update calendar_status
       if (typeof refreshUser === 'function') {
         await refreshUser();
       } else {
         window.location.reload();
       }
     } catch (err) {
-      console.error('Disconnect failed:', err);
+      console.error('Calendar disconnect failed:', err);
       setDisconnecting(false);
     }
   };
@@ -92,7 +94,7 @@ const CalendarSettings: React.FC = () => {
             </button>
           : <button onClick={connect} disabled={connecting || !authReady}
               className="flex items-center gap-2 px-5 py-2.5 bg-[#b8f000] text-black text-sm font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
-              <ExternalLink size={14}/> {connecting ? '…' : authReady ? t('connectCal') : 'Loading…'}
+              <ExternalLink size={14}/> {connecting ? '…' : authReady ? t('connectCal') : 'Chargement…'}
             </button>
         }
       </div>
