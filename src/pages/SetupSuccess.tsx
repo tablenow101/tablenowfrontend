@@ -77,34 +77,34 @@ const SetupSuccess: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] px-4 py-12">
+    <div className="min-h-screen bg-[#0a0a0a] px-4 py-8 sm:py-12">
       {/* Header */}
-      <div className="max-w-2xl mx-auto mb-12 text-center">
-        <div className="flex justify-center mb-6">
+      <div className="max-w-2xl mx-auto mb-8 sm:mb-12 text-center">
+        <div className="flex justify-center mb-4 sm:mb-6">
           <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: '#b8f000' }}>
             <Check className="w-8 h-8 text-black" strokeWidth={3} />
           </div>
         </div>
-        <h1 className="text-4xl font-bold text-white mb-2">{t.title}</h1>
-        <p className="text-[#888] text-base mb-6">{t.subtitle}</p>
+        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">{t.title}</h1>
+        <p className="text-[#888] text-base mb-4 sm:mb-6">{t.subtitle}</p>
         {user?.name && (
           <p className="text-white font-semibold text-lg">{user.name}</p>
         )}
       </div>
 
       {/* Main content */}
-      <div className="max-w-3xl mx-auto space-y-12">
+      <div className="max-w-3xl mx-auto space-y-8 sm:space-y-12">
         {/* AI Phone Number Section */}
         {vapiPhoneNumber ? (
-          <div className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-8">
-            <div className="flex items-center gap-3 mb-6">
+          <div className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 sm:p-8">
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
               <Phone className="w-6 h-6 text-[#b8f000]" />
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
                 {vapiPhoneNumber}
               </h2>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
                 onClick={handleTestCall}
                 className="flex-1 h-14 bg-[#b8f000] text-black font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
@@ -131,7 +131,7 @@ const SetupSuccess: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-8 text-center">
+          <div className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 sm:p-8 text-center">
             <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: '#b8f000' }}>
               <Phone className="w-6 h-6 text-black" />
             </div>
@@ -142,18 +142,18 @@ const SetupSuccess: React.FC = () => {
 
         {/* Call Forwarding Instructions */}
         {vapiPhoneNumber && (
-          <div className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-8">
-            <h2 className="text-2xl font-bold text-white mb-2">{t.forwardingSection}</h2>
-            <p className="text-[#888] mb-8">{t.forwardingDesc}</p>
+          <div className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 sm:p-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">{t.forwardingSection}</h2>
+            <p className="text-[#888] mb-6 sm:mb-8">{t.forwardingDesc}</p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
               {/* iPhone */}
               <div>
                 <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
                   <span className="text-lg">📱</span>
                   {t.iPhoneSteps}
                 </h3>
-                <ol className="space-y-3">
+                <ol className="space-y-2 sm:space-y-3">
                   {[t.iPhoneStep1, t.iPhoneStep2, t.iPhoneStep3, t.iPhoneStep4].map((step, i) => (
                     <li key={i} className="flex gap-3">
                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#b8f000] text-black text-xs font-bold flex items-center justify-center">
@@ -171,7 +171,7 @@ const SetupSuccess: React.FC = () => {
                   <span className="text-lg">🤖</span>
                   {t.androidSteps}
                 </h3>
-                <ol className="space-y-3">
+                <ol className="space-y-2 sm:space-y-3">
                   {[t.androidStep1, t.androidStep2, t.androidStep3, t.androidStep4].map((step, i) => (
                     <li key={i} className="flex gap-3">
                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#b8f000] text-black text-xs font-bold flex items-center justify-center">

@@ -1,23 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { calendarAPI } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { Calendar, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import { useLang } from '../../hooks/useLang';
 
 const CalendarSettings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { t } = useLang();
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
-  const isConnected = !!(user as unknown as Record<string, unknown>)?.google_calendar_connected;
+  const isConnected = (user as unknown as Record<string, unknown>)?.calendar_status === 'connected' || !!(user as unknown as Record<string, unknown>)?.google_calendar_connected;
+
+  // Handle OAuth callback: exchange code for tokens
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+
+    if (error) {
+      console.error('Calendar OAuth error:', error);
+      params.delete('error');
+      window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
+      return;
+    }
+
+    if (!code) return;
+
+    (async () => {
+      try {
+        await calendarAPI.callback(code);
+        // Reload user context to update calendar_status
+        if (typeof refreshUser === 'function') {
+          await refreshUser();
+        } else {
+          window.location.reload();
+        }
+      } catch (err) {
+        console.error('Calendar callback failed:', err);
+        // Clean up URL even on error
+        params.delete('code');
+        window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const connect = async () => {
     setConnecting(true);
     try {
-      const res = await calendarAPI.getAuthUrl();
+      const res = await calendarAPI.getAuthUrl({ returnTo: '/settings' });
       const url = res.data?.authUrl ?? res.data?.url ?? res.data?.auth_url ?? res.data;
       if (typeof url === 'string') window.location.href = url;
-    } catch { setConnecting(false); }
+    } catch (error) {
+      console.error('Failed to get calendar auth URL:', error);
+      setConnecting(false);
+    }
   };
 
   const disconnect = async () => {

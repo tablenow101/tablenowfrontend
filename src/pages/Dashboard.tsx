@@ -66,7 +66,7 @@ function StatTile({ label, value, sub, subLime = false }: {
     return (
         <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
             <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-2">{label}</p>
-            <p className="text-[40px] font-bold text-white leading-none">{value}</p>
+            <p className="text-2xl sm:text-[40px] font-bold text-white leading-none">{value}</p>
             {sub && <p className={`text-xs mt-1.5 ${subLime ? 'text-[#b8f000]' : 'text-[#888]'}`}>{sub}</p>}
         </div>
     );
@@ -223,12 +223,12 @@ const Dashboard: React.FC = () => {
     ];
 
     return (
-        <div className="space-y-7">
+        <div className="space-y-4 sm:space-y-7">
 
             {/* ── Header ─────────────────────────────────────────────── */}
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">{greeting()} {user?.name}</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">{greeting()} {user?.name}</h1>
                     <p className="text-sm text-[#888] mt-1">
                         {t('heroSub')
                             .replace('{calls}', String(heroCallsToday))
@@ -256,8 +256,8 @@ const Dashboard: React.FC = () => {
 
             {/* ── ACTIVITÉ ───────────────────────────────────────────── */}
             <div>
-                <p className="text-[10px] font-bold tracking-[.15em] uppercase text-[#555] mb-3">— {t('sectionActivity')}</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <p className="text-[10px] font-bold tracking-[.15em] uppercase text-[#555] mb-2 sm:mb-3">— {t('sectionActivity')}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                     <StatTile
                         label={t('callsHandled')}
                         value={totalCalls}
@@ -284,7 +284,7 @@ const Dashboard: React.FC = () => {
 
             {/* ── ANALYSE ────────────────────────────────────────────── */}
             <div>
-                <p className="text-[10px] font-bold tracking-[.15em] uppercase text-[#555] mb-3">— {t('sectionAnalysis')}</p>
+                <p className="text-[10px] font-bold tracking-[.15em] uppercase text-[#555] mb-2 sm:mb-3">— {t('sectionAnalysis')}</p>
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-xl overflow-hidden">
                     <InsightRow
                         label={t('fillRate')}
@@ -310,10 +310,10 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* ── Bottom grid ────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {/* Derniers appels */}
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-2 sm:mb-4">
                         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('latestCalls')}</p>
                         <Link to={`/r/${slug}/calls`} className="text-[11px] font-bold text-[#b8f000] hover:opacity-70 flex items-center gap-1">
                             {t('seeAll')} <ArrowUpRight size={11} />
@@ -327,7 +327,7 @@ const Dashboard: React.FC = () => {
 
                 {/* Prochaines réservations */}
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-2 sm:mb-4">
                         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('nextResa')}</p>
                         <Link to={`/r/${slug}/bookings`} className="text-[11px] font-bold text-[#b8f000] hover:opacity-70 flex items-center gap-1">
                             {t('seeAll')} <ArrowUpRight size={11} />

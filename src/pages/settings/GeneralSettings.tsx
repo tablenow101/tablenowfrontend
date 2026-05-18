@@ -169,15 +169,15 @@ const GeneralSettings: React.FC = () => {
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {dirty && (
-        <div className="flex gap-3">
-          <button onClick={save} disabled={saving}
-            className="h-11 px-6 bg-[#b8f000] text-black font-bold rounded-xl text-sm disabled:opacity-60 flex items-center gap-2">
-            {saving && <span className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin"/>}
-            {t('save')}
-          </button>
+        <div className="flex flex-col sm:flex-row gap-3 justify-end">
           <button onClick={cancel} disabled={saving}
             className="h-11 px-6 bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl text-sm hover:border-[#444] transition-colors">
             {t('cancel')}
+          </button>
+          <button onClick={save} disabled={saving}
+            className="h-11 px-6 bg-[#b8f000] text-black font-bold rounded-xl text-sm disabled:opacity-60 flex items-center justify-center gap-2">
+            {saving && <span className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin"/>}
+            {t('save')}
           </button>
         </div>
       )}

@@ -57,7 +57,7 @@ const NotificationsSettings: React.FC = () => {
         ))}
       </div>
       {dirty && (
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col sm:flex-row justify-end gap-3">
           <button onClick={() => { setPrefs(DEFAULT); setDirty(false); }}
             className="h-10 px-5 bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl text-sm hover:border-[#444]">
             {t('cancel')}

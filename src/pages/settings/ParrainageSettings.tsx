@@ -40,13 +40,13 @@ const ParrainageSettings: React.FC = () => {
         </h2>
         <p className="text-sm text-[#555] mb-5">{t('referralSub2')}</p>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl px-4 py-3">
             <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1">{t('yourCode')}</p>
             <p className="text-base font-bold tracking-wider" style={{ color: '#b8f000' }}>{code}</p>
           </div>
           <button onClick={() => copy(code)}
-            className="flex items-center gap-2 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-[#888] hover:border-[#444] transition-colors">
+            className="flex items-center justify-center gap-2 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-[#888] hover:border-[#444] transition-colors">
             {copied ? <Check size={14} className="text-[#b8f000]" /> : <Copy size={14} />}
             {t('copy')}
           </button>

@@ -113,10 +113,10 @@ const Login: React.FC = () => {
   const goToLogin  = () => { setView('login'); setForgotSuccess(false); setForgotError(''); };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4 py-16">
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4 py-8 sm:py-16">
       <div className="w-full max-w-lg">
         {/* Logo + tagline */}
-        <div className="flex flex-col items-center mb-10 gap-3">
+        <div className="flex flex-col items-center mb-6 sm:mb-10 gap-3">
           <span className="text-4xl font-black tracking-tight text-white">
             Table<span className="text-[#b8f000]">Now</span>
           </span>
@@ -126,21 +126,21 @@ const Login: React.FC = () => {
         </div>
 
         <div
-          className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-10"
+          className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 sm:p-10"
           style={{ borderTop: '4px solid #b8f000' }}
         >
           {view === 'forgot' ? (
             <>
               <button
                 onClick={goToLogin}
-                className="flex items-center gap-1.5 text-sm text-[#888] hover:text-white mb-6 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-[#888] hover:text-white mb-4 sm:mb-6 transition-colors"
               >
                 <ArrowLeft size={14} />
                 {t.back}
               </button>
 
-              <h1 className="text-3xl font-bold text-white mb-1">{t.forgotTitle}</h1>
-              <p className="text-sm text-[#888] mb-6">{t.forgotSubtitle}</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">{t.forgotTitle}</h1>
+              <p className="text-sm text-[#888] mb-4 sm:mb-6">{t.forgotSubtitle}</p>
 
               {forgotSuccess ? (
                 <div className="flex items-start gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
@@ -150,12 +150,12 @@ const Login: React.FC = () => {
               ) : (
                 <>
                   {forgotError && (
-                    <div className="mb-5 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400">
+                    <div className="mb-3 sm:mb-5 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400">
                       <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                       <span>{forgotError}</span>
                     </div>
                   )}
-                  <form onSubmit={handleForgot} className="space-y-5">
+                  <form onSubmit={handleForgot} className="space-y-4 sm:space-y-5">
                     <div>
                       <label className="block text-[10px] uppercase tracking-wider text-[#888] mb-1.5">
                         {t.emailLabel}
@@ -184,17 +184,17 @@ const Login: React.FC = () => {
             </>
           ) : (
             <>
-              <h1 className="text-3xl font-bold text-white mb-1">{t.title}</h1>
-              <p className="text-sm text-[#888] mb-6">{t.subtitle}</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">{t.title}</h1>
+              <p className="text-sm text-[#888] mb-4 sm:mb-6">{t.subtitle}</p>
 
               {error && (
-                <div className="mb-5 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400">
+                <div className="mb-3 sm:mb-5 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider text-[#888] mb-1.5">
                     {t.emailLabel}
@@ -265,7 +265,7 @@ const Login: React.FC = () => {
                 </button>
               </form>
 
-              <div className="flex items-center gap-3 my-6">
+              <div className="flex items-center gap-3 my-4 sm:my-6">
                 <div className="flex-1 h-px bg-[#2a2a2a]" />
                 <span className="text-xs text-[#555]">{t.or}</span>
                 <div className="flex-1 h-px bg-[#2a2a2a]" />
@@ -289,7 +289,7 @@ const Login: React.FC = () => {
                 {t.google}
               </button>
 
-              <p className="mt-6 text-center text-sm text-[#555]">
+              <p className="mt-4 sm:mt-6 text-center text-sm text-[#555]">
                 {t.noAccount}{' '}
                 <Link to="/register" className="text-[#b8f000] hover:underline">
                   {t.createAccount}
