@@ -11,6 +11,7 @@ interface User {
 export interface AuthContextType {
     user: User | null;
     loading: boolean;
+    authReady: boolean;
     login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
     loginWithToken: (token: string, restaurant: User) => void;
     register: (data: Record<string, unknown>) => Promise<void>;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../hooks/useLang';
+import { setAccessToken } from '../lib/authToken';
 import { AlertCircle, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
 
 interface Suggestion {
@@ -162,7 +163,9 @@ const Register: React.FC = () => {
         return;
       }
       if (data.token) {
-        localStorage.setItem('token', data.token);
+        const token = data.token || data.access_token;
+        setAccessToken(token);
+        localStorage.setItem('backend_token', token);
         localStorage.setItem('restaurant_slug', data.slug);
         if (selectedPlan) {
           localStorage.setItem('pending_plan', selectedPlan);
@@ -170,7 +173,7 @@ const Register: React.FC = () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${data.token}`,
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({ plan: selectedPlan }),
           });

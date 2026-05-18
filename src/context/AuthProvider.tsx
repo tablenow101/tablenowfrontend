@@ -1,6 +1,6 @@
-// @refresh reset
 import React, { useState, useEffect } from 'react';
 import { authAPI } from '../lib/api';
+import { setAccessToken, getAccessToken } from '../lib/authToken';
 import { AuthContext } from './authContext';
 
 interface User {
@@ -11,49 +11,69 @@ interface User {
     [key: string]: unknown;
 }
 
-const API_BASE = (import.meta as Record<string, unknown>).env?.VITE_API_URL || 'https://api.tablenow.io';
-
-const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [authReady, setAuthReady] = useState(false);
 
-    useEffect(() => { checkAuth(); }, []);
+    useEffect(() => {
+        let mounted = true;
 
-    const checkAuth = async () => {
-        const token = getToken();
-        if (!token) { setLoading(false); return; }
-        try {
-            const res = await fetch(`${API_BASE}/api/auth/me`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-            });
-            if (!res.ok) throw new Error('Unauthorized');
-            const data = await res.json();
-            setUser(data.restaurant);
-        } catch {
-            localStorage.removeItem('token');
-            sessionStorage.removeItem('token');
-        } finally {
-            setLoading(false);
-        }
-    };
+        const initAuth = async () => {
+            try {
+                // Restore token from localStorage
+                const savedToken = localStorage.getItem('backend_token');
+                if (savedToken) {
+                    setAccessToken(savedToken);
+                }
+
+                // Validate token with /api/auth/me
+                const token = getAccessToken();
+                if (token) {
+                    try {
+                        const response = await authAPI.getMe();
+                        if (mounted) {
+                            setUser(response.data);
+                        }
+                    } catch {
+                        // Token invalid, clear it
+                        localStorage.removeItem('backend_token');
+                        setAccessToken(null);
+                        setUser(null);
+                    }
+                }
+            } catch (err) {
+                console.error('Auth init error:', err);
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                    setAuthReady(true);
+                }
+            }
+        };
+
+        initAuth();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     const login = async (email: string, password: string, rememberMe = false) => {
         const response = await authAPI.login({ email, password });
-        const token = response.data.token;
-        if (rememberMe) {
-            localStorage.setItem('token', token);
-            sessionStorage.removeItem('token');
-        } else {
-            sessionStorage.setItem('token', token);
-            localStorage.removeItem('token');
+        const token = response.data.access_token || response.data.token;
+
+        if (token) {
+            setAccessToken(token);
+            localStorage.setItem('backend_token', token);
+            const userResponse = await authAPI.getMe();
+            setUser(userResponse.data);
         }
-        setUser(response.data.restaurant);
     };
 
     const loginWithToken = (token: string, restaurant: User): void => {
-        localStorage.setItem('token', token);
+        setAccessToken(token);
+        localStorage.setItem('backend_token', token);
         setUser(restaurant);
     };
 
@@ -62,27 +82,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        sessionStorage.removeItem('token');
+        setAccessToken(null);
+        localStorage.removeItem('backend_token');
         setUser(null);
+        setAuthReady(false);
         window.location.href = '/login';
     };
 
     const refreshUser = async () => {
-        const token = getToken();
-        if (!token) return;
         try {
-            const res = await fetch(`${API_BASE}/api/auth/me`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-            });
-            if (!res.ok) return;
-            const data = await res.json();
-            setUser(data.restaurant);
-        } catch { /* silent */ }
+            const response = await authAPI.getMe();
+            setUser(response.data);
+        } catch (err) {
+            console.error('Refresh user error:', err);
+            await logout();
+        }
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, loginWithToken, register, logout, refreshUser }}>
+        <AuthContext.Provider value={{ user, loading, authReady, login, loginWithToken, register, logout, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );
