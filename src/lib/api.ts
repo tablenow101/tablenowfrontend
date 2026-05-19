@@ -29,7 +29,7 @@ export const authAPI = {
     login:          (data: Record<string, unknown>)    => api.post('/auth/login', data),
     verifyEmail:    (token: string)=> api.post('/auth/verify-email', { token }),
     getMe:          ()             => api.get('/auth/me'),
-    googleCallback: (token: string)=> api.post('/auth/google/token', { access_token: token }),
+    googleCallback: (token: string)=> api.post('/auth/google/supabase', { access_token: token }),
 };
 
 export const dashboardAPI = {

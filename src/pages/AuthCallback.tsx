@@ -22,17 +22,22 @@ const AuthCallback: React.FC = () => {
       try {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
+        console.log('[AuthCallback] Code from URL:', code);
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
+        console.log('[AuthCallback] Starting PKCE exchange with Supabase...');
         const { data: sessionData, error: exchangeError } =
           await supabase.auth.exchangeCodeForSession(code);
 
+        console.log('[AuthCallback] PKCE exchange result:', { sessionData, error: exchangeError });
         if (exchangeError || !sessionData.session?.access_token) {
           throw new Error(exchangeError?.message || 'Échec de l\'échange PKCE');
         }
 
+        console.log('[AuthCallback] Exchanged access_token, calling backend /auth/google/supabase...');
         const response = await authAPI.googleCallback(sessionData.session.access_token);
         const token = response.data.access_token || response.data.token;
+        console.log('[AuthCallback] Backend response:', response.data);
 
         if (!token) throw new Error('Pas de token reçu du backend');
 
