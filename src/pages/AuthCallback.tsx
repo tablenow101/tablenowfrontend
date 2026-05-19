@@ -11,7 +11,6 @@ const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
   const [error, setError] = useState('');
-  // Guard against StrictMode double-invocation in dev (which would double-exchange the code)
   const ranRef = useRef(false);
 
   useEffect(() => {
@@ -22,22 +21,58 @@ const AuthCallback: React.FC = () => {
       try {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
-        console.log('[AuthCallback] Code from URL:', code);
+        console.log('[AuthCallback] Code:', code ? code.slice(0, 20) + '...' : 'MISSING');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        console.log('[AuthCallback] Starting PKCE exchange with Supabase...');
-        const { data: sessionData, error: exchangeError } =
-          await supabase.auth.exchangeCodeForSession(code);
+        // Get PKCE code verifier from localStorage (saved during OAuth initiation)
+        const codeVerifier = localStorage.getItem('supabase.pkce.code_verifier');
+        console.log('[AuthCallback] Code verifier stored:', !!codeVerifier);
 
-        console.log('[AuthCallback] PKCE exchange result:', { sessionData, error: exchangeError });
-        if (exchangeError || !sessionData.session?.access_token) {
-          throw new Error(exchangeError?.message || 'Échec de l\'échange PKCE');
+        if (!codeVerifier) {
+          throw new Error('PKCE code verifier not found - try restarting login');
         }
 
-        console.log('[AuthCallback] Exchanged access_token, calling backend /auth/google/supabase...');
-        const response = await authAPI.googleCallback(sessionData.session.access_token);
+        // Exchange code for session directly via Supabase token endpoint
+        const supabaseUrl = (supabase as any).auth.mfa._getHttpClient?.()?.baseUrl ||
+                          import.meta.env.VITE_SUPABASE_URL;
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        console.log('[AuthCallback] Exchanging code for session via:',
+          `${supabaseUrl}/auth/v1/token`);
+
+        const tokenResponse = await fetch(
+          `${supabaseUrl}/auth/v1/token?grant_type=authorization_code`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+            },
+            body: JSON.stringify({
+              code,
+              code_verifier: codeVerifier,
+              grant_type: 'authorization_code',
+            }),
+          }
+        );
+
+        console.log('[AuthCallback] Token response status:', tokenResponse.status);
+        const tokenData = await tokenResponse.json();
+        console.log('[AuthCallback] Token data:', tokenData.access_token ? 'success' : 'error');
+
+        if (!tokenResponse.ok || !tokenData.access_token) {
+          throw new Error(
+            tokenData.error_description ||
+            tokenData.error ||
+            'Token exchange failed'
+          );
+        }
+
+        // Call backend to validate/create restaurant
+        console.log('[AuthCallback] Calling backend /auth/google/supabase...');
+        const response = await authAPI.googleCallback(tokenData.access_token);
         const token = response.data.access_token || response.data.token;
-        console.log('[AuthCallback] Backend response:', response.data);
+        console.log('[AuthCallback] Backend response:', response.status);
 
         if (!token) throw new Error('Pas de token reçu du backend');
 
@@ -47,8 +82,9 @@ const AuthCallback: React.FC = () => {
 
         navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
       } catch (err: unknown) {
-        console.error('Auth callback error:', err);
-        setError((err instanceof Error ? err.message : String(err)) || 'Authentification échouée');
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error('[AuthCallback] Error:', msg);
+        setError(msg || 'Authentification échouée');
         setTimeout(() => navigate('/login', { replace: true }), 3000);
       }
     };
