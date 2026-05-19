@@ -35,36 +35,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     let mounted = true;
 
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (!mounted) return;
+    // Start getSession in background, don't block render
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!mounted) return;
 
-        const hasSession = !!data.session;
-        setSession(data.session ?? null);
-        setUser(data.session?.user ?? null);
-        setAccessToken(data.session?.access_token ?? null);
+      const hasSession = !!data.session;
+      setSession(data.session ?? null);
+      setUser(data.session?.user ?? null);
+      setAccessToken(data.session?.access_token ?? null);
 
-        // Fetch restaurant data if session exists
-        await fetchRestaurant(hasSession);
-      } catch (err) {
-        console.error('Failed to get session:', err);
-      } finally {
-        if (mounted) {
-          setAuthReady(true);
-        }
+      // Fetch restaurant data if session exists
+      await fetchRestaurant(hasSession);
+    }).catch((err) => {
+      console.error('Failed to get session:', err);
+    }).finally(() => {
+      if (mounted) {
+        setAuthReady(true);
       }
-    })();
+    });
 
+    // Listen for auth state changes
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       const hasSession = !!newSession;
       setSession(newSession);
       setUser(newSession?.user ?? null);
       setAccessToken(newSession?.access_token ?? null);
-
-      // Fetch restaurant data if session exists
       await fetchRestaurant(hasSession);
-
       setAuthReady(true);
     });
 
