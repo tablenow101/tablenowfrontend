@@ -4,7 +4,6 @@ import { useAuth } from '../hooks/useAuth';
 import { useLang } from '../hooks/useLang';
 import { AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import api from '../lib/api';
-import { supabase } from '../lib/supabase';
 
 const T = {
   fr: {
@@ -271,16 +270,8 @@ const Login: React.FC = () => {
               </div>
 
               <button
-                onClick={async () => {
-                  // Supabase PKCE : le code_verifier est stocké automatiquement
-                  // On s'assure que le client est bien initialisé avant la redirection
-                  await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                      redirectTo: 'https://app.tablenow.io/auth/callback',
-                      skipBrowserRedirect: false,
-                    }
-                  });
+                onClick={() => {
+                  window.location.href = `${import.meta.env.VITE_API_URL || 'https://api.tablenow.io'}/api/auth/google`;
                 }}
                 className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
               >

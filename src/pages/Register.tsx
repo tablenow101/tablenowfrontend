@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../hooks/useLang';
 import { AlertCircle, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 
 interface Suggestion {
   placeId: string;
@@ -520,14 +519,8 @@ const Register: React.FC = () => {
 
         <button
           type="button"
-          onClick={async () => {
-            await supabase.auth.signInWithOAuth({
-              provider: 'google',
-              options: {
-                redirectTo: 'https://app.tablenow.io/auth/callback',
-                skipBrowserRedirect: false,
-              }
-            });
+          onClick={() => {
+            window.location.href = `${import.meta.env.VITE_API_URL || 'https://api.tablenow.io'}/api/auth/google`;
           }}
           className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
         >

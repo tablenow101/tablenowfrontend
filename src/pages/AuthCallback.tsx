@@ -21,44 +21,37 @@ const AuthCallback: React.FC = () => {
       try {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
-        console.log('[AuthCallback] Code:', code ? code.slice(0, 20) + '...' : 'MISSING');
+        console.log('[AuthCallback] Code in URL:', code ? code.slice(0, 20) + '...' : 'MISSING');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        // Supabase SDK automatically detects and exchanges code via detectSessionInUrl: true
-        console.log('[AuthCallback] Waiting for Supabase to detect session...');
+        // Wait briefly for Supabase SDK to detect and exchange the code
+        console.log('[AuthCallback] Waiting for PKCE exchange...');
+        await new Promise(r => setTimeout(r, 500));
 
-        // Wait for Supabase SDK to process the URL and populate the session
-        let attempts = 0;
-        const maxAttempts = 30; // 3 seconds max
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        console.log('[AuthCallback] Session check:', {
+          hasSession: !!sessionData.session,
+          hasToken: !!sessionData.session?.access_token,
+          email: sessionData.session?.user?.email,
+          error: sessionError?.message
+        });
 
-        while (attempts < maxAttempts) {
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (sessionData.session?.access_token) {
-            console.log('[AuthCallback] Session detected:', sessionData.session.user?.email);
-
-            // Call backend to validate/create restaurant
-            console.log('[AuthCallback] Calling backend /auth/google/supabase...');
-            const response = await authAPI.googleCallback(sessionData.session.access_token);
-            const token = response.data.access_token || response.data.token;
-            console.log('[AuthCallback] Backend response:', response.status);
-
-            if (!token) throw new Error('Pas de token reçu du backend');
-
-            setAccessToken(token);
-            localStorage.setItem('backend_token', token);
-            await refreshUser();
-
-            navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
-            return;
-          }
-
-          attempts++;
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
+        if (!sessionData.session?.access_token) {
+          throw new Error('PKCE exchange failed - no access token');
         }
 
-        throw new Error('Session not established after PKCE exchange');
+        // Send token to backend for restaurant lookup/creation
+        console.log('[AuthCallback] Calling backend /auth/google/supabase...');
+        const response = await authAPI.googleCallback(sessionData.session.access_token);
+        const token = response.data.access_token || response.data.token;
+
+        if (!token) throw new Error('Pas de token reçu du backend');
+
+        setAccessToken(token);
+        localStorage.setItem('backend_token', token);
+        await refreshUser();
+
+        navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error('[AuthCallback] Error:', msg);
