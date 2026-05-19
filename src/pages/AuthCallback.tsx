@@ -24,63 +24,41 @@ const AuthCallback: React.FC = () => {
         console.log('[AuthCallback] Code:', code ? code.slice(0, 20) + '...' : 'MISSING');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        // Get PKCE code verifier from localStorage (saved during OAuth initiation)
-        const codeVerifier = localStorage.getItem('supabase.pkce.code_verifier');
-        console.log('[AuthCallback] Code verifier stored:', !!codeVerifier);
+        // Supabase SDK automatically detects and exchanges code via detectSessionInUrl: true
+        console.log('[AuthCallback] Waiting for Supabase to detect session...');
 
-        if (!codeVerifier) {
-          throw new Error('PKCE code verifier not found - try restarting login');
-        }
+        // Wait for Supabase SDK to process the URL and populate the session
+        let attempts = 0;
+        const maxAttempts = 30; // 3 seconds max
 
-        // Exchange code for session directly via Supabase token endpoint
-        const supabaseUrl = (supabase as any).auth.mfa._getHttpClient?.()?.baseUrl ||
-                          import.meta.env.VITE_SUPABASE_URL;
-        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        while (attempts < maxAttempts) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session?.access_token) {
+            console.log('[AuthCallback] Session detected:', sessionData.session.user?.email);
 
-        console.log('[AuthCallback] Exchanging code for session via:',
-          `${supabaseUrl}/auth/v1/token`);
+            // Call backend to validate/create restaurant
+            console.log('[AuthCallback] Calling backend /auth/google/supabase...');
+            const response = await authAPI.googleCallback(sessionData.session.access_token);
+            const token = response.data.access_token || response.data.token;
+            console.log('[AuthCallback] Backend response:', response.status);
 
-        const tokenResponse = await fetch(
-          `${supabaseUrl}/auth/v1/token?grant_type=authorization_code`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': anonKey,
-            },
-            body: JSON.stringify({
-              code,
-              code_verifier: codeVerifier,
-              grant_type: 'authorization_code',
-            }),
+            if (!token) throw new Error('Pas de token reçu du backend');
+
+            setAccessToken(token);
+            localStorage.setItem('backend_token', token);
+            await refreshUser();
+
+            navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
+            return;
           }
-        );
 
-        console.log('[AuthCallback] Token response status:', tokenResponse.status);
-        const tokenData = await tokenResponse.json();
-        console.log('[AuthCallback] Token data:', tokenData.access_token ? 'success' : 'error');
-
-        if (!tokenResponse.ok || !tokenData.access_token) {
-          throw new Error(
-            tokenData.error_description ||
-            tokenData.error ||
-            'Token exchange failed'
-          );
+          attempts++;
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
         }
 
-        // Call backend to validate/create restaurant
-        console.log('[AuthCallback] Calling backend /auth/google/supabase...');
-        const response = await authAPI.googleCallback(tokenData.access_token);
-        const token = response.data.access_token || response.data.token;
-        console.log('[AuthCallback] Backend response:', response.status);
-
-        if (!token) throw new Error('Pas de token reçu du backend');
-
-        setAccessToken(token);
-        localStorage.setItem('backend_token', token);
-        await refreshUser();
-
-        navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
+        throw new Error('Session not established after PKCE exchange');
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error('[AuthCallback] Error:', msg);
