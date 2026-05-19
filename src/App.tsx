@@ -162,46 +162,19 @@ const AppRoutes = () => {
 
 // Redirect legacy /setup, /start, /signup to canonical route
 const LegacyRedirect: React.FC = () => {
-  const { session, authReady } = useAuth();
-
-  if (!authReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="loading w-12 h-12"></div>
-      </div>
-    );
-  }
-
+  const { session } = useAuth();
   return <Navigate to={session ? '/dashboard' : '/login'} replace />;
 };
 
 // Redirect legacy /r/:slug/ routes to canonical
 const LegacySlugRedirect: React.FC = () => {
-  const { session, authReady } = useAuth();
-
-  if (!authReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="loading w-12 h-12"></div>
-      </div>
-    );
-  }
-
+  const { session } = useAuth();
   return <Navigate to={session ? '/dashboard' : '/login'} replace />;
 };
 
-// Root redirect
+// Root redirect - immediate, no wait
 const RootRedirect: React.FC = () => {
-  const { session, authReady } = useAuth();
-
-  if (!authReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="loading w-12 h-12"></div>
-      </div>
-    );
-  }
-
+  const { session } = useAuth();
   return <Navigate to={session ? '/dashboard' : '/login'} replace />;
 };
 
