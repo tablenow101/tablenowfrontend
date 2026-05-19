@@ -1,15 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { getPostAuthRedirect } from '../lib/postAuthRedirect';
 import { AlertCircle } from 'lucide-react';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
   const [error, setError] = useState('');
-  // Guard against StrictMode double-invocation in dev (which would double-exchange the code)
   const ranRef = useRef(false);
 
   useEffect(() => {
@@ -22,9 +18,7 @@ const AuthCallback: React.FC = () => {
         const code = params.get('code');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        // Use Supabase JS client to perform PKCE exchange — it reads the
-        // code_verifier from localStorage (set during signInWithOAuth) and
-        // sends the correct headers. Manual fetch bypasses this and fails.
+        // Step 1: Exchange PKCE code for session (single responsibility)
         const { data: sessionData, error: exchangeError } =
           await supabase.auth.exchangeCodeForSession(code);
 
@@ -32,17 +26,18 @@ const AuthCallback: React.FC = () => {
           throw new Error(exchangeError?.message || 'Échec de l\'échange PKCE');
         }
 
-        await refreshUser();
-        navigate(getPostAuthRedirect(sessionData.session?.user ?? null), { replace: true });
+        // Step 2: Session is now in localStorage, AuthProvider will pick it up
+        // Navigate to dashboard, let AuthProvider fetch restaurant data
+        navigate('/dashboard', { replace: true });
       } catch (err: unknown) {
-        console.error('Auth callback error:', err);
-        setError((err instanceof Error ? err.message : String(err)) || 'Authentification échouée');
-        setTimeout(() => navigate('/login', { replace: true }), 3000);
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.error('Auth callback error:', errorMsg);
+        setError(errorMsg || 'Authentification échouée');
       }
     };
 
     handleCallback();
-  }, [navigate, refreshUser]);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-[#080912] flex items-center justify-center px-4">
@@ -51,7 +46,7 @@ const AuthCallback: React.FC = () => {
           <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-2xl flex flex-col items-center space-y-3">
             <AlertCircle className="text-red-400" size={36} />
             <p className="text-red-400 font-medium text-sm">{error}</p>
-            <p className="text-xs text-[#555]">Redirection vers la page de connexion...</p>
+            <p className="text-xs text-[#555]">Redirection vers la page de connexion dans 3s...</p>
           </div>
         ) : (
           <div className="flex flex-col items-center space-y-4">

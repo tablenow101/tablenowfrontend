@@ -37,11 +37,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     (async () => {
       try {
-        console.log('[AuthProvider] Getting session...');
         const { data } = await supabase.auth.getSession();
         if (!mounted) return;
 
-        console.log('[AuthProvider] Session retrieved:', !!data.session);
         const hasSession = !!data.session;
         setSession(data.session ?? null);
         setUser(data.session?.user ?? null);
@@ -49,26 +47,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Fetch restaurant data if session exists
         await fetchRestaurant(hasSession);
-
-        if (mounted) {
-          setAuthReady(true);
-          console.log('[AuthProvider] authReady = true');
-        }
       } catch (err) {
-        console.error('[AuthProvider] Init error:', err);
+        console.error('Failed to get session:', err);
+      } finally {
         if (mounted) {
           setAuthReady(true);
         }
       }
     })();
-
-    // Safety timeout: if authReady doesn't become true in 5s, force it
-    const timeoutId = setTimeout(() => {
-      if (mounted) {
-        console.warn('[AuthProvider] Timeout: forcing authReady = true');
-        setAuthReady(true);
-      }
-    }, 5000);
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       const hasSession = !!newSession;
@@ -84,7 +70,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return () => {
       mounted = false;
-      clearTimeout(timeoutId);
       sub?.subscription?.unsubscribe();
     };
   }, [fetchRestaurant]);
