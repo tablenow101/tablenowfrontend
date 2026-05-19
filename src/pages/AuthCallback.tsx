@@ -14,24 +14,36 @@ const AuthCallback: React.FC = () => {
 
     const handleCallback = async () => {
       try {
+        console.log('=== AuthCallback START ===');
+        console.log('URL:', window.location.href);
+
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
+        console.log('Code from URL:', code);
+
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        // Step 1: Exchange PKCE code for session (single responsibility)
+        console.log('Calling exchangeCodeForSession...');
+        const startTime = Date.now();
+
         const { data: sessionData, error: exchangeError } =
           await supabase.auth.exchangeCodeForSession(code);
+
+        const elapsed = Date.now() - startTime;
+        console.log(`exchangeCodeForSession returned after ${elapsed}ms`);
+        console.log('Session data:', sessionData);
+        console.log('Exchange error:', exchangeError);
 
         if (exchangeError || !sessionData.session?.access_token) {
           throw new Error(exchangeError?.message || 'Échec de l\'échange PKCE');
         }
 
-        // Step 2: Session is now in localStorage, AuthProvider will pick it up
-        // Navigate to dashboard, let AuthProvider fetch restaurant data
+        console.log('Exchange SUCCESS, navigating to /dashboard');
         navigate('/dashboard', { replace: true });
       } catch (err: unknown) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         console.error('Auth callback error:', errorMsg);
+        console.error('Full error:', err);
         setError(errorMsg || 'Authentification échouée');
       }
     };
