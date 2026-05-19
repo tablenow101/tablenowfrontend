@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import SetupSuccess from './pages/SetupSuccess';
 import AuthCallback from './pages/AuthCallback';
+import Debug from './pages/Debug';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import CallLogs from './pages/CallLogs';
@@ -83,6 +84,7 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/debug" element={<Debug />} />
 
       {/* Legacy alias routes - redirect to canonical routes */}
       <Route path="/setup" element={<LegacyRedirect />} />
