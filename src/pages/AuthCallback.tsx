@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { getPostAuthRedirect } from '../lib/postAuthRedirect';
 import { setAccessToken } from '../lib/authToken';
 import { authAPI } from '../lib/api';
 import { AlertCircle } from 'lucide-react';
@@ -21,37 +20,78 @@ const AuthCallback: React.FC = () => {
       try {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
-        console.log('[AuthCallback] Code in URL:', code ? code.slice(0, 20) + '...' : 'MISSING');
+        console.log('[AuthCallback] Code:', code ? code.slice(0, 20) + '...' : 'MISSING');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        // Wait briefly for Supabase SDK to detect and exchange the code
-        console.log('[AuthCallback] Waiting for PKCE exchange...');
-        await new Promise(r => setTimeout(r, 500));
+        // Get PKCE code verifier from localStorage (saved during OAuth initiation)
+        const codeVerifier = localStorage.getItem('supabase.pkce.code_verifier');
+        console.log('[AuthCallback] Code verifier stored:', !!codeVerifier);
 
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        console.log('[AuthCallback] Session check:', {
-          hasSession: !!sessionData.session,
-          hasToken: !!sessionData.session?.access_token,
-          email: sessionData.session?.user?.email,
-          error: sessionError?.message
-        });
-
-        if (!sessionData.session?.access_token) {
-          throw new Error('PKCE exchange failed - no access token');
+        if (!codeVerifier) {
+          throw new Error('PKCE code verifier not found - try restarting login');
         }
 
-        // Send token to backend for restaurant lookup/creation
+        // Exchange code for session directly via Supabase token endpoint
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        console.log('[AuthCallback] Exchanging code for session via:',
+          `${supabaseUrl}/auth/v1/token`);
+
+        const tokenResponse = await fetch(
+          `${supabaseUrl}/auth/v1/token?grant_type=authorization_code`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+            },
+            body: JSON.stringify({
+              code,
+              code_verifier: codeVerifier,
+              grant_type: 'authorization_code',
+            }),
+          }
+        );
+
+        console.log('[AuthCallback] Token response status:', tokenResponse.status);
+        const tokenData = await tokenResponse.json();
+        console.log('[AuthCallback] Token data:', tokenData.access_token ? 'success' : 'error');
+
+        if (!tokenResponse.ok || !tokenData.access_token) {
+          throw new Error(
+            tokenData.error_description ||
+            tokenData.error ||
+            'Token exchange failed'
+          );
+        }
+
+        // Call backend to validate/create restaurant
         console.log('[AuthCallback] Calling backend /auth/google/supabase...');
-        const response = await authAPI.googleCallback(sessionData.session.access_token);
+        const response = await authAPI.googleCallback(tokenData.access_token);
         const token = response.data.access_token || response.data.token;
+        console.log('[AuthCallback] Backend response:', response.status);
 
         if (!token) throw new Error('Pas de token reçu du backend');
 
         setAccessToken(token);
         localStorage.setItem('backend_token', token);
+
+        // Persist Supabase session in SDK before refreshUser() calls getSession()
+        // This ensures refreshUser() finds a valid session and doesn't overwrite our backend token
+        await supabase.auth.setSession({
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token || '',
+        });
+
         await refreshUser();
 
-        navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
+        // Get next_route from backend (backend-driven routing)
+        console.log('[AuthCallback] Fetching next_route from /api/me...');
+        const meResponse = await authAPI.getMe();
+        const nextRoute = meResponse.data.next_route || '/dashboard';
+        console.log('[AuthCallback] Next route resolved:', nextRoute);
+        navigate(nextRoute, { replace: true });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error('[AuthCallback] Error:', msg);
