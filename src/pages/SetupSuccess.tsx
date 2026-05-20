@@ -88,7 +88,7 @@ const SetupSuccess: React.FC = () => {
         <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">{t.title}</h1>
         <p className="text-[#888] text-base mb-4 sm:mb-6">{t.subtitle}</p>
         {user?.name && (
-          <p className="text-white font-semibold text-lg">{user.name}</p>
+          <p className="text-white font-semibold text-lg">{user?.name}</p>
         )}
       </div>
 
