@@ -24,25 +24,20 @@ const AuthCallback: React.FC = () => {
         console.log('[AuthCallback] Code in URL:', code ? code.slice(0, 20) + '...' : 'MISSING');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        // Wait briefly for Supabase SDK to detect and exchange the code
-        console.log('[AuthCallback] Waiting for PKCE exchange...');
-        await new Promise(r => setTimeout(r, 500));
+        // Exchange code for session using Supabase SDK
+        console.log('[AuthCallback] Exchanging code via SDK...');
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        console.log('[AuthCallback] Session check:', {
-          hasSession: !!sessionData.session,
-          hasToken: !!sessionData.session?.access_token,
-          email: sessionData.session?.user?.email,
-          error: sessionError?.message
-        });
-
-        if (!sessionData.session?.access_token) {
-          throw new Error('PKCE exchange failed - no access token');
+        if (error || !data.session?.access_token) {
+          throw new Error(error?.message || 'PKCE exchange failed');
         }
+
+        const supabaseAccessToken = data.session.access_token;
+        console.log('[AuthCallback] PKCE exchange success');
 
         // Send token to backend for restaurant lookup/creation
         console.log('[AuthCallback] Calling backend /auth/google/supabase...');
-        const response = await authAPI.googleCallback(sessionData.session.access_token);
+        const response = await authAPI.googleCallback(supabaseAccessToken);
         const token = response.data.access_token || response.data.token;
 
         if (!token) throw new Error('Pas de token reçu du backend');
