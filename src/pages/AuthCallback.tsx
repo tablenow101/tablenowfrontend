@@ -24,16 +24,17 @@ const AuthCallback: React.FC = () => {
         console.log('[AuthCallback] Code in URL:', code ? code.slice(0, 20) + '...' : 'MISSING');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        // Exchange code for session using Supabase SDK
-        console.log('[AuthCallback] Exchanging code via SDK...');
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        // Wait for Supabase SDK to auto-process PKCE exchange via detectSessionInUrl
+        console.log('[AuthCallback] Waiting for SDK PKCE processing...');
+        await new Promise(r => setTimeout(r, 800));
 
-        if (error || !data.session?.access_token) {
-          throw new Error(error?.message || 'PKCE exchange failed');
+        const { data } = await supabase.auth.getSession();
+        if (!data.session?.access_token) {
+          throw new Error('No session after OAuth');
         }
 
         const supabaseAccessToken = data.session.access_token;
-        console.log('[AuthCallback] PKCE exchange success');
+        console.log('[AuthCallback] PKCE session ready');
 
         // Send token to backend for restaurant lookup/creation
         console.log('[AuthCallback] Calling backend /auth/google/supabase...');
