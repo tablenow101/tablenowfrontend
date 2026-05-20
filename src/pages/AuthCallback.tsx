@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { getPostAuthRedirect } from '../lib/postAuthRedirect';
 import { setAccessToken } from '../lib/authToken';
 import { authAPI } from '../lib/api';
 import { AlertCircle } from 'lucide-react';
@@ -51,7 +50,12 @@ const AuthCallback: React.FC = () => {
         localStorage.setItem('backend_token', token);
         await refreshUser();
 
-        navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
+        // Get next_route from backend (backend-driven routing)
+        console.log('[AuthCallback] Fetching next_route from /api/me...');
+        const meResponse = await authAPI.getMe();
+        const nextRoute = meResponse.data.next_route || '/dashboard';
+        console.log('[AuthCallback] Next route resolved:', nextRoute);
+        navigate(nextRoute, { replace: true });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error('[AuthCallback] Error:', msg);
