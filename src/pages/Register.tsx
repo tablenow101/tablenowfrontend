@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../hooks/useLang';
 import { AlertCircle, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface Suggestion {
   placeId: string;
@@ -519,8 +520,20 @@ const Register: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => {
-            window.location.href = `${import.meta.env.VITE_API_URL || 'https://api.tablenow.io'}/api/auth/google`;
+          onClick={async () => {
+            try {
+              const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                  redirectTo: `${window.location.origin}/auth/callback`,
+                },
+              });
+              if (error) throw error;
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : String(err);
+              console.error('OAuth error:', msg);
+              setErrors({ google: msg || 'OAuth failed' });
+            }
           }}
           className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
         >
