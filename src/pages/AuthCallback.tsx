@@ -23,66 +23,34 @@ const AuthCallback: React.FC = () => {
         console.log('[AuthCallback] Code:', code ? code.slice(0, 20) + '...' : 'MISSING');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
-        // Get PKCE code verifier from localStorage (saved during OAuth initiation)
-        const codeVerifier = localStorage.getItem('supabase.pkce.code_verifier');
-        console.log('[AuthCallback] Code verifier stored:', !!codeVerifier);
+        // Exchange code for session using Supabase SDK PKCE flow
+        console.log('[AuthCallback] Exchanging code via Supabase SDK...');
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-        if (!codeVerifier) {
-          throw new Error('PKCE code verifier not found - try restarting login');
-        }
-
-        // Exchange code for session directly via Supabase token endpoint
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-        console.log('[AuthCallback] Exchanging code for session via:',
-          `${supabaseUrl}/auth/v1/token`);
-
-        const tokenResponse = await fetch(
-          `${supabaseUrl}/auth/v1/token?grant_type=authorization_code`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': anonKey,
-            },
-            body: JSON.stringify({
-              code,
-              code_verifier: codeVerifier,
-              grant_type: 'authorization_code',
-            }),
-          }
-        );
-
-        console.log('[AuthCallback] Token response status:', tokenResponse.status);
-        const tokenData = await tokenResponse.json();
-        console.log('[AuthCallback] Token data:', tokenData.access_token ? 'success' : 'error');
-
-        if (!tokenResponse.ok || !tokenData.access_token) {
+        if (error || !data.session?.access_token) {
           throw new Error(
-            tokenData.error_description ||
-            tokenData.error ||
-            'Token exchange failed'
+            error?.message ||
+            'Failed to exchange code for session'
           );
         }
 
-        // Call backend to validate/create restaurant
+        const supabaseAccessToken = data.session.access_token;
+        console.log('[AuthCallback] Session exchanged successfully');
+
+        // Call backend to validate/create restaurant using Supabase token
         console.log('[AuthCallback] Calling backend /auth/google/supabase...');
-        const response = await authAPI.googleCallback(tokenData.access_token);
-        const token = response.data.access_token || response.data.token;
+        const response = await authAPI.googleCallback(supabaseAccessToken);
+        const backendToken = response.data.access_token || response.data.token;
         console.log('[AuthCallback] Backend response:', response.status);
 
-        if (!token) throw new Error('Pas de token reçu du backend');
+        if (!backendToken) throw new Error('Pas de token reçu du backend');
 
-        setAccessToken(token);
-        localStorage.setItem('backend_token', token);
+        // Store backend JWT for all TableNow API calls
+        setAccessToken(backendToken);
+        localStorage.setItem('backend_token', backendToken);
 
-        // Persist Supabase session in SDK before refreshUser() calls getSession()
-        // This ensures refreshUser() finds a valid session and doesn't overwrite our backend token
-        await supabase.auth.setSession({
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token || '',
-        });
+        // Supabase session is already persisted by exchangeCodeForSession()
+        // No manual setSession() call needed
 
         await refreshUser();
 

@@ -7,3 +7,7 @@ export function setAccessToken(token: string | null) {
 export function getAccessToken() {
   return accessToken;
 }
+
+export function clearAccessToken() {
+  accessToken = null;
+}

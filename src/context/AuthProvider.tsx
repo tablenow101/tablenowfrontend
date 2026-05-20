@@ -42,7 +42,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const hasSession = !!data.session;
       setSession(data.session ?? null);
       setUser(data.session?.user ?? null);
-      setAccessToken(data.session?.access_token ?? null);
+      // Note: Do NOT call setAccessToken() here — backend JWT is managed separately
+      // Supabase session is for user display only, not for backend API auth
 
       // Fetch restaurant data if session exists
       await fetchRestaurant(hasSession);
@@ -54,12 +55,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     });
 
-    // Listen for auth state changes
+    // Listen for auth state changes (Supabase session only, not backend JWT)
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       const hasSession = !!newSession;
       setSession(newSession);
       setUser(newSession?.user ?? null);
-      setAccessToken(newSession?.access_token ?? null);
+      // Note: Do NOT call setAccessToken() here — backend JWT is managed separately
       await fetchRestaurant(hasSession);
       setAuthReady(true);
     });
