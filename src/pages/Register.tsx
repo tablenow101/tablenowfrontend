@@ -124,10 +124,11 @@ const Register: React.FC = () => {
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!googlePlaceId) {
+    const restaurantName = (name || searchInput).trim();
+    if (!restaurantName) {
       errs.place = lang === 'fr'
-        ? 'Tapez le nom de votre restaurant et sélectionnez-le dans la liste'
-        : 'Type your restaurant name and select it from the list';
+        ? 'Veuillez saisir le nom de votre restaurant'
+        : 'Please enter your restaurant name';
       setTimeout(() => placeFieldRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
     }
     if (!ownerName.trim()) errs.ownerName = lang === 'fr' ? 'Champ requis' : 'Required';
@@ -154,7 +155,7 @@ const Register: React.FC = () => {
           email,
           password,
           confirmPassword,
-          restaurantName: name,
+          restaurantName: (name || searchInput).trim(),
           ownerName,
           phone,
           address,
@@ -299,8 +300,8 @@ const Register: React.FC = () => {
             <label className={labelCls}>RESTAURANT *</label>
             <p className="text-xs text-[#555] mb-3">
               {lang === 'fr'
-                ? 'Tapez le nom — nous remplissons tout automatiquement'
-                : 'Type the name — we auto-fill everything'}
+                ? 'Tapez le nom — sélectionnez dans la liste pour un remplissage automatique, ou continuez en saisie libre'
+                : 'Type the name — pick from the list to auto-fill, or continue with free text'}
             </p>
             <div className="relative">
               <div className="relative">
