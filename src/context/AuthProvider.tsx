@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, ReactNode, useCallback } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { setAccessToken } from '../lib/authToken';
 import { settingsAPI } from '../lib/api';
 import { AuthContext, type AuthState } from './authContext';
 
@@ -42,7 +41,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const hasSession = !!data.session;
       setSession(data.session ?? null);
       setUser(data.session?.user ?? null);
-      setAccessToken(data.session?.access_token ?? null);
+      // Note: backend_token is managed by AuthCallback only, not here
 
       // Fetch restaurant data if session exists
       await fetchRestaurant(hasSession);
@@ -59,7 +58,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const hasSession = !!newSession;
       setSession(newSession);
       setUser(newSession?.user ?? null);
-      setAccessToken(newSession?.access_token ?? null);
+      // Note: backend_token is managed by AuthCallback only, not here
       await fetchRestaurant(hasSession);
       setAuthReady(true);
     });
@@ -76,7 +75,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const hasSession = !!data.session;
       setSession(data.session ?? null);
       setUser(data.session?.user ?? null);
-      setAccessToken(data.session?.access_token ?? null);
+      // Note: backend_token is managed by AuthCallback only, not here
 
       // Refresh restaurant data
       await fetchRestaurant(hasSession);
