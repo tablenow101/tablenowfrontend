@@ -21,11 +21,9 @@ const AuthCallback: React.FC = () => {
       try {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
-        console.log('[AuthCallback] Code in URL:', code ? code.slice(0, 20) + '...' : 'MISSING');
         if (!code) throw new Error('Aucun code OAuth dans l\'URL');
 
         // Exchange code for session using Supabase SDK
-        console.log('[AuthCallback] Exchanging code via SDK...');
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error || !data.session?.access_token) {
@@ -33,13 +31,10 @@ const AuthCallback: React.FC = () => {
         }
 
         const supabaseAccessToken = data.session.access_token;
-        console.log('[AuthCallback] PKCE exchange success');
 
         // Call backend to validate/create restaurant
-        console.log('[AuthCallback] Calling backend /auth/google/supabase...');
         const response = await authAPI.googleCallback(supabaseAccessToken);
         const token = response.data.access_token || response.data.token;
-        console.log('[AuthCallback] Backend response:', response.status);
 
         if (!token) throw new Error('Pas de token reçu du backend');
 
@@ -50,7 +45,6 @@ const AuthCallback: React.FC = () => {
         navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error('[AuthCallback] Error:', msg);
         setError(msg || 'Authentification échouée');
         setTimeout(() => navigate('/login', { replace: true }), 3000);
       }

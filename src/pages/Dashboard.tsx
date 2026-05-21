@@ -129,8 +129,7 @@ function BookingRow({ booking }: { booking: Booking }) {
 const Dashboard: React.FC = () => {
     const { user, authReady } = useAuth();
     const { t } = useLang();
-    const { restaurantSlug } = useParams();
-    const slug = restaurantSlug || user?.slug || '';
+    useParams();
 
     const [stats, setStats]       = useState<Record<string, unknown> | null>(null);
     const [todayStats, setTodayStats] = useState<Record<string, unknown> | null>(null);
