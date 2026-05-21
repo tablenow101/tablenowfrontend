@@ -269,15 +269,20 @@ const Login: React.FC = () => {
                 <div className="flex-1 h-px bg-[#2a2a2a]" />
               </div>
 
-              <button
-                onClick={() => {
-                  window.location.href = `${import.meta.env.VITE_API_URL || 'https://api.tablenow.io'}/api/auth/google`;
-                }}
-                className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
-              >
-                <GoogleIcon />
-                {t.google}
-              </button>
+              <div className="relative">
+                <button
+                  disabled
+                  className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-[#666] flex items-center justify-center gap-3 opacity-50 cursor-not-allowed"
+                >
+                  <GoogleIcon />
+                  {t.google}
+                </button>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="bg-[#b8f000] text-black text-xs font-bold px-2.5 py-1 rounded-lg">
+                    Coming soon
+                  </span>
+                </div>
+              </div>
 
               <p className="mt-4 sm:mt-6 text-center text-sm text-[#555]">
                 {t.noAccount}{' '}

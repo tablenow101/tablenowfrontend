@@ -319,7 +319,7 @@ const Dashboard: React.FC = () => {
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
                     <div className="flex items-center justify-between mb-2 sm:mb-4">
                         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('latestCalls')}</p>
-                        <Link to={`/r/${slug}/calls`} className="text-[11px] font-bold text-[#b8f000] hover:opacity-70 flex items-center gap-1">
+                        <Link to="/calls" className="text-[11px] font-bold text-[#b8f000] hover:opacity-70 flex items-center gap-1">
                             {t('seeAll')} <ArrowUpRight size={11} />
                         </Link>
                     </div>
@@ -333,7 +333,7 @@ const Dashboard: React.FC = () => {
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
                     <div className="flex items-center justify-between mb-2 sm:mb-4">
                         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('nextResa')}</p>
-                        <Link to={`/r/${slug}/bookings`} className="text-[11px] font-bold text-[#b8f000] hover:opacity-70 flex items-center gap-1">
+                        <Link to="/bookings" className="text-[11px] font-bold text-[#b8f000] hover:opacity-70 flex items-center gap-1">
                             {t('seeAll')} <ArrowUpRight size={11} />
                         </Link>
                     </div>

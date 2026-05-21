@@ -174,12 +174,22 @@ function BookingDetailDrawer({ booking, onClose, onCancel }: { booking: Booking;
                             </div>
                             {/* Download buttons */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <button className="px-3 py-2 rounded-xl text-xs text-[#888] bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#444] transition-colors">
-                                    {t('downloadTranscriptBtn')}
-                                </button>
-                                <button className="px-3 py-2 rounded-xl text-xs text-[#888] bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#444] transition-colors">
-                                    {t('downloadAudioBtn')}
-                                </button>
+                                <div className="relative">
+                                    <button disabled className="w-full px-3 py-2 rounded-xl text-xs text-[#666] bg-[#1a1a1a] border border-[#2a2a2a] opacity-50 cursor-not-allowed">
+                                        {t('downloadTranscriptBtn')}
+                                    </button>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <span className="bg-[#b8f000] text-black text-[10px] font-bold px-2 py-0.5 rounded">Soon</span>
+                                    </div>
+                                </div>
+                                <div className="relative">
+                                    <button disabled className="w-full px-3 py-2 rounded-xl text-xs text-[#666] bg-[#1a1a1a] border border-[#2a2a2a] opacity-50 cursor-not-allowed">
+                                        {t('downloadAudioBtn')}
+                                    </button>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <span className="bg-[#b8f000] text-black text-[10px] font-bold px-2 py-0.5 rounded">Soon</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
