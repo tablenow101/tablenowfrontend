@@ -18,7 +18,13 @@ import NotLinked from './pages/NotLinked';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
-import { ProtectedRoute } from './components/RouteGuards';
+import {
+  ProtectedRoute,
+  OnboardingGuard,
+  SubscriptionGuard,
+  RestaurantCompleteGuard,
+  AssistantGuard,
+} from './components/RouteGuards';
 
 function isDomainMarketingSite() {
   return window.location.hostname === 'tablenow.io' || window.location.hostname === 'www.tablenow.io';
@@ -70,40 +76,64 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Canonical private routes */}
+      {/* Canonical private routes — guards stacked from outer to inner */}
+      {/* /dashboard: auth + restaurant linked + onboarded + subscribed + restaurant profile complete */}
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
+            <OnboardingGuard>
+              <SubscriptionGuard>
+                <RestaurantCompleteGuard>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </RestaurantCompleteGuard>
+              </SubscriptionGuard>
+            </OnboardingGuard>
           </ProtectedRoute>
         }
       />
 
+      {/* /bookings: same as dashboard */}
       <Route
         path="/bookings"
         element={
           <ProtectedRoute>
-            <Layout>
-              <Bookings />
-            </Layout>
+            <OnboardingGuard>
+              <SubscriptionGuard>
+                <RestaurantCompleteGuard>
+                  <Layout>
+                    <Bookings />
+                  </Layout>
+                </RestaurantCompleteGuard>
+              </SubscriptionGuard>
+            </OnboardingGuard>
           </ProtectedRoute>
         }
       />
 
+      {/* /calls: same as bookings + assistant must be active */}
       <Route
         path="/calls"
         element={
           <ProtectedRoute>
-            <Layout>
-              <CallLogs />
-            </Layout>
+            <OnboardingGuard>
+              <SubscriptionGuard>
+                <RestaurantCompleteGuard>
+                  <AssistantGuard>
+                    <Layout>
+                      <CallLogs />
+                    </Layout>
+                  </AssistantGuard>
+                </RestaurantCompleteGuard>
+              </SubscriptionGuard>
+            </OnboardingGuard>
           </ProtectedRoute>
         }
       />
 
+      {/* /settings: auth + restaurant linked only (must be accessible for setup) */}
       <Route
         path="/settings"
         element={
@@ -115,6 +145,7 @@ const AppRoutes = () => {
         }
       />
 
+      {/* /billing: auth + restaurant linked only (always accessible to upgrade) */}
       <Route
         path="/billing"
         element={
