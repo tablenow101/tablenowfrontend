@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState, ReactNode, useCallback } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { setAccessToken } from '../lib/authToken';
-import { settingsAPI } from '../lib/api';
-import { AuthContext, type AuthState } from './authContext';
+import { settingsAPI, api } from '../lib/api';
+import { AuthContext, type AuthState, type AppState, type Restaurant } from './authContext';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -13,22 +13,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [appState, setAppState] = useState<AppState | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
-  // Fetch restaurant data from /api/auth/me
-  const fetchRestaurant = useCallback(async (hasSession: boolean): Promise<void> => {
+  // Fetch unified app state from /auth/app-state
+  const fetchAppState = useCallback(async (hasSession: boolean): Promise<void> => {
     if (!hasSession) {
+      setAppState(null);
       setRestaurant(null);
       return;
     }
 
     try {
-      const res = await settingsAPI.get();
-      const restaurantData = res.data.settings || res.data;
-      setRestaurant(restaurantData);
+      const res = await api.get('/auth/app-state');
+      const state = res.data as AppState;
+      setAppState(state);
+      setRestaurant(state.restaurant || null);
     } catch {
-      console.error('Failed to fetch restaurant');
-      setRestaurant(null);
+      console.error('Failed to fetch app state');
+      // Fallback to settings API for backward compatibility
+      try {
+        const res = await settingsAPI.get();
+        const restaurantData = res.data.settings || res.data;
+        setRestaurant(restaurantData);
+      } catch {
+        console.error('Failed to fetch restaurant');
+        setRestaurant(null);
+      }
+      setAppState(null);
     }
   }, []);
 
@@ -44,8 +56,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(data.session?.user ?? null);
       setAccessToken(data.session?.access_token ?? null);
 
-      // Fetch restaurant data if session exists
-      await fetchRestaurant(hasSession);
+      // Fetch unified app state if session exists
+      await fetchAppState(hasSession);
     }).catch((err) => {
       console.error('Failed to get session:', err);
     }).finally(() => {
@@ -60,7 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(newSession);
       setUser(newSession?.user ?? null);
       setAccessToken(newSession?.access_token ?? null);
-      await fetchRestaurant(hasSession);
+      await fetchAppState(hasSession);
       setAuthReady(true);
     });
 
@@ -68,7 +80,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       mounted = false;
       sub?.subscription?.unsubscribe();
     };
-  }, [fetchRestaurant]);
+  }, [fetchAppState]);
 
   const refreshUser = useCallback(async (): Promise<void> => {
     try {
@@ -78,12 +90,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(data.session?.user ?? null);
       setAccessToken(data.session?.access_token ?? null);
 
-      // Refresh restaurant data
-      await fetchRestaurant(hasSession);
+      // Refresh unified app state
+      await fetchAppState(hasSession);
     } catch {
       console.error('Failed to refresh user');
     }
-  }, [fetchRestaurant]);
+  }, [fetchAppState]);
 
   const login = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -94,8 +106,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, session, restaurant, authReady, refreshUser, login } as AuthState),
-    [user, session, restaurant, authReady, refreshUser, login]
+    () => ({ user, session, restaurant, appState, authReady, refreshUser, login } as AuthState),
+    [user, session, restaurant, appState, authReady, refreshUser, login]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
