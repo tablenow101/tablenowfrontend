@@ -13,10 +13,12 @@ import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import CallLogs from './pages/CallLogs';
 import Settings from './pages/Settings';
+import Billing from './pages/Billing';
 import NotLinked from './pages/NotLinked';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ProtectedRoute } from './components/RouteGuards';
 
 function isDomainMarketingSite() {
   return window.location.hostname === 'tablenow.io' || window.location.hostname === 'www.tablenow.io';
@@ -33,41 +35,6 @@ const PublicRoutes = () => (
   </Routes>
 );
 
-// Canonical private routes + guards
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { restaurant, authReady } = useAuth();
-
-  if (!authReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="loading w-12 h-12"></div>
-      </div>
-    );
-  }
-
-  // Restaurant linked: show content
-  if (restaurant?.id) {
-    return <>{children}</>;
-  }
-
-  // No restaurant linked: show 403 page
-  return <NotLinked />;
-};
-
-// Guard for authenticated users
-const AuthenticatedGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { session, authReady } = useAuth();
-
-  if (!authReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="loading w-12 h-12"></div>
-      </div>
-    );
-  }
-
-  return session ? <>{children}</> : <Navigate to="/login" replace />;
-};
 
 // App routes for authenticated users
 const AppRoutes = () => {
@@ -97,9 +64,9 @@ const AppRoutes = () => {
       <Route
         path="/setup/success"
         element={
-          <AuthenticatedGuard>
+          <ProtectedRoute>
             <SetupSuccess />
-          </AuthenticatedGuard>
+          </ProtectedRoute>
         }
       />
 
@@ -107,44 +74,55 @@ const AppRoutes = () => {
       <Route
         path="/dashboard"
         element={
-          <PrivateRoute>
+          <ProtectedRoute>
             <Layout>
               <Dashboard />
             </Layout>
-          </PrivateRoute>
+          </ProtectedRoute>
         }
       />
 
       <Route
         path="/bookings"
         element={
-          <PrivateRoute>
+          <ProtectedRoute>
             <Layout>
               <Bookings />
             </Layout>
-          </PrivateRoute>
+          </ProtectedRoute>
         }
       />
 
       <Route
         path="/calls"
         element={
-          <PrivateRoute>
+          <ProtectedRoute>
             <Layout>
               <CallLogs />
             </Layout>
-          </PrivateRoute>
+          </ProtectedRoute>
         }
       />
 
       <Route
         path="/settings"
         element={
-          <PrivateRoute>
+          <ProtectedRoute>
             <Layout>
               <Settings />
             </Layout>
-          </PrivateRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/billing"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Billing />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
