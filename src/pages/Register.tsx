@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../hooks/useLang';
 import { AlertCircle, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
+import { api } from '../lib/api';
 
 interface Suggestion {
   placeId: string;
@@ -40,6 +42,7 @@ function GoogleIcon() {
 const Register: React.FC = () => {
   const { lang } = useLang();
   const navigate = useNavigate();
+  const { register: registerSession, refreshUser } = useAuth();
 
   const sessionToken = useRef(crypto.randomUUID());
   const [selectedPlan] = useState(() => new URLSearchParams(window.location.search).get('plan') || '');
@@ -174,31 +177,25 @@ const Register: React.FC = () => {
         setGlobalError(data.error || (lang === 'fr' ? 'Une erreur est survenue.' : 'Something went wrong.'));
         return;
       }
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('restaurant_slug', data.slug);
-        if (selectedPlan) {
-          localStorage.setItem('pending_plan', selectedPlan);
-          const stripeRes = await fetch('/api/stripe/create-checkout-session', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${data.token}`,
-            },
-            body: JSON.stringify({ plan: selectedPlan }),
-          });
-          const stripeData = await stripeRes.json();
-          if (stripeData.url) {
-            window.location.href = stripeData.url;
+
+      // Compte créé dans Supabase Auth + fiche restaurant -> on établit la session
+      await registerSession(email, password);
+      await refreshUser();
+
+      if (selectedPlan) {
+        localStorage.setItem('pending_plan', selectedPlan);
+        try {
+          const stripeRes = await api.post('/stripe/create-checkout-session', { plan: selectedPlan });
+          if (stripeRes.data?.url) {
+            window.location.href = stripeRes.data.url;
             return;
           }
+        } catch {
+          // Stripe indisponible -> on continue vers le dashboard
         }
-        // No plan or Stripe failed → go to dashboard
-        navigate(`/r/${data.slug}/dashboard`);
-      } else {
-        // Email verification required — show success screen
-        setEmailSent(true);
       }
+      // DashboardRedirect résout le slug et redirige vers /r/:slug/dashboard
+      navigate('/dashboard');
     } catch {
       setGlobalError(lang === 'fr' ? 'Une erreur est survenue.' : 'Something went wrong.');
     } finally {

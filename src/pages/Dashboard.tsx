@@ -164,8 +164,10 @@ const Dashboard: React.FC = () => {
                 const start = new Date();
                 start.setDate(start.getDate() - days);
                 params.startDate = start.toISOString().split('T')[0];
-                params.endDate   = today.toISOString().split('T')[0];
+                // Pas de endDate : les réservations sont par nature à venir. Plafonner à
+                // aujourd'hui masquerait toutes les résas futures (compteur + prochaines résas).
             }
+            void today;
             const res = await dashboardAPI.getStats(params);
             setStats(res.data);
         } catch (e) {

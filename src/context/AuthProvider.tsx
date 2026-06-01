@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, ReactNode, useCallback } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { settingsAPI } from '../lib/api';
-import { AuthContext, type AuthState } from './authContext';
+import { AuthContext, type AuthState, type Restaurant } from './authContext';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -92,9 +92,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (error) throw error;
   }, []);
 
+  // Inscription via Supabase Auth (la fiche restaurant est créée par le backend /auth/register).
+  const register = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  }, []);
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setRestaurant(null);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, session, restaurant, authReady, refreshUser, login } as AuthState),
-    [user, session, restaurant, authReady, refreshUser, login]
+    () => ({ user, session, restaurant, authReady, refreshUser, login, register, logout } as AuthState),
+    [user, session, restaurant, authReady, refreshUser, login, register, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

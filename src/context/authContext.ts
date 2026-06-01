@@ -13,6 +13,8 @@ export interface AuthState {
   authReady: boolean;
   refreshUser: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthState | undefined>(undefined);

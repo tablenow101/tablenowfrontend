@@ -1,16 +1,33 @@
 import axios from 'axios';
-import { getAccessToken } from './authToken';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.tablenow.creez.io';
 
 export const api = axios.create({
   baseURL: `${API_URL}/api`,
   withCredentials: true,
 });
 
-// Request: inject backend JWT
+// Lecture SYNCHRONE du token Supabase depuis le storage local.
+// IMPORTANT : ne PAS appeler supabase.auth.getSession() ici — cet intercepteur est
+// déclenché par des requêtes lancées depuis onAuthStateChange, et getSession() prend
+// le verrou d'auth de supabase-js -> deadlock (spinner infini sur /auth/callback).
+function getStoredAccessToken(): string | null {
+  try {
+    const key = Object.keys(localStorage).find(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    );
+    if (!key) return null;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.access_token || parsed?.currentSession?.access_token || null;
+  } catch {
+    return null;
+  }
+}
+
 api.interceptors.request.use((config) => {
-  const token = getAccessToken();
+  const token = getStoredAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

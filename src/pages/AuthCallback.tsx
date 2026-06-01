@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { getPostAuthRedirect } from '../lib/postAuthRedirect';
-import { setAccessToken } from '../lib/authToken';
 import { authAPI } from '../lib/api';
 import { AlertCircle } from 'lucide-react';
 
@@ -36,15 +35,11 @@ const AuthCallback: React.FC = () => {
         const supabaseAccessToken = data.session.access_token;
         console.log('[AuthCallback] PKCE session ready');
 
-        // Send token to backend for restaurant lookup/creation
+        // Garantit la fiche restaurant (création au 1er login) — l'auth API utilise
+        // désormais directement la session Supabase, pas de token backend.
         console.log('[AuthCallback] Calling backend /auth/google/supabase...');
         const response = await authAPI.googleCallback(supabaseAccessToken);
-        const token = response.data.access_token || response.data.token;
 
-        if (!token) throw new Error('Pas de token reçu du backend');
-
-        setAccessToken(token);
-        localStorage.setItem('backend_token', token);
         await refreshUser();
 
         navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
