@@ -82,8 +82,10 @@ export const OnboardingGuard: React.FC<RouteGuardProps> = ({
   const isOnboardingComplete = appState?.onboarding?.status === 'complete';
 
   if (!isOnboardingComplete) {
-    // Backend-driven destination; '/settings' is the terminal fallback surface.
-    const nextRoute = appState?.next_route || '/settings';
+    // Backend-driven destination: a real /setup/* onboarding page (or /dashboard
+    // once done). GuardRedirect prevents self-redirects; the fallback is the
+    // first real onboarding step.
+    const nextRoute = appState?.next_route || '/setup/restaurant';
     return <GuardRedirect to={nextRoute}>{children}</GuardRedirect>;
   }
 

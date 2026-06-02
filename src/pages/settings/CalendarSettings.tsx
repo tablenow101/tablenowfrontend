@@ -4,7 +4,12 @@ import { useAuth } from '../../hooks/useAuth';
 import { Calendar, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import { useLang } from '../../hooks/useLang';
 
-const CalendarSettings: React.FC = () => {
+interface CalendarSettingsProps {
+  /** Where Google should redirect back after OAuth. Defaults to /settings. */
+  returnTo?: string;
+}
+
+const CalendarSettings: React.FC<CalendarSettingsProps> = ({ returnTo = '/settings' }) => {
   const { user, authReady, refreshUser } = useAuth();
   const { t } = useLang();
   const [connecting, setConnecting] = useState(false);
@@ -48,7 +53,7 @@ const CalendarSettings: React.FC = () => {
   const connect = async () => {
     setConnecting(true);
     try {
-      const res = await calendarAPI.getAuthUrl({ returnTo: '/settings' });
+      const res = await calendarAPI.getAuthUrl({ returnTo });
       const url = res.data?.authUrl ?? res.data?.url ?? res.data?.auth_url ?? res.data;
       if (typeof url === 'string') window.location.href = url;
     } catch (error) {

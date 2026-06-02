@@ -61,6 +61,11 @@ export const calendarAPI = {
   skip: () => api.post('/calendar/skip'),
 };
 
+export const onboardingAPI = {
+  // Persists onboarding_status='complete' server-side (re-validated there).
+  complete: () => api.post('/auth/onboarding/complete'),
+};
+
 export const emailAPI = {
   getBCCEmails: (params?: Record<string, unknown>) => api.get('/email/bcc', { params }),
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLang } from '../hooks/useLang';
+import { onboardingAPI } from '../lib/api';
 import { Phone, Copy, Check, ArrowRight } from 'lucide-react';
 
 const T = {
@@ -54,13 +55,29 @@ const T = {
 };
 
 const SetupSuccess: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { lang } = useLang();
   const t = T[lang];
   const navigate = useNavigate();
 
   const vapiPhoneNumber = (user as unknown)?.vapi_phone_number as string | undefined;
   const [copied, setCopied] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+
+  // Acknowledge the success screen: persist onboarding_status='complete', then
+  // enter the dashboard. The backend re-validates every step before flipping it.
+  const finishOnboarding = async () => {
+    setFinishing(true);
+    try {
+      await onboardingAPI.complete();
+      await refreshUser();
+      navigate('/dashboard', { replace: true });
+    } catch {
+      // Backend refused (a step regressed). Refresh so the guards reroute us.
+      await refreshUser();
+      navigate('/dashboard', { replace: true });
+    }
+  };
 
   const copyNumber = () => {
     if (vapiPhoneNumber) {
@@ -189,10 +206,11 @@ const SetupSuccess: React.FC = () => {
         {/* CTA Button */}
         <div className="text-center">
           <button
-            onClick={() => navigate(`/r/${user?.slug}/dashboard`)}
-            className="inline-flex items-center gap-2 h-14 px-8 bg-[#b8f000] text-black font-semibold rounded-xl hover:opacity-90 transition-opacity"
+            onClick={finishOnboarding}
+            disabled={finishing}
+            className="inline-flex items-center gap-2 h-14 px-8 bg-[#b8f000] text-black font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-60"
           >
-            {t.goToDashboard}
+            {finishing ? '…' : t.goToDashboard}
             <ArrowRight size={18} />
           </button>
         </div>
