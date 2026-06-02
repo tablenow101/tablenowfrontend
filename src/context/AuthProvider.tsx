@@ -101,9 +101,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (error) throw error;
   }, []);
 
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setRestaurant(null);
+    setAppState(null);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, session, restaurant, appState, authReady, refreshUser, login } as AuthState),
-    [user, session, restaurant, appState, authReady, refreshUser, login]
+    () => ({ user, session, restaurant, appState, authReady, refreshUser, login, logout } as AuthState),
+    [user, session, restaurant, appState, authReady, refreshUser, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

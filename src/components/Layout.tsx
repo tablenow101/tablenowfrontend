@@ -5,7 +5,8 @@ import { useLang } from '../hooks/useLang';
 import { LayoutDashboard, Calendar, Phone, Settings, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
 
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
-    const { logout } = useAuth();
+    const { logout, restaurant, user } = useAuth();
+    const displayName = (restaurant?.name as string | undefined) || user?.email || '';
     const { lang, setLang, t } = useLang();
     const location = useLocation();
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -42,9 +43,9 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
                         <Link to="/dashboard" className="text-sm font-bold text-white tracking-tight whitespace-nowrap">
                             Table<span style={{ color: '#b8f000' }}>Now</span>
                         </Link>
-                        {user?.name && (
+                        {displayName && (
                             <span className="hidden sm:block text-sm text-[#888] truncate max-w-[140px]">
-                                {user.name}
+                                {displayName}
                             </span>
                         )}
                     </div>
