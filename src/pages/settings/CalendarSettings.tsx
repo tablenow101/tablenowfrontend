@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { calendarAPI } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
-import { Calendar, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
+import { Calendar, CheckCircle, XCircle, ExternalLink, Copy, Check, RefreshCw, Link2, Trash2 } from 'lucide-react';
 import { useLang } from '../../hooks/useLang';
 
 interface CalendarSettingsProps {
@@ -9,14 +9,42 @@ interface CalendarSettingsProps {
   returnTo?: string;
 }
 
+interface Connection {
+  id: string;
+  provider: string;
+  account_email: string | null;
+  status: string;
+  last_error: string | null;
+  created_at: string;
+}
+
 const CalendarSettings: React.FC<CalendarSettingsProps> = ({ returnTo = '/settings' }) => {
-  const { user, authReady, refreshUser } = useAuth();
+  const { authReady, refreshUser } = useAuth();
   const { t } = useLang();
   const [connecting, setConnecting] = useState(false);
-  const [disconnecting, setDisconnecting] = useState(false);
-  const isConnected = (user as unknown as Record<string, unknown>)?.calendar_status === 'connected' || !!(user as unknown as Record<string, unknown>)?.google_calendar_connected;
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [feedUrl, setFeedUrl] = useState<string>('');
+  const [webcalUrl, setWebcalUrl] = useState<string>('');
+  const [copied, setCopied] = useState(false);
+  const [rotating, setRotating] = useState(false);
 
-  // Handle OAuth callback: exchange code for tokens
+  const hasGoogle = connections.some((c) => c.provider === 'google' && c.status === 'active');
+
+  const loadState = useCallback(async () => {
+    try {
+      const [conns, feed] = await Promise.all([
+        calendarAPI.connections(),
+        calendarAPI.feedUrl(),
+      ]);
+      setConnections(conns.data?.connections ?? []);
+      setFeedUrl(feed.data?.feedUrl ?? '');
+      setWebcalUrl(feed.data?.webcalUrl ?? '');
+    } catch (err) {
+      console.error('Failed to load calendar state:', err);
+    }
+  }, []);
+
+  // Handle Google OAuth callback (exchange code), then load state.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
@@ -26,31 +54,31 @@ const CalendarSettings: React.FC<CalendarSettingsProps> = ({ returnTo = '/settin
       console.error('Calendar OAuth error:', error);
       params.delete('error');
       window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
+      loadState();
       return;
     }
 
-    if (!code) return;
+    if (!code) {
+      loadState();
+      return;
+    }
 
     (async () => {
       try {
         await calendarAPI.callback(code);
-        // Reload user context to update calendar_status
-        if (typeof refreshUser === 'function') {
-          await refreshUser();
-        } else {
-          window.location.reload();
-        }
+        if (typeof refreshUser === 'function') await refreshUser();
       } catch (err) {
         console.error('Calendar callback failed:', err);
-        // Clean up URL even on error
+      } finally {
         params.delete('code');
         window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
+        loadState();
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const connect = async () => {
+  const connectGoogle = async () => {
     setConnecting(true);
     try {
       const res = await calendarAPI.getAuthUrl({ returnTo });
@@ -62,57 +90,126 @@ const CalendarSettings: React.FC<CalendarSettingsProps> = ({ returnTo = '/settin
     }
   };
 
-  const disconnect = async () => {
-    setDisconnecting(true);
+  const removeConnection = async (id: string) => {
     try {
-      await calendarAPI.disconnect();
-      // Refresh user context to update calendar_status
-      if (typeof refreshUser === 'function') {
-        await refreshUser();
-      } else {
-        window.location.reload();
-      }
+      await calendarAPI.removeConnection(id);
+      await loadState();
     } catch (err) {
-      console.error('Calendar disconnect failed:', err);
-      setDisconnecting(false);
+      console.error('Disconnect failed:', err);
+    }
+  };
+
+  const copyFeed = async () => {
+    try {
+      await navigator.clipboard.writeText(feedUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
+  const rotateFeed = async () => {
+    if (!window.confirm('Régénérer le lien désactivera l’abonnement actuel sur tous les calendriers. Continuer ?')) return;
+    setRotating(true);
+    try {
+      const res = await calendarAPI.rotateFeed();
+      setFeedUrl(res.data?.feedUrl ?? '');
+      setWebcalUrl(res.data?.webcalUrl ?? '');
+    } catch (err) {
+      console.error('Rotate failed:', err);
+    } finally {
+      setRotating(false);
     }
   };
 
   return (
     <div className="max-w-2xl space-y-4">
+      {/* Source of truth explainer */}
+      <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-2">
+          <Calendar size={20} className="text-[#b8f000]" />
+          <span className="font-semibold text-white">Calendrier TableNow</span>
+        </div>
+        <p className="text-sm text-[#888]">
+          Vos réservations sont enregistrées dans TableNow et synchronisées automatiquement vers
+          tous les calendriers que vous connectez ci-dessous — sans limite.
+        </p>
+      </div>
+
+      {/* Google push connection */}
       <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <Calendar size={20} className="text-[#b8f000]" />
             <span className="font-semibold text-white">Google Calendar</span>
           </div>
-          {isConnected
-            ? <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#b8f000] border border-[#b8f00040] bg-[#b8f00010] px-2 py-1 rounded"><CheckCircle size={12}/> CONNECTED</span>
+          {hasGoogle
+            ? <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#b8f000] border border-[#b8f00040] bg-[#b8f00010] px-2 py-1 rounded"><CheckCircle size={12}/> CONNECTÉ</span>
             : <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#555] border border-[#2a2a2a] px-2 py-1 rounded"><XCircle size={12}/> {t('notConnected').toUpperCase()}</span>
           }
         </div>
-        <p className="text-sm text-[#888] mb-5">{t('calConnectDesc')}</p>
-        {isConnected
-          ? <button onClick={disconnect} disabled={disconnecting}
-              className="px-4 py-2 bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-red-400 rounded-xl hover:border-red-400/40 transition-colors">
-              {disconnecting ? '…' : 'Disconnect'}
+        <p className="text-sm text-[#888] mb-5">
+          Connexion directe : les réservations sont créées, modifiées et annulées en temps réel sur votre Google Calendar.
+        </p>
+
+        {connections.filter((c) => c.provider === 'google').map((c) => (
+          <div key={c.id} className="flex items-center justify-between bg-[#0c0c0c] border border-[#2a2a2a] rounded-lg px-3 py-2 mb-3">
+            <div className="min-w-0">
+              <div className="text-sm text-white truncate">{c.account_email || 'Compte Google'}</div>
+              {c.last_error && <div className="text-[11px] text-red-400 truncate">Erreur : {c.last_error}</div>}
+            </div>
+            <button onClick={() => removeConnection(c.id)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-red-400 border border-[#2a2a2a] rounded-lg hover:border-red-400/40 transition-colors flex-shrink-0">
+              <Trash2 size={13}/> Déconnecter
             </button>
-          : <button onClick={connect} disabled={connecting || !authReady}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#b8f000] text-black text-sm font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
-              <ExternalLink size={14}/> {connecting ? '…' : authReady ? t('connectCal') : 'Chargement…'}
-            </button>
-        }
+          </div>
+        ))}
+
+        {!hasGoogle && (
+          <button onClick={connectGoogle} disabled={connecting || !authReady}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#b8f000] text-black text-sm font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
+            <ExternalLink size={14}/> {connecting ? '…' : authReady ? t('connectCal') : 'Chargement…'}
+          </button>
+        )}
       </div>
 
+      {/* Universal subscribe feed — works with ANY calendar app */}
       <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6">
-        <p className="text-[10px] font-bold tracking-[.15em] text-[#555] mb-4">{t('calHowItWorks')}</p>
-        <div className="space-y-3">
-          {[t('calStep1'), t('calStep2'), t('calStep3'), t('calStep4')].map((step, i) => (
-            <div key={i} className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full border border-[#b8f000] text-[#b8f000] text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i+1}</div>
-              <span className="text-sm text-[#888]">{step}</span>
-            </div>
-          ))}
+        <div className="flex items-center gap-3 mb-2">
+          <Link2 size={20} className="text-[#b8f000]" />
+          <span className="font-semibold text-white">N’importe quel calendrier</span>
+        </div>
+        <p className="text-sm text-[#888] mb-4">
+          Abonnez Apple Calendar, Outlook, Google ou tout autre agenda à ce lien sécurisé.
+          Les réservations apparaissent automatiquement, en lecture seule.
+        </p>
+
+        <div className="flex items-center gap-2 mb-3">
+          <input
+            readOnly
+            value={feedUrl}
+            onFocus={(e) => e.currentTarget.select()}
+            className="flex-1 min-w-0 bg-[#0c0c0c] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-[#aaa] font-mono"
+          />
+          <button onClick={copyFeed}
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#1a1a1a] border border-[#2a2a2a] text-xs text-white rounded-lg hover:border-[#b8f00040] transition-colors flex-shrink-0">
+            {copied ? <Check size={13} className="text-[#b8f000]"/> : <Copy size={13}/>}
+            {copied ? 'Copié' : 'Copier'}
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {webcalUrl && (
+            <a href={webcalUrl}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#b8f000] text-black text-xs font-bold rounded-lg hover:opacity-90 transition-opacity">
+              <ExternalLink size={13}/> S’abonner en un clic
+            </a>
+          )}
+          <button onClick={rotateFeed} disabled={rotating}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs text-[#888] border border-[#2a2a2a] rounded-lg hover:text-white transition-colors disabled:opacity-50">
+            <RefreshCw size={13} className={rotating ? 'animate-spin' : ''}/> Régénérer le lien
+          </button>
         </div>
       </div>
     </div>

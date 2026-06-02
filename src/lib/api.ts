@@ -78,6 +78,12 @@ export const calendarAPI = {
   callback: (code: string) => api.post('/calendar/callback', { code }),
   disconnect: () => api.post('/calendar/disconnect'),
   skip: () => api.post('/calendar/skip'),
+  // Connected push calendars (Google, …)
+  connections: () => api.get('/calendar/connections'),
+  removeConnection: (id: string) => api.delete(`/calendar/connections/${id}`),
+  // Universal subscribe feed (any calendar app)
+  feedUrl: () => api.get('/calendar/feed-url'),
+  rotateFeed: () => api.post('/calendar/feed/rotate'),
 };
 
 export const emailAPI = {
