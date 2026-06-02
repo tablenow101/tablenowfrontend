@@ -13,10 +13,17 @@ import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import CallLogs from './pages/CallLogs';
 import Settings from './pages/Settings';
-import NotLinked from './pages/NotLinked';
+import Billing from './pages/Billing';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import {
+  ProtectedRoute,
+  OnboardingGuard,
+  SubscriptionGuard,
+  RestaurantCompleteGuard,
+  AssistantGuard,
+} from './components/RouteGuards';
 
 function isDomainMarketingSite() {
   return window.location.hostname === 'tablenow.io' || window.location.hostname === 'www.tablenow.io';
@@ -32,42 +39,6 @@ const PublicRoutes = () => (
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );
-
-// Canonical private routes + guards
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { restaurant, authReady } = useAuth();
-
-  if (!authReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="loading w-12 h-12"></div>
-      </div>
-    );
-  }
-
-  // Restaurant linked: show content
-  if (restaurant?.id) {
-    return <>{children}</>;
-  }
-
-  // No restaurant linked: show 403 page
-  return <NotLinked />;
-};
-
-// Guard for authenticated users
-const AuthenticatedGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { session, authReady } = useAuth();
-
-  if (!authReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="loading w-12 h-12"></div>
-      </div>
-    );
-  }
-
-  return session ? <>{children}</> : <Navigate to="/login" replace />;
-};
 
 // App routes for authenticated users
 const AppRoutes = () => {
@@ -86,65 +57,109 @@ const AppRoutes = () => {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/debug" element={<Debug />} />
 
-      {/* Legacy alias routes - redirect to canonical routes */}
-      <Route path="/setup" element={<LegacyRedirect />} />
-      <Route path="/setup/restaurant" element={<LegacyRedirect />} />
+      {/* Setup destinations — every value resolveNextRoute() can return maps to a
+          real terminal route (/settings). This is what makes the guards loop-free:
+          OnboardingGuard redirects to next_route, and next_route always lands on a
+          page that does NOT re-trigger the guard. */}
+      <Route path="/setup" element={<SetupRedirect />} />
+      <Route path="/setup/restaurant" element={<SetupRedirect />} />
+      <Route path="/setup/vapi" element={<SetupRedirect />} />
+      <Route path="/setup/assistant" element={<SetupRedirect />} />
+      <Route path="/setup/calendar" element={<SetupRedirect />} />
+      <Route path="/onboarding" element={<SetupRedirect />} />
+
+      {/* Legacy signup aliases */}
       <Route path="/start" element={<LegacyRedirect />} />
       <Route path="/signup" element={<LegacyRedirect />} />
-      <Route path="/onboarding" element={<LegacyRedirect />} />
 
       {/* Optional setup success page */}
       <Route
         path="/setup/success"
         element={
-          <AuthenticatedGuard>
+          <ProtectedRoute>
             <SetupSuccess />
-          </AuthenticatedGuard>
+          </ProtectedRoute>
         }
       />
 
-      {/* Canonical private routes */}
+      {/* Canonical private routes — guards stacked from outer to inner */}
+      {/* /dashboard: auth + restaurant linked + onboarded + subscribed + restaurant profile complete */}
       <Route
         path="/dashboard"
         element={
-          <PrivateRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
-          </PrivateRoute>
+          <ProtectedRoute>
+            <OnboardingGuard>
+              <SubscriptionGuard>
+                <RestaurantCompleteGuard>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </RestaurantCompleteGuard>
+              </SubscriptionGuard>
+            </OnboardingGuard>
+          </ProtectedRoute>
         }
       />
 
+      {/* /bookings: same as dashboard */}
       <Route
         path="/bookings"
         element={
-          <PrivateRoute>
-            <Layout>
-              <Bookings />
-            </Layout>
-          </PrivateRoute>
+          <ProtectedRoute>
+            <OnboardingGuard>
+              <SubscriptionGuard>
+                <RestaurantCompleteGuard>
+                  <Layout>
+                    <Bookings />
+                  </Layout>
+                </RestaurantCompleteGuard>
+              </SubscriptionGuard>
+            </OnboardingGuard>
+          </ProtectedRoute>
         }
       />
 
+      {/* /calls: same as bookings + assistant must be active */}
       <Route
         path="/calls"
         element={
-          <PrivateRoute>
-            <Layout>
-              <CallLogs />
-            </Layout>
-          </PrivateRoute>
+          <ProtectedRoute>
+            <OnboardingGuard>
+              <SubscriptionGuard>
+                <RestaurantCompleteGuard>
+                  <AssistantGuard>
+                    <Layout>
+                      <CallLogs />
+                    </Layout>
+                  </AssistantGuard>
+                </RestaurantCompleteGuard>
+              </SubscriptionGuard>
+            </OnboardingGuard>
+          </ProtectedRoute>
         }
       />
 
+      {/* /settings: auth + restaurant linked only (must remain reachable to complete setup) */}
       <Route
         path="/settings"
         element={
-          <PrivateRoute>
+          <ProtectedRoute>
             <Layout>
               <Settings />
             </Layout>
-          </PrivateRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* /billing: auth + restaurant linked only (must remain reachable to upgrade) */}
+      <Route
+        path="/billing"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Billing />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
@@ -162,7 +177,14 @@ const AppRoutes = () => {
   );
 };
 
-// Redirect legacy /setup, /start, /signup to canonical route
+// Setup/onboarding destinations resolve to the terminal /settings surface
+// (no dedicated setup pages exist). Terminal = not re-guarded by OnboardingGuard.
+const SetupRedirect: React.FC = () => {
+  const { session } = useAuth();
+  return <Navigate to={session ? '/settings' : '/login'} replace />;
+};
+
+// Redirect legacy /start, /signup to canonical route
 const LegacyRedirect: React.FC = () => {
   const { session } = useAuth();
   return <Navigate to={session ? '/dashboard' : '/login'} replace />;
