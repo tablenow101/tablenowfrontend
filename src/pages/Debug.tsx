@@ -1,5 +1,4 @@
 import React from 'react';
-import { supabase } from '../lib/supabase';
 
 const Debug: React.FC = () => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
