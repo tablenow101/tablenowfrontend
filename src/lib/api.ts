@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { getAccessToken } from './authToken';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.tablenow.io';
 
@@ -8,9 +7,29 @@ export const api = axios.create({
   withCredentials: true,
 });
 
-// Request: inject backend JWT
+// Synchronous read of the Supabase access_token from local storage.
+// IMPORTANT: do NOT call supabase.auth.getSession() here — this interceptor runs
+// for requests fired from onAuthStateChange, and getSession() takes the supabase-js
+// auth lock -> deadlock (infinite spinner on /auth/callback). The backend validates
+// this Supabase token directly (see middleware/auth.ts).
+function getStoredAccessToken(): string | null {
+  try {
+    const key = Object.keys(localStorage).find(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    );
+    if (!key) return null;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.access_token || parsed?.currentSession?.access_token || null;
+  } catch {
+    return null;
+  }
+}
+
+// Request: inject the Supabase access token
 api.interceptors.request.use((config) => {
-  const token = getAccessToken();
+  const token = getStoredAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
