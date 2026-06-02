@@ -29,48 +29,6 @@ function isDomainMarketingSite() {
   return window.location.hostname === 'tablenow.io' || window.location.hostname === 'www.tablenow.io';
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Routing model (loop-free by construction)
-//
-//   • There is exactly ONE redirect resolver — <SmartLanding/>. Every ambiguous
-//     entry point (root, legacy aliases, unknown paths) funnels through it.
-//   • SmartLanding sends an authenticated user to appState.next_route, which the
-//     backend guarantees to be a REAL, TERMINAL route (/dashboard, /settings,
-//     /billing). It never invents /setup/* paths.
-//   • Business guards (Onboarding / Subscription / RestaurantComplete / Assistant)
-//     only ever redirect to TERMINAL pages (/settings, /billing) that are NOT
-//     wrapped by those same guards — so a redirect can never bounce back.
-//
-// Because every redirect target is terminal, no sequence of guards can form a
-// cycle. That is the whole reason this routing is stable.
-// ──────────────────────────────────────────────────────────────────────────────
-
-function CenteredSpinner() {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="loading w-12 h-12"></div>
-    </div>
-  );
-}
-
-// Single source of truth for "where should this visitor go?".
-// Used for "/", the catch-all, and every legacy alias.
-const SmartLanding: React.FC = () => {
-  const { session, appState, authReady } = useAuth();
-
-  if (!authReady) {
-    return <CenteredSpinner />;
-  }
-
-  if (!session) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // next_route is resolved server-side and is always a real terminal route.
-  // Fallback to /dashboard, whose guard stack will route precisely if needed.
-  return <Navigate to={appState?.next_route ?? '/dashboard'} replace />;
-};
-
 // Public routes - always accessible
 const PublicRoutes = () => (
   <Routes>
@@ -99,7 +57,22 @@ const AppRoutes = () => {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/debug" element={<Debug />} />
 
-      {/* Setup success confirmation (auth + restaurant linked only) */}
+      {/* Setup destinations — every value resolveNextRoute() can return maps to a
+          real terminal route (/settings). This is what makes the guards loop-free:
+          OnboardingGuard redirects to next_route, and next_route always lands on a
+          page that does NOT re-trigger the guard. */}
+      <Route path="/setup" element={<SetupRedirect />} />
+      <Route path="/setup/restaurant" element={<SetupRedirect />} />
+      <Route path="/setup/vapi" element={<SetupRedirect />} />
+      <Route path="/setup/assistant" element={<SetupRedirect />} />
+      <Route path="/setup/calendar" element={<SetupRedirect />} />
+      <Route path="/onboarding" element={<SetupRedirect />} />
+
+      {/* Legacy signup aliases */}
+      <Route path="/start" element={<LegacyRedirect />} />
+      <Route path="/signup" element={<LegacyRedirect />} />
+
+      {/* Optional setup success page */}
       <Route
         path="/setup/success"
         element={
@@ -109,7 +82,8 @@ const AppRoutes = () => {
         }
       />
 
-      {/* /dashboard: auth + restaurant linked + onboarded + subscribed + profile complete */}
+      {/* Canonical private routes — guards stacked from outer to inner */}
+      {/* /dashboard: auth + restaurant linked + onboarded + subscribed + restaurant profile complete */}
       <Route
         path="/dashboard"
         element={
@@ -127,7 +101,7 @@ const AppRoutes = () => {
         }
       />
 
-      {/* /bookings: same gating as dashboard */}
+      {/* /bookings: same as dashboard */}
       <Route
         path="/bookings"
         element={
@@ -145,7 +119,7 @@ const AppRoutes = () => {
         }
       />
 
-      {/* /calls: dashboard gating + voice assistant must be active */}
+      {/* /calls: same as bookings + assistant must be active */}
       <Route
         path="/calls"
         element={
@@ -165,9 +139,7 @@ const AppRoutes = () => {
         }
       />
 
-      {/* TERMINAL pages — auth + restaurant linked only. These must stay reachable
-          during setup, otherwise a partially-onboarded user would be locked out.
-          They are the redirect targets of the business guards above. */}
+      {/* /settings: auth + restaurant linked only (must remain reachable to complete setup) */}
       <Route
         path="/settings"
         element={
@@ -178,6 +150,8 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* /billing: auth + restaurant linked only (must remain reachable to upgrade) */}
       <Route
         path="/billing"
         element={
@@ -189,12 +163,43 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Everything else — root, legacy aliases (/setup, /onboarding, /start,
-          /signup, /r/:slug/...), and unknown paths — funnels through the single
-          smart resolver. No dedicated redirect components, no ghost routes. */}
-      <Route path="*" element={<SmartLanding />} />
+      {/* Legacy /r/:slug/... routes - redirect to canonical */}
+      <Route path="/r/:restaurantSlug" element={<LegacySlugRedirect />} />
+      <Route path="/r/:restaurantSlug/dashboard" element={<LegacySlugRedirect />} />
+      <Route path="/r/:restaurantSlug/bookings" element={<LegacySlugRedirect />} />
+      <Route path="/r/:restaurantSlug/calls" element={<LegacySlugRedirect />} />
+      <Route path="/r/:restaurantSlug/settings" element={<LegacySlugRedirect />} />
+
+      {/* Catch-all: redirect to canonical dashboard */}
+      <Route path="/" element={<RootRedirect />} />
+      <Route path="*" element={<RootRedirect />} />
     </Routes>
   );
+};
+
+// Setup/onboarding destinations resolve to the terminal /settings surface
+// (no dedicated setup pages exist). Terminal = not re-guarded by OnboardingGuard.
+const SetupRedirect: React.FC = () => {
+  const { session } = useAuth();
+  return <Navigate to={session ? '/settings' : '/login'} replace />;
+};
+
+// Redirect legacy /start, /signup to canonical route
+const LegacyRedirect: React.FC = () => {
+  const { session } = useAuth();
+  return <Navigate to={session ? '/dashboard' : '/login'} replace />;
+};
+
+// Redirect legacy /r/:slug/ routes to canonical
+const LegacySlugRedirect: React.FC = () => {
+  const { session } = useAuth();
+  return <Navigate to={session ? '/dashboard' : '/login'} replace />;
+};
+
+// Root redirect - immediate, no wait
+const RootRedirect: React.FC = () => {
+  const { session } = useAuth();
+  return <Navigate to={session ? '/dashboard' : '/login'} replace />;
 };
 
 function App() {

@@ -82,10 +82,9 @@ export const OnboardingGuard: React.FC<RouteGuardProps> = ({
   const isOnboardingComplete = appState?.onboarding?.status === 'complete';
 
   if (!isOnboardingComplete) {
-    // Single, fixed remediation surface. /settings is terminal (it is not wrapped
-    // by this guard), so the redirect can never bounce back. Optimal landing is
-    // handled separately by SmartLanding via appState.next_route.
-    return <GuardRedirect to="/settings">{children}</GuardRedirect>;
+    // Backend-driven destination; '/settings' is the terminal fallback surface.
+    const nextRoute = appState?.next_route || '/settings';
+    return <GuardRedirect to={nextRoute}>{children}</GuardRedirect>;
   }
 
   return <>{children}</>;
