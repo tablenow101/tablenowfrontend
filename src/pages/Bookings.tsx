@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { bookingsAPI } from '../lib/api';
-import { Calendar, Search, AlertTriangle, X } from 'lucide-react';
+import { Calendar, Search, AlertTriangle, X, Plus } from 'lucide-react';
 import { useLang } from '../hooks/useLang';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ const getStatusConfig = (t: (k: string) => string): Record<string, { label: stri
 
 
 // ─── Booking detail drawer ────────────────────────────────────────────────────
-function BookingDetailDrawer({ booking, onClose, onCancel }: { booking: Booking; onClose: () => void; onCancel: () => void }) {
+function BookingDetailDrawer({ booking, onClose, onCancel, onEdit }: { booking: Booking; onClose: () => void; onCancel: () => void; onEdit: () => void }) {
     const { t } = useLang();
     const statusCfg: Record<string, { label: string; bg: string; color: string }> = {
         confirmed: { label: t('statusConfirmed'),  bg: '#1a2a00', color: '#b8f000' },
@@ -184,16 +184,158 @@ function BookingDetailDrawer({ booking, onClose, onCancel }: { booking: Booking;
                         </div>
                     </div>
 
-                    {/* Bouton annuler */}
+                    {/* Actions */}
                     {booking.status === 'confirmed' && (
-                        <button
-                            onClick={onCancel}
-                            className="w-full py-3 rounded-xl text-sm font-semibold transition-colors"
-                            style={{ background: '#2a0000', color: '#ef4444' }}
-                        >
-                            Annuler la réservation
-                        </button>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={onEdit}
+                                className="flex-1 py-3 rounded-xl text-sm font-semibold text-black transition-colors"
+                                style={{ background: '#b8f000' }}
+                            >
+                                Modifier
+                            </button>
+                            <button
+                                onClick={onCancel}
+                                className="flex-1 py-3 rounded-xl text-sm font-semibold transition-colors"
+                                style={{ background: '#2a0000', color: '#ef4444' }}
+                            >
+                                Annuler
+                            </button>
+                        </div>
                     )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Reservation form (create + edit) ──────────────────────────────────────────
+function toDateInput(b?: Booking | null): string {
+    if (!b) return '';
+    if (b.booked_for) return new Date(b.booked_for).toISOString().slice(0, 10);
+    return b.booking_date || '';
+}
+function toTimeInput(b?: Booking | null): string {
+    if (!b) return '';
+    if (b.booked_for) {
+        const d = new Date(b.booked_for);
+        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+    return (b.booking_time || '').slice(0, 5);
+}
+
+function ReservationFormModal({ mode, booking, onClose, onSaved }: {
+    mode: 'create' | 'edit';
+    booking?: Booking | null;
+    onClose: () => void;
+    onSaved: () => void;
+}) {
+    const [name, setName]     = useState(booking?.guest_name  || '');
+    const [phone, setPhone]   = useState(booking?.guest_phone || '');
+    const [email, setEmail]   = useState(booking?.guest_email || '');
+    const [date, setDate]     = useState(toDateInput(booking));
+    const [time, setTime]     = useState(toTimeInput(booking));
+    const [covers, setCovers] = useState<number>(booking?.party_size || booking?.covers || 2);
+    const [notes, setNotes]   = useState(booking?.special_requests || '');
+    const [saving, setSaving] = useState(false);
+    const [error, setError]   = useState('');
+
+    const canSave = !!(name.trim() && phone.trim() && date && time && covers > 0);
+
+    const handleSave = async () => {
+        if (!canSave) { setError('Nom, téléphone, date, heure et couverts sont requis.'); return; }
+        setSaving(true); setError('');
+        try {
+            if (mode === 'create') {
+                await bookingsAPI.create({
+                    guestName: name.trim(),
+                    guestPhone: phone.trim(),
+                    ...(email.trim() ? { guestEmail: email.trim() } : {}),
+                    date, time,
+                    partySize: covers,
+                    ...(notes.trim() ? { specialRequests: notes.trim() } : {}),
+                });
+            } else if (booking) {
+                await bookingsAPI.update(booking.id, {
+                    guest_name: name.trim(),
+                    guest_phone: phone.trim(),
+                    ...(email.trim() ? { guest_email: email.trim() } : {}),
+                    booking_date: date,
+                    booking_time: time,
+                    party_size: covers,
+                    special_requests: notes.trim(),
+                });
+            }
+            onSaved();
+        } catch {
+            setError("Échec de l'enregistrement. Vérifiez les champs et réessayez.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const inputCls = 'w-full px-3 py-2.5 rounded-xl text-sm bg-[#0f0f0f] border border-[#2a2a2a] text-white placeholder-[#555] focus:outline-none focus:border-[#b8f000]/50 transition-colors';
+    const labelCls = 'block text-[10px] font-bold tracking-[.12em] uppercase text-[#555] mb-1.5';
+
+    return (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-end md:items-center justify-center p-4" onClick={onClose}>
+            <div className="w-full max-w-md bg-[#111] border border-[#2a2a2a] rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#1a1a1a]">
+                    <h2 className="text-base font-bold text-white">
+                        {mode === 'create' ? 'Nouvelle réservation' : 'Modifier la réservation'}
+                    </h2>
+                    <button onClick={onClose} className="text-[#555] hover:text-white"><X size={18} /></button>
+                </div>
+
+                <div className="p-4 sm:p-5 space-y-3">
+                    <div>
+                        <label className={labelCls}>Nom du client *</label>
+                        <input className={inputCls} value={name} onChange={e => setName(e.target.value)} placeholder="Jean Dupont" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className={labelCls}>Téléphone *</label>
+                            <input className={inputCls} value={phone} onChange={e => setPhone(e.target.value)} placeholder="+33 6 12 34 56 78" />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Email</label>
+                            <input className={inputCls} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="(optionnel)" />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <div>
+                            <label className={labelCls}>Date *</label>
+                            <input className={inputCls} type="date" value={date} onChange={e => setDate(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Heure *</label>
+                            <input className={inputCls} type="time" value={time} onChange={e => setTime(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Couverts *</label>
+                            <input className={inputCls} type="number" min={1} max={50} value={covers} onChange={e => setCovers(Number(e.target.value))} />
+                        </div>
+                    </div>
+                    <div>
+                        <label className={labelCls}>Demandes spéciales</label>
+                        <textarea className={inputCls} rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Allergies, occasion, table…" />
+                    </div>
+
+                    {error && <p className="text-xs text-red-400">{error}</p>}
+
+                    <div className="flex gap-3 pt-1">
+                        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl text-xs font-medium text-gray-400 border border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                            Annuler
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            disabled={!canSave || saving}
+                            className="flex-1 px-4 py-2.5 rounded-xl text-xs font-semibold text-black transition-colors disabled:opacity-40"
+                            style={{ background: '#b8f000' }}
+                        >
+                            {saving ? 'Enregistrement…' : mode === 'create' ? 'Créer la réservation' : 'Enregistrer'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -209,6 +351,8 @@ const Bookings: React.FC = () => {
     const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
     const [cancelling, setCancelling]     = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+    const [formMode, setFormMode]         = useState<'create' | 'edit' | null>(null);
+    const [formTarget, setFormTarget]     = useState<Booking | null>(null);
 
     const fetchBookings = useCallback(async () => {
         try {
@@ -260,8 +404,25 @@ const Bookings: React.FC = () => {
     return (
         <div className="space-y-6">
 
-            {/* Cancel modal */}
-            {selectedBooking && <BookingDetailDrawer booking={selectedBooking} onClose={() => setSelectedBooking(null)} onCancel={() => { setCancelTarget(selectedBooking); setSelectedBooking(null); }} />}
+            {/* Reservation form (create + edit) */}
+            {formMode && (
+                <ReservationFormModal
+                    mode={formMode}
+                    booking={formTarget}
+                    onClose={() => { setFormMode(null); setFormTarget(null); }}
+                    onSaved={() => { setFormMode(null); setFormTarget(null); fetchBookings(); }}
+                />
+            )}
+
+            {/* Detail drawer */}
+            {selectedBooking && (
+                <BookingDetailDrawer
+                    booking={selectedBooking}
+                    onClose={() => setSelectedBooking(null)}
+                    onCancel={() => { setCancelTarget(selectedBooking); setSelectedBooking(null); }}
+                    onEdit={() => { setFormTarget(selectedBooking); setFormMode('edit'); setSelectedBooking(null); }}
+                />
+            )}
 
             {cancelTarget && (
                 <CancelModal
@@ -277,21 +438,30 @@ const Bookings: React.FC = () => {
                     <h1 className="text-2xl font-bold text-white">{t('resaPageTitle')}</h1>
                     <p className="text-sm text-gray-500 mt-0.5">{t('resaPageSub')}</p>
                 </div>
-                <div className="flex border border-[#2a2a2a] rounded-lg overflow-hidden flex-shrink-0">
-                    {[
-                        { key: 'all',       label: t('all2')      },
-                        { key: 'confirmed', label: t('confirmed') },
-                        { key: 'cancelled', label: t('cancelled') },
-                    ].map(({ key, label }) => (
-                        <button
-                            key={key}
-                            onClick={() => setFilter(key)}
-                            className="px-3 py-1.5 text-xs font-bold transition-colors"
-                            style={filter === key ? { background: '#b8f000', color: '#000' } : { color: '#888' }}
-                        >
-                            {label}
-                        </button>
-                    ))}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex border border-[#2a2a2a] rounded-lg overflow-hidden">
+                        {[
+                            { key: 'all',       label: t('all2')      },
+                            { key: 'confirmed', label: t('confirmed') },
+                            { key: 'cancelled', label: t('cancelled') },
+                        ].map(({ key, label }) => (
+                            <button
+                                key={key}
+                                onClick={() => setFilter(key)}
+                                className="px-3 py-1.5 text-xs font-bold transition-colors"
+                                style={filter === key ? { background: '#b8f000', color: '#000' } : { color: '#888' }}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                    <button
+                        onClick={() => { setFormTarget(null); setFormMode('create'); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-black transition-colors"
+                        style={{ background: '#b8f000' }}
+                    >
+                        <Plus size={14} /> Nouvelle réservation
+                    </button>
                 </div>
             </div>
 
