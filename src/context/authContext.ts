@@ -38,7 +38,7 @@ export interface AuthState {
   restaurant: Restaurant | null;
   appState: AppState | null;
   authReady: boolean;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<AppState | null>;
   logout: () => Promise<void>;
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './hooks/useAuth';
 import { LangProvider } from './context/LangProvider';
@@ -41,22 +41,48 @@ const PublicRoutes = () => (
   </Routes>
 );
 
-// Requires the Supabase user to resolve to a linked restaurant. No onboarding
-// gating — login goes straight to the dashboard; restaurant details are edited
-// in /settings.
+// Canonical private routes are slug-scoped (/r/:slug/...). The guard requires a
+// linked restaurant and enforces slug ownership; cross-restaurant access is
+// bounced to the caller's own slug (the backend is the real authority).
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { restaurant, authReady } = useAuth();
+  const { restaurant, session, authReady } = useAuth();
+  const { slug } = useParams();
+
   if (!authReady) return <CenteredSpinner />;
-  if (restaurant?.id) return <>{children}</>;
-  return <NotLinked />;
+  if (!session) return <Navigate to="/login" replace />;
+  if (!restaurant?.id) return <NotLinked />;
+
+  const mySlug = restaurant.slug as string | undefined;
+  if (mySlug && slug && slug !== mySlug) {
+    return <Navigate to={`/r/${mySlug}/dashboard`} replace />;
+  }
+  return <>{children}</>;
 };
 
-// Legacy / onboarding entry points → canonical app. The onboarding flow was
-// removed; any old /setup, /onboarding, /start, /signup, /r/:slug link lands
-// on the dashboard (or login when signed out).
-const LegacyRedirect: React.FC = () => {
-  const { session } = useAuth();
-  return <Navigate to={session ? '/dashboard' : '/login'} replace />;
+// Redirect a legacy flat path to its canonical /r/:slug/* equivalent. The slug
+// comes only from app-state (restaurant.slug) — never reconstructed locally.
+const CanonicalRedirect: React.FC<{ to: string }> = ({ to }) => {
+  const { session, restaurant, authReady } = useAuth();
+
+  if (!authReady) return <CenteredSpinner />;
+  if (!session) return <Navigate to="/login" replace />;
+
+  const slug = restaurant?.slug as string | undefined;
+  if (!slug) return <NotLinked />;
+  return <Navigate to={`/r/${slug}${to}`} replace />;
+};
+
+// Root + unknown paths: signed-in users land on their dashboard, everyone else
+// on /login. Destination still derives from the app-state slug, not heuristics.
+const RootRedirect: React.FC = () => {
+  const { session, restaurant, authReady } = useAuth();
+
+  if (!authReady) return <CenteredSpinner />;
+  if (!session) return <Navigate to="/login" replace />;
+
+  const slug = restaurant?.slug as string | undefined;
+  if (!slug) return <NotLinked />;
+  return <Navigate to={`/r/${slug}/dashboard`} replace />;
 };
 
 // App routes for authenticated users
@@ -74,27 +100,34 @@ const AppRoutes = () => {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/debug" element={<Debug />} />
 
-      {/* Legacy onboarding routes → canonical app (onboarding removed) */}
-      <Route path="/setup" element={<LegacyRedirect />} />
-      <Route path="/setup/*" element={<LegacyRedirect />} />
-      <Route path="/onboarding" element={<LegacyRedirect />} />
-      <Route path="/start" element={<LegacyRedirect />} />
-      <Route path="/signup" element={<LegacyRedirect />} />
+      {/* Canonical private routes — slug-scoped, auth + linked restaurant only */}
+      <Route path="/r/:slug/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
+      <Route path="/r/:slug/reservations" element={<PrivateRoute><Layout><Bookings /></Layout></PrivateRoute>} />
+      <Route path="/r/:slug/calls" element={<PrivateRoute><Layout><CallLogs /></Layout></PrivateRoute>} />
+      <Route path="/r/:slug/settings" element={<PrivateRoute><Layout><Settings /></Layout></PrivateRoute>} />
+      <Route path="/r/:slug/billing" element={<PrivateRoute><Layout><Billing /></Layout></PrivateRoute>} />
 
-      {/* Canonical private routes — auth + linked restaurant only */}
-      <Route path="/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
-      <Route path="/bookings" element={<PrivateRoute><Layout><Bookings /></Layout></PrivateRoute>} />
-      <Route path="/calls" element={<PrivateRoute><Layout><CallLogs /></Layout></PrivateRoute>} />
-      <Route path="/settings" element={<PrivateRoute><Layout><Settings /></Layout></PrivateRoute>} />
-      <Route path="/billing" element={<PrivateRoute><Layout><Billing /></Layout></PrivateRoute>} />
+      {/* Legacy flat paths → canonical (spec §11). No business logic of their own. */}
+      <Route path="/dashboard" element={<CanonicalRedirect to="/dashboard" />} />
+      <Route path="/bookings" element={<CanonicalRedirect to="/reservations" />} />
+      <Route path="/reservations" element={<CanonicalRedirect to="/reservations" />} />
+      <Route path="/calls" element={<CanonicalRedirect to="/calls" />} />
+      <Route path="/settings" element={<CanonicalRedirect to="/settings" />} />
+      <Route path="/billing" element={<CanonicalRedirect to="/billing" />} />
 
-      {/* Legacy /r/:slug/... → canonical */}
-      <Route path="/r/:restaurantSlug/*" element={<LegacyRedirect />} />
-      <Route path="/r/:restaurantSlug" element={<LegacyRedirect />} />
+      {/* Legacy slug subpath kept until /reservations fully replaces /bookings */}
+      <Route path="/r/:slug/bookings" element={<CanonicalRedirect to="/reservations" />} />
 
-      {/* Root + unknown paths → dashboard (or login) */}
-      <Route path="/" element={<LegacyRedirect />} />
-      <Route path="*" element={<LegacyRedirect />} />
+      {/* Legacy entry points → canonical app or login */}
+      <Route path="/signup" element={<Navigate to="/login" replace />} />
+      <Route path="/setup" element={<CanonicalRedirect to="/dashboard" />} />
+      <Route path="/setup/*" element={<CanonicalRedirect to="/dashboard" />} />
+      <Route path="/onboarding" element={<CanonicalRedirect to="/dashboard" />} />
+      <Route path="/start" element={<CanonicalRedirect to="/dashboard" />} />
+
+      {/* Root + unknown paths */}
+      <Route path="/" element={<RootRedirect />} />
+      <Route path="*" element={<RootRedirect />} />
     </Routes>
   );
 };

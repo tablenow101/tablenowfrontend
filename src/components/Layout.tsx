@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLang } from '../hooks/useLang';
 import { LayoutDashboard, Calendar, Phone, Settings, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
@@ -9,20 +9,32 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const displayName = (restaurant?.name as string | undefined) || user?.email || '';
     const { lang, setLang, t } = useLang();
     const location = useLocation();
+    const navigate = useNavigate();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [darkMode, setDarkMode] = useState(() => {
         return localStorage.getItem('theme') !== 'light';
     });
 
-    // Canonical routes - no slug needed
+    // Canonical routes are slug-scoped (/r/:slug/...). The slug is the linked
+    // restaurant's own slug from app-state — never reconstructed locally.
+    const slug = (restaurant?.slug as string | undefined) || '';
+    const base = slug ? `/r/${slug}` : '';
     const nav = [
-        { key: 'navDashboard', href: '/dashboard', icon: LayoutDashboard },
-        { key: 'navReservations', href: '/bookings',  icon: Calendar        },
-        { key: 'navCalls',       href: '/calls',     icon: Phone            },
-        { key: 'navSettings',    href: '/settings',  icon: Settings         },
+        { key: 'navDashboard',    href: `${base}/dashboard`,    icon: LayoutDashboard },
+        { key: 'navReservations', href: `${base}/reservations`, icon: Calendar        },
+        { key: 'navCalls',        href: `${base}/calls`,        icon: Phone            },
+        { key: 'navSettings',     href: `${base}/settings`,     icon: Settings         },
     ];
 
     const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
+
+    // Clear the session, then leave the private area. Without the explicit
+    // navigation the guard would render <NotLinked /> on the current slug route
+    // instead of returning the user to the login screen.
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login', { replace: true });
+    };
 
     const toggleTheme = () => {
         const next = !darkMode;
@@ -40,7 +52,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
                     {/* Left */}
                     <div className="flex items-center gap-3 min-w-0">
-                        <Link to="/dashboard" className="text-sm font-bold text-white tracking-tight whitespace-nowrap">
+                        <Link to={`${base}/dashboard`} className="text-sm font-bold text-white tracking-tight whitespace-nowrap">
                             Table<span style={{ color: '#b8f000' }}>Now</span>
                         </Link>
                         {displayName && (
@@ -106,7 +118,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
                         {/* Logout */}
                         <button
-                            onClick={logout}
+                            onClick={handleLogout}
                             className="flex items-center gap-1.5 text-xs text-[#555] hover:text-white transition-colors"
                         >
                             <LogOut size={13} />
@@ -151,7 +163,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
                             <button onClick={toggleTheme} className="ml-auto p-1.5 text-[#555]">{darkMode ? <Sun size={14} /> : <Moon size={14} />}</button>
                         </div>
                         <button
-                            onClick={() => { logout(); setMobileOpen(false); }}
+                            onClick={() => { setMobileOpen(false); handleLogout(); }}
                             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#555] hover:text-red-400"
                         >
                             <LogOut size={15} />

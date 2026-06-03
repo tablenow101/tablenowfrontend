@@ -16,12 +16,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [authReady, setAuthReady] = useState(false);
 
   // Unified app state from /auth/app-state — single source of truth for routing
-  // and authentication context.
-  const fetchAppState = useCallback(async (hasSession: boolean): Promise<void> => {
+  // and authentication context. Returns the freshly-fetched state so callers
+  // (e.g. AuthCallback) can navigate to next_route without reading stale context.
+  const fetchAppState = useCallback(async (hasSession: boolean): Promise<AppState | null> => {
     if (!hasSession) {
       setAppState(null);
       setRestaurant(null);
-      return;
+      return null;
     }
 
     try {
@@ -29,10 +30,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const state = res.data as AppState;
       setAppState(state);
       setRestaurant(state.restaurant || null);
+      return state;
     } catch (error) {
       console.error('Failed to fetch app state:', error);
       setAppState(null);
       setRestaurant(null);
+      return null;
     }
   }, []);
 
@@ -71,16 +74,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, [fetchAppState]);
 
-  const refreshUser = useCallback(async (): Promise<void> => {
+  const refreshUser = useCallback(async (): Promise<AppState | null> => {
     try {
       const { data } = await supabase.auth.getSession();
       const hasSession = !!data.session;
       setSession(data.session ?? null);
       setUser(data.session?.user ?? null);
 
-      await fetchAppState(hasSession);
+      return await fetchAppState(hasSession);
     } catch {
       console.error('Failed to refresh user');
+      return null;
     }
   }, [fetchAppState]);
 
