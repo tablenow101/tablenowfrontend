@@ -2,13 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { getPostAuthRedirect } from '../lib/postAuthRedirect';
 import { authAPI } from '../lib/api';
 import { AlertCircle } from 'lucide-react';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { refreshUser, appState } = useAuth();
   const [error, setError] = useState('');
   const ranRef = useRef(false);
 
@@ -38,11 +37,17 @@ const AuthCallback: React.FC = () => {
         // Ask the backend to look up / create + link the restaurant for this user.
         // Auth itself uses the Supabase token (see lib/api.ts) — no backend token.
         console.log('[AuthCallback] Calling backend /auth/google/supabase...');
-        const response = await authAPI.googleCallback(supabaseAccessToken);
+        await authAPI.googleCallback(supabaseAccessToken);
 
         await refreshUser();
 
-        navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
+        // Use next_route from app-state after refresh
+        if (appState?.next_route) {
+          navigate(appState.next_route, { replace: true });
+        } else {
+          // Fallback if app-state not ready yet — should not happen
+          navigate('/dashboard', { replace: true });
+        }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error('[AuthCallback] Error:', msg);
@@ -52,7 +57,7 @@ const AuthCallback: React.FC = () => {
     };
 
     handleCallback();
-  }, [navigate, refreshUser]);
+  }, [navigate, refreshUser, appState]);
 
   return (
     <div className="min-h-screen bg-[#080912] flex items-center justify-center px-4">
