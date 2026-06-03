@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, ReactNode, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { settingsAPI, api } from '../lib/api';
