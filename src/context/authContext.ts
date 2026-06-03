@@ -21,12 +21,13 @@ export type CalendarStatus = 'not_connected' | 'pending' | 'connected' | 'error'
 // Mirror of the backend GET /auth/app-state contract (src/routes/auth.ts
 // getUserContextWithNextRoute). Single source of truth for route guards.
 export interface AppState {
+  version?: number;
   user: { id: string; email: string } | null;
   restaurant: Restaurant | null;
   subscription: { status: SubscriptionStatus };
-  calendar: { status: CalendarStatus };
-  provisioning: { status: ProvisioningStatus; phone_number?: string };
-  onboarding: { status: OnboardingStatus; test_call_completed: boolean };
+  calendar: { status: CalendarStatus; skipped?: boolean };
+  provisioning: { status: ProvisioningStatus; phone_number?: string | null };
+  onboarding: { status: OnboardingStatus };
   assistant: { status: AssistantStatus };
   next_route: string | null;
 }
@@ -38,7 +39,6 @@ export interface AuthState {
   appState: AppState | null;
   authReady: boolean;
   refreshUser: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 

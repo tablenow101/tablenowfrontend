@@ -57,7 +57,7 @@ const HoraireSettings: React.FC = () => {
     const copy = JSON.parse(JSON.stringify(d)) as unknown;
     ((copy as Record<string, unknown>)[di] as Record<string, unknown>).services = ((copy as Record<string, unknown>)[di] as Record<string, unknown>).services || [];
     (((copy as Record<string, unknown>)[di] as Record<string, unknown>).services as Record<string, unknown>[])[si][field] = val;
-    return copy;
+    return copy as DayData[];
   });
 
   const addService = (di: number) => update(d => {

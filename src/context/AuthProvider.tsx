@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, ReactNode, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { settingsAPI, api } from '../lib/api';
+import { api } from '../lib/api';
 import { AuthContext, type AuthState, type AppState, type Restaurant } from './authContext';
 
 interface AuthProviderProps {
@@ -15,9 +15,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [appState, setAppState] = useState<AppState | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
-  // Unified app state from /auth/app-state — single source of truth for route
-  // guards (subscription / onboarding / assistant / restaurant completeness).
-  // Falls back to settingsAPI so the restaurant stays populated if app-state fails.
+  // Unified app state from /auth/app-state — single source of truth for routing
+  // and authentication context.
   const fetchAppState = useCallback(async (hasSession: boolean): Promise<void> => {
     if (!hasSession) {
       setAppState(null);
@@ -30,18 +29,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const state = res.data as AppState;
       setAppState(state);
       setRestaurant(state.restaurant || null);
-    } catch {
-      console.error('Failed to fetch app state');
-      // Fallback to settings API for backward compatibility
-      try {
-        const res = await settingsAPI.get();
-        const restaurantData = res.data.settings || res.data;
-        setRestaurant(restaurantData);
-      } catch {
-        console.error('Failed to fetch restaurant');
-        setRestaurant(null);
-      }
+    } catch (error) {
+      console.error('Failed to fetch app state:', error);
       setAppState(null);
+      setRestaurant(null);
     }
   }, []);
 
@@ -93,14 +84,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [fetchAppState]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-  }, []);
-
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -110,8 +93,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, session, restaurant, appState, authReady, refreshUser, login, logout } as AuthState),
-    [user, session, restaurant, appState, authReady, refreshUser, login, logout]
+    () => ({ user, session, restaurant, appState, authReady, refreshUser, logout } as AuthState),
+    [user, session, restaurant, appState, authReady, refreshUser, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

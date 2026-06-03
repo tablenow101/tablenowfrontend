@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import { authAPI } from '../lib/api';
-import { getPostAuthRedirect, type AuthUser } from '../lib/postAuthRedirect';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 
 const VerifyEmail: React.FC = () => {
@@ -9,6 +9,7 @@ const VerifyEmail: React.FC = () => {
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
+    const { refreshUser, appState } = useAuth();
 
     const verifyEmail = useCallback(async (): Promise<void> => {
         const token = searchParams.get('token');
@@ -20,13 +21,21 @@ const VerifyEmail: React.FC = () => {
         }
 
         try {
-            const response = await authAPI.verifyEmail(token);
-            const { restaurant } = response.data;
+            await authAPI.verifyEmail(token);
 
             setStatus('success');
-            setMessage(response.data.message || 'Email vérifié avec succès !');
+            setMessage('Email vérifié avec succès !');
 
-            setTimeout(() => navigate(getPostAuthRedirect(restaurant as unknown as AuthUser | null), { replace: true }), 1500);
+            // Refresh auth state to get app-state with next_route
+            await refreshUser();
+
+            setTimeout(() => {
+                if (appState?.next_route) {
+                    navigate(appState.next_route, { replace: true });
+                } else {
+                    navigate('/dashboard', { replace: true });
+                }
+            }, 1500);
         } catch (error: unknown) {
             setStatus('error');
             let errorMessage = 'La vérification a échoué';
@@ -36,7 +45,7 @@ const VerifyEmail: React.FC = () => {
             }
             setMessage(errorMessage);
         }
-    }, [searchParams, navigate]) as () => Promise<void>;
+    }, [searchParams, navigate, refreshUser, appState]) as () => Promise<void>;
 
     useEffect(() => {
         verifyEmail();
