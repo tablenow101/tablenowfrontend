@@ -84,14 +84,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [fetchAppState]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-  }, []);
-
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -101,8 +93,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, session, restaurant, appState, authReady, refreshUser, login, logout } as AuthState),
-    [user, session, restaurant, appState, authReady, refreshUser, login, logout]
+    () => ({ user, session, restaurant, appState, authReady, refreshUser, logout } as AuthState),
+    [user, session, restaurant, appState, authReady, refreshUser, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
