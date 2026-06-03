@@ -1,8 +1,49 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../hooks/useLang';
-import { AlertCircle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { authAPI } from '../lib/api';
+
+const T = {
+  fr: {
+    title: 'Créer votre compte',
+    subtitle: 'Essai 7 jours gratuits · Résiliable à tout moment',
+    nameLabel: 'NOM DU RESTAURANT',
+    namePlaceholder: 'Le Bistrot du Coin',
+    emailLabel: 'E-MAIL',
+    emailPlaceholder: 'vous@restaurant.fr',
+    passwordLabel: 'MOT DE PASSE',
+    passwordPlaceholder: '8 caractères minimum',
+    submit: 'Créer mon compte',
+    or: 'OU',
+    google: "S'inscrire avec Google",
+    hasAccount: 'Déjà un compte ?',
+    signIn: 'Se connecter',
+    errorDefault: "La création du compte a échoué.",
+    checkEmailTitle: 'Vérifiez votre email',
+    checkEmailBody: 'Nous vous avons envoyé un lien de confirmation. Cliquez dessus pour activer votre compte.',
+  },
+  en: {
+    title: 'Create your account',
+    subtitle: '7-day free trial · Cancel anytime',
+    nameLabel: 'RESTAURANT NAME',
+    namePlaceholder: 'The Corner Bistro',
+    emailLabel: 'E-MAIL',
+    emailPlaceholder: 'you@restaurant.com',
+    passwordLabel: 'PASSWORD',
+    passwordPlaceholder: 'At least 8 characters',
+    submit: 'Create my account',
+    or: 'OR',
+    google: 'Sign up with Google',
+    hasAccount: 'Already have an account?',
+    signIn: 'Sign in',
+    errorDefault: 'Account creation failed.',
+    checkEmailTitle: 'Check your email',
+    checkEmailBody: "We've sent you a confirmation link. Click it to activate your account.",
+  },
+};
 
 function GoogleIcon() {
   return (
@@ -15,21 +56,66 @@ function GoogleIcon() {
   );
 }
 
-// Sign-up is Google-OAuth only. The Supabase OAuth redirect lands on
-// /auth/callback, which auto-creates the restaurant from the Google profile
-// and routes via app-state.
+// Sign-up yields a Supabase session in every case. Email/password uses
+// supabase.auth.signUp (restaurant name carried in user_metadata.full_name so the
+// backend names the restaurant correctly). If email confirmation is enabled the
+// session arrives only after the user clicks the link → /auth/callback finishes the
+// link/create. Otherwise we link + route immediately. Google uses signInWithOAuth.
 const Register: React.FC = () => {
   const { lang } = useLang();
-  const [error, setError] = useState('');
+  const t = T[lang];
+  const { refreshUser } = useAuth();
+  const navigate = useNavigate();
+
+  const [name, setName]         = useState('');
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (signUpError) throw signUpError;
+
+      const token = data.session?.access_token;
+      if (token) {
+        // Email confirmation disabled: we already have a session. Create/link the
+        // restaurant and follow the backend's next_route.
+        await authAPI.ensureRestaurant(token);
+        const state = await refreshUser();
+        navigate(state?.next_route || '/login', { replace: true });
+      } else {
+        // Email confirmation enabled: finish on /auth/callback after the user clicks.
+        setCheckEmail(true);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || t.errorDefault);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const signUpWithGoogle = async (): Promise<void> => {
     setError('');
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
-      if (error) throw error;
+      if (oauthError) throw oauthError;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg || 'OAuth failed');
@@ -53,37 +139,103 @@ const Register: React.FC = () => {
           className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 sm:p-10"
           style={{ borderTop: '4px solid #b8f000' }}
         >
-          <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">
-            {lang === 'fr' ? 'Créer votre compte' : 'Create your account'}
-          </h1>
-          <p className="text-sm text-[#888] mb-4 sm:mb-6">
-            {lang === 'fr'
-              ? 'Essai 7 jours gratuits · Résiliable à tout moment'
-              : '7-day free trial · Cancel anytime'}
-          </p>
-
-          {error && (
-            <div className="mb-3 sm:mb-5 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400">
-              <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
+          {checkEmail ? (
+            <div className="flex flex-col items-center text-center gap-3">
+              <CheckCircle2 size={40} className="text-[#b8f000]" />
+              <h1 className="text-2xl font-bold text-white">{t.checkEmailTitle}</h1>
+              <p className="text-sm text-[#888]">{t.checkEmailBody}</p>
             </div>
+          ) : (
+            <>
+              <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">{t.title}</h1>
+              <p className="text-sm text-[#888] mb-4 sm:mb-6">{t.subtitle}</p>
+
+              {error && (
+                <div className="mb-3 sm:mb-5 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400">
+                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-[#888] mb-1.5">
+                    {t.nameLabel}
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder={t.namePlaceholder}
+                    required
+                    className="w-full h-14 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#b8f000] transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-[#888] mb-1.5">
+                    {t.emailLabel}
+                  </label>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder={t.emailPlaceholder}
+                    required
+                    className="w-full h-14 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#b8f000] transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-[#888] mb-1.5">
+                    {t.passwordLabel}
+                  </label>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder={t.passwordPlaceholder}
+                    required
+                    minLength={8}
+                    className="w-full h-14 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#b8f000] transition-colors"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-14 bg-[#b8f000] text-black font-bold rounded-xl text-sm transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {loading && <span className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />}
+                  {t.submit}
+                </button>
+              </form>
+
+              <div className="flex items-center gap-3 my-4 sm:my-6">
+                <div className="flex-1 h-px bg-[#2a2a2a]" />
+                <span className="text-xs text-[#555]">{t.or}</span>
+                <div className="flex-1 h-px bg-[#2a2a2a]" />
+              </div>
+
+              <button
+                type="button"
+                onClick={signUpWithGoogle}
+                className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
+              >
+                <GoogleIcon />
+                {t.google}
+              </button>
+
+              <p className="text-center text-sm text-[#555] mt-6">
+                {t.hasAccount}{' '}
+                <Link to="/login" className="text-[#b8f000] hover:underline font-medium">
+                  {t.signIn}
+                </Link>
+              </p>
+            </>
           )}
-
-          <button
-            type="button"
-            onClick={signUpWithGoogle}
-            className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
-          >
-            <GoogleIcon />
-            {lang === 'fr' ? "S'inscrire avec Google" : 'Sign up with Google'}
-          </button>
-
-          <p className="text-center text-sm text-[#555] mt-6">
-            {lang === 'fr' ? 'Déjà un compte ? ' : 'Already have an account? '}
-            <Link to="/login" className="text-[#b8f000] hover:underline font-medium">
-              {lang === 'fr' ? 'Se connecter' : 'Sign in'}
-            </Link>
-          </p>
         </div>
       </div>
     </div>
