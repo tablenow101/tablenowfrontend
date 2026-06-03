@@ -4,7 +4,7 @@ import { useLang } from '../hooks/useLang';
 import { useAuth } from '../hooks/useAuth';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { authAPI } from '../lib/api';
+import { runPostAuth } from '../lib/postAuth';
 
 const T = {
   fr: {
@@ -89,13 +89,11 @@ const Register: React.FC = () => {
       });
       if (signUpError) throw signUpError;
 
-      const token = data.session?.access_token;
-      if (token) {
-        // Email confirmation disabled: we already have a session. Create/link the
+      if (data.session) {
+        // Email confirmation disabled: we already have a session. Bootstrap the
         // restaurant and follow the backend's next_route.
-        await authAPI.ensureRestaurant(token);
-        const state = await refreshUser();
-        navigate(state?.next_route || '/login', { replace: true });
+        const next = await runPostAuth(refreshUser);
+        navigate(next, { replace: true });
       } else {
         // Email confirmation enabled: finish on /auth/callback after the user clicks.
         setCheckEmail(true);

@@ -2,9 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { authAPI } from '../lib/api';
+import { runPostAuth } from '../lib/postAuth';
 import { AlertCircle } from 'lucide-react';
 
+// Landing page for every Supabase redirect: Google OAuth AND email-confirmation
+// links. supabase-js processes the URL (detectSessionInUrl) to establish the
+// session; we then run the one shared post-auth routine. No provider branching.
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
@@ -17,32 +20,18 @@ const AuthCallback: React.FC = () => {
 
     const handleCallback = async () => {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        console.log('[AuthCallback] Code in URL:', code ? code.slice(0, 20) + '...' : 'MISSING');
-        if (!code) throw new Error('Aucun code OAuth dans l\'URL');
-
-        // Wait for Supabase SDK to auto-process PKCE exchange via detectSessionInUrl
-        console.log('[AuthCallback] Waiting for SDK PKCE processing...');
-        await new Promise(r => setTimeout(r, 800));
-
-        const { data } = await supabase.auth.getSession();
-        if (!data.session?.access_token) {
-          throw new Error('No session after OAuth');
+        // Wait for supabase-js to process the PKCE code / token hash in the URL.
+        let session = null;
+        for (let attempt = 0; attempt < 10 && !session; attempt++) {
+          await new Promise(r => setTimeout(r, 250));
+          const { data } = await supabase.auth.getSession();
+          session = data.session;
         }
+        if (!session?.access_token) throw new Error('No session after redirect');
 
-        const supabaseAccessToken = data.session.access_token;
-        console.log('[AuthCallback] PKCE session ready');
-
-        // Ask the backend to look up / create + link the restaurant for this user.
-        // Auth itself uses the Supabase token (see lib/api.ts) — no backend token.
-        console.log('[AuthCallback] Calling backend /auth/google/supabase...');
-        await authAPI.googleCallback(supabaseAccessToken);
-
-        // The backend is the single source of routing truth. Follow next_route
-        // verbatim — never reconstruct the destination from local state.
-        const state = await refreshUser();
-        navigate(state?.next_route || '/login', { replace: true });
+        // bootstrap → app-state → next_route (single source of routing truth).
+        const next = await runPostAuth(refreshUser);
+        navigate(next, { replace: true });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error('[AuthCallback] Error:', msg);

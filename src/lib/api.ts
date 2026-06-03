@@ -45,13 +45,10 @@ api.interceptors.response.use(
 );
 
 // API wrappers. Authentication always yields a Supabase session (Google OAuth OR
-// email/password). ensureRestaurant takes that Supabase access token and links or
-// creates the matching restaurant server-side. googleCallback is kept as the name
-// used by the OAuth callback; both hit the same generic endpoint.
+// email/password). bootstrap takes that Supabase access token and links or creates
+// the matching restaurant server-side — the single, provider-agnostic entry point.
 export const authAPI = {
-  verifyEmail:     (token: string)=> api.post('/auth/verify-email', { token }),
-  googleCallback:  (token: string)=> api.post('/auth/google/supabase', { access_token: token }),
-  ensureRestaurant:(token: string)=> api.post('/auth/google/supabase', { access_token: token }),
+  bootstrap: (token: string) => api.post('/auth/bootstrap', { access_token: token }),
 };
 
 export const dashboardAPI = {

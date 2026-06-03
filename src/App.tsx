@@ -5,7 +5,9 @@ import { useAuth } from './hooks/useAuth';
 import { LangProvider } from './context/LangProvider';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import Logout from './pages/Logout';
 import AuthCallback from './pages/AuthCallback';
 import Debug from './pages/Debug';
 import Dashboard from './pages/Dashboard';
@@ -36,7 +38,8 @@ const PublicRoutes = () => (
     <Route path="/" element={<Landing />} />
     <Route path="/login" element={<Login />} />
     <Route path="/register" element={<Register />} />
-    <Route path="/verify-email" element={<VerifyEmail />} />
+    <Route path="/forgot-password" element={<ForgotPassword />} />
+    <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );
@@ -93,10 +96,12 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {/* Public routes */}
+      {/* Public auth routes — all Supabase-backed */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/logout" element={<Logout />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/debug" element={<Debug />} />
 
