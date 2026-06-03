@@ -127,10 +127,10 @@ function BookingRow({ booking }: { booking: Booking }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 const Dashboard: React.FC = () => {
-    const { user, authReady } = useAuth();
+    const { restaurant, authReady } = useAuth();
     const { t } = useLang();
-    const { restaurantSlug } = useParams();
-    const slug = restaurantSlug || user?.slug || '';
+    const { slug: slugParam } = useParams();
+    const slug = slugParam || (restaurant?.slug as string | undefined) || '';
 
     const [stats, setStats]       = useState<Record<string, unknown> | null>(null);
     const [todayStats, setTodayStats] = useState<Record<string, unknown> | null>(null);
@@ -232,7 +232,7 @@ const Dashboard: React.FC = () => {
             {/* ── Header ─────────────────────────────────────────────── */}
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-white">{greeting()} {user?.name}</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">{greeting()} {(restaurant?.name as string | undefined) || ''}</h1>
                     <p className="text-sm text-[#888] mt-1">
                         {t('heroSub')
                             .replace('{calls}', String(heroCallsToday))
@@ -333,7 +333,7 @@ const Dashboard: React.FC = () => {
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5">
                     <div className="flex items-center justify-between mb-2 sm:mb-4">
                         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555]">{t('nextResa')}</p>
-                        <Link to={`/r/${slug}/bookings`} className="text-[11px] font-bold text-[#b8f000] hover:opacity-70 flex items-center gap-1">
+                        <Link to={`/r/${slug}/reservations`} className="text-[11px] font-bold text-[#b8f000] hover:opacity-70 flex items-center gap-1">
                             {t('seeAll')} <ArrowUpRight size={11} />
                         </Link>
                     </div>

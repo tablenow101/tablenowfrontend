@@ -7,7 +7,7 @@ import { AlertCircle } from 'lucide-react';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
-  const { refreshUser, appState } = useAuth();
+  const { refreshUser } = useAuth();
   const [error, setError] = useState('');
   const ranRef = useRef(false);
 
@@ -39,15 +39,10 @@ const AuthCallback: React.FC = () => {
         console.log('[AuthCallback] Calling backend /auth/google/supabase...');
         await authAPI.googleCallback(supabaseAccessToken);
 
-        await refreshUser();
-
-        // Use next_route from app-state after refresh
-        if (appState?.next_route) {
-          navigate(appState.next_route, { replace: true });
-        } else {
-          // Fallback if app-state not ready yet — should not happen
-          navigate('/dashboard', { replace: true });
-        }
+        // The backend is the single source of routing truth. Follow next_route
+        // verbatim — never reconstruct the destination from local state.
+        const state = await refreshUser();
+        navigate(state?.next_route || '/login', { replace: true });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error('[AuthCallback] Error:', msg);
@@ -57,7 +52,7 @@ const AuthCallback: React.FC = () => {
     };
 
     handleCallback();
-  }, [navigate, refreshUser, appState]);
+  }, [navigate, refreshUser]);
 
   return (
     <div className="min-h-screen bg-[#080912] flex items-center justify-center px-4">

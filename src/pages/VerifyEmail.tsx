@@ -9,7 +9,7 @@ const VerifyEmail: React.FC = () => {
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
-    const { refreshUser, appState } = useAuth();
+    const { refreshUser } = useAuth();
 
     const verifyEmail = useCallback(async (): Promise<void> => {
         const token = searchParams.get('token');
@@ -26,15 +26,12 @@ const VerifyEmail: React.FC = () => {
             setStatus('success');
             setMessage('Email vérifié avec succès !');
 
-            // Refresh auth state to get app-state with next_route
-            await refreshUser();
+            // Refresh auth state and follow the backend's next_route verbatim.
+            const state = await refreshUser();
+            const next = state?.next_route || '/login';
 
             setTimeout(() => {
-                if (appState?.next_route) {
-                    navigate(appState.next_route, { replace: true });
-                } else {
-                    navigate('/dashboard', { replace: true });
-                }
+                navigate(next, { replace: true });
             }, 1500);
         } catch (error: unknown) {
             setStatus('error');
@@ -45,7 +42,7 @@ const VerifyEmail: React.FC = () => {
             }
             setMessage(errorMessage);
         }
-    }, [searchParams, navigate, refreshUser, appState]) as () => Promise<void>;
+    }, [searchParams, navigate, refreshUser]) as () => Promise<void>;
 
     useEffect(() => {
         verifyEmail();
