@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLang } from '../hooks/useLang';
-import { AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, Loader } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { resendPasswordReset } from '../lib/emailResend';
 
 const T = {
   fr: {
@@ -36,6 +37,8 @@ const ForgotPassword: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendError, setResendError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -51,6 +54,20 @@ const ForgotPassword: React.FC = () => {
       setError(t.error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendEmail = async (): Promise<void> => {
+    setResendError('');
+    setResendLoading(true);
+    try {
+      await resendPasswordReset(email);
+      // Success — confirmation already shown via success state
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setResendError(msg || t.error);
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -73,9 +90,57 @@ const ForgotPassword: React.FC = () => {
           <p className="text-sm text-[#888] mb-4 sm:mb-6">{t.subtitle}</p>
 
           {success ? (
-            <div className="flex items-start gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-              <CheckCircle2 size={18} className="text-green-400 flex-shrink-0 mt-0.5" />
-              <span className="text-sm text-green-400">{t.success}</span>
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="p-4 rounded-full bg-green-500/10">
+                <CheckCircle2 size={40} className="text-green-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white mb-1">{t.success}</h2>
+                <p className="text-sm text-[#888]">
+                  {lang === 'fr'
+                    ? 'Un lien de réinitialisation a été envoyé à:'
+                    : 'A password reset link has been sent to:'}
+                </p>
+              </div>
+
+              {/* Display email */}
+              <div className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg w-full">
+                <p className="text-xs text-[#555] uppercase tracking-wide mb-1">E-mail</p>
+                <p className="text-sm text-white font-medium break-all">{email}</p>
+              </div>
+
+              {/* Spam notice */}
+              <p className="text-xs text-[#555]">
+                {lang === 'fr'
+                  ? 'Vérifiez vos spams si vous ne recevez pas le lien'
+                  : "Check your spam folder if you don't receive the link"}
+              </p>
+
+              {/* Resend error */}
+              {resendError && (
+                <div className="p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400 w-full">
+                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                  <span>{resendError}</span>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex flex-col gap-3 w-full pt-2">
+                <button
+                  onClick={handleResendEmail}
+                  disabled={resendLoading}
+                  className="w-full h-12 bg-[#b8f000] text-black font-bold rounded-xl text-sm transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {resendLoading && <Loader size={14} className="animate-spin" />}
+                  {lang === 'fr' ? 'Renvoyer le lien' : 'Resend link'}
+                </button>
+                <Link
+                  to="/login"
+                  className="w-full h-12 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center hover:border-[#444] transition-colors"
+                >
+                  {lang === 'fr' ? 'Retour à la connexion' : 'Back to sign in'}
+                </Link>
+              </div>
             </div>
           ) : (
             <>

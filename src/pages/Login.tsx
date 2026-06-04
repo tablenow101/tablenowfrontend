@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../hooks/useLang';
 import { useAuth } from '../hooks/useAuth';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { runPostAuth } from '../lib/postAuth';
+import { resendSignupConfirmation } from '../lib/emailResend';
 
 const T = {
   fr: {
@@ -63,20 +64,55 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendError, setResendError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
+    setUnconfirmedEmail('');
     setLoading(true);
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInError) throw signInError;
+      if (signInError) {
+        // Only the explicit 'email_not_confirmed' code triggers the dedicated
+        // resend-confirmation UI. Every other case (wrong password, unknown
+        // account, social-only account) stays generic so we never reveal whether
+        // an account exists — Supabase keeps 'invalid_credentials' ambiguous on
+        // purpose.
+        const code = (signInError as { code?: string }).code;
+        if (code === 'email_not_confirmed') {
+          setUnconfirmedEmail(email);
+          return;
+        }
+        // Log the real code/status for debugging; never shown to the user.
+        console.error('[Login] signIn failed:', code, signInError.status, signInError.message);
+        setError(t.errorDefault);
+        return;
+      }
       const next = await runPostAuth(refreshUser);
       navigate(next, { replace: true });
-    } catch {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[Login] unexpected error:', msg);
       setError(t.errorDefault);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async (): Promise<void> => {
+    setResendError('');
+    setResendLoading(true);
+    try {
+      await resendSignupConfirmation(unconfirmedEmail);
+      // Success — just show spinner for a moment
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setResendError(msg || t.errorDefault);
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -111,17 +147,67 @@ const Login: React.FC = () => {
           className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 sm:p-10"
           style={{ borderTop: '4px solid #b8f000' }}
         >
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">{t.title}</h1>
-          <p className="text-sm text-[#888] mb-4 sm:mb-6">{t.subtitle}</p>
+          {unconfirmedEmail ? (
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="p-4 rounded-full bg-amber-500/10">
+                <AlertCircle className="text-amber-400" size={40} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white mb-2">
+                  {lang === 'fr' ? 'Email non confirmé' : 'Email not confirmed'}
+                </h1>
+                <p className="text-sm text-[#888]">
+                  {lang === 'fr'
+                    ? 'Veuillez confirmer votre adresse email avant de vous connecter.'
+                    : 'Please confirm your email address before signing in.'}
+                </p>
+              </div>
 
-          {error && (
-            <div className="mb-3 sm:mb-5 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400">
-              <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
+              {/* Display email */}
+              <div className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg w-full">
+                <p className="text-xs text-[#555] uppercase tracking-wide mb-1">E-mail</p>
+                <p className="text-sm text-white font-medium break-all">{unconfirmedEmail}</p>
+              </div>
+
+              {/* Resend error */}
+              {resendError && (
+                <div className="p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400 w-full">
+                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                  <span>{resendError}</span>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex flex-col gap-3 w-full pt-2">
+                <button
+                  onClick={handleResendConfirmation}
+                  disabled={resendLoading}
+                  className="w-full h-12 bg-[#b8f000] text-black font-bold rounded-xl text-sm transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {resendLoading && <Loader size={14} className="animate-spin" />}
+                  {lang === 'fr' ? 'Renvoyer le lien' : 'Resend link'}
+                </button>
+                <button
+                  onClick={() => setUnconfirmedEmail('')}
+                  className="w-full h-12 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white hover:border-[#444] transition-colors"
+                >
+                  {lang === 'fr' ? 'Retour' : 'Back'}
+                </button>
+              </div>
             </div>
-          )}
+          ) : (
+            <>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">{t.title}</h1>
+              <p className="text-sm text-[#888] mb-4 sm:mb-6">{t.subtitle}</p>
 
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+              {error && (
+                <div className="mb-3 sm:mb-5 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400">
+                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             <div>
               <label className="block text-[10px] uppercase tracking-wider text-[#888] mb-1.5">
                 {t.emailLabel}
@@ -165,29 +251,31 @@ const Login: React.FC = () => {
             >
               {loading && <span className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />}
               {t.submit}
-            </button>
-          </form>
+              </button>
+              </form>
 
-          <div className="flex items-center gap-3 my-4 sm:my-6">
-            <div className="flex-1 h-px bg-[#2a2a2a]" />
-            <span className="text-xs text-[#555]">{t.or}</span>
-            <div className="flex-1 h-px bg-[#2a2a2a]" />
-          </div>
+              <div className="flex items-center gap-3 my-4 sm:my-6">
+                <div className="flex-1 h-px bg-[#2a2a2a]" />
+                <span className="text-xs text-[#555]">{t.or}</span>
+                <div className="flex-1 h-px bg-[#2a2a2a]" />
+              </div>
 
-          <button
-            onClick={signInWithGoogle}
-            className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
-          >
-            <GoogleIcon />
-            {t.google}
-          </button>
+              <button
+                onClick={signInWithGoogle}
+                className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
+              >
+                <GoogleIcon />
+                {t.google}
+              </button>
 
-          <p className="mt-4 sm:mt-6 text-center text-sm text-[#555]">
-            {t.noAccount}{' '}
-            <Link to="/register" className="text-[#b8f000] hover:underline">
-              {t.createAccount}
-            </Link>
-          </p>
+              <p className="mt-4 sm:mt-6 text-center text-sm text-[#555]">
+                {t.noAccount}{' '}
+                <Link to="/register" className="text-[#b8f000] hover:underline">
+                  {t.createAccount}
+                </Link>
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
