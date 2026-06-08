@@ -16,6 +16,7 @@ import CallLogs from './pages/CallLogs';
 import Settings from './pages/Settings';
 import Billing from './pages/Billing';
 import NotLinked from './pages/NotLinked';
+import Onboarding from './pages/Onboarding';
 import Landing from './pages/Landing';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -44,20 +45,53 @@ const PublicRoutes = () => (
   </Routes>
 );
 
-// Canonical private routes are slug-scoped (/r/:slug/...). The guard requires a
-// linked restaurant and enforces slug ownership; cross-restaurant access is
-// bounced to the caller's own slug (the backend is the real authority).
+// Does the backend want this user on the onboarding screen? This is the ONLY
+// business decision the frontend reads, and it is fully owned by the backend
+// (resolveNextRoute → app-state.next_route). The frontend never recomputes
+// completeness from slug / is_complete / heuristics.
+function wantsOnboarding(nextRoute: string | null | undefined): boolean {
+  return !!nextRoute && nextRoute.endsWith('/onboarding');
+}
+
+// Slug-scoped app pages (/r/:slug/dashboard, /settings, …). Responsibilities limited
+// to: auth protection, canonical slug control, and following next_route. An authenticated
+// user with no linked restaurant gets a contained error (NotLinked), never a login loop.
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { restaurant, session, authReady } = useAuth();
+  const { restaurant, session, appState, authReady } = useAuth();
   const { slug } = useParams();
 
   if (!authReady) return <CenteredSpinner />;
   if (!session) return <Navigate to="/login" replace />;
-  if (!restaurant?.id) return <NotLinked />;
+  if (!restaurant?.id || !restaurant?.slug) return <NotLinked />;
 
-  const mySlug = restaurant.slug as string | undefined;
-  if (mySlug && slug && slug !== mySlug) {
+  const mySlug = restaurant.slug as string;
+  if (slug && slug !== mySlug) {
     return <Navigate to={`/r/${mySlug}/dashboard`} replace />;
+  }
+  // Backend says the profile is incomplete → follow next_route to onboarding.
+  if (wantsOnboarding(appState?.next_route)) {
+    return <Navigate to={appState!.next_route as string} replace />;
+  }
+  return <>{children}</>;
+};
+
+// Onboarding screen guard. Same protections, but the inverse next_route gate: if the
+// backend no longer wants onboarding (profile complete), follow next_route forward.
+const OnboardingRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { restaurant, session, appState, authReady } = useAuth();
+  const { slug } = useParams();
+
+  if (!authReady) return <CenteredSpinner />;
+  if (!session) return <Navigate to="/login" replace />;
+  if (!restaurant?.id || !restaurant?.slug) return <NotLinked />;
+
+  const mySlug = restaurant.slug as string;
+  if (slug && slug !== mySlug) {
+    return <Navigate to={`/r/${mySlug}/onboarding`} replace />;
+  }
+  const next = appState?.next_route;
+  if (next && !wantsOnboarding(next)) {
+    return <Navigate to={next} replace />;
   }
   return <>{children}</>;
 };
@@ -75,17 +109,18 @@ const CanonicalRedirect: React.FC<{ to: string }> = ({ to }) => {
   return <Navigate to={`/r/${slug}${to}`} replace />;
 };
 
-// Root + unknown paths: signed-in users land on their dashboard, everyone else
-// on /login. Destination still derives from the app-state slug, not heuristics.
+// Root + unknown paths. The destination is whatever the backend decided
+// (app-state.next_route): onboarding or dashboard. An authenticated user with no
+// usable route gets a contained error — never a silent bounce to /login.
 const RootRedirect: React.FC = () => {
-  const { session, restaurant, authReady } = useAuth();
+  const { session, appState, authReady } = useAuth();
 
   if (!authReady) return <CenteredSpinner />;
   if (!session) return <Navigate to="/login" replace />;
 
-  const slug = restaurant?.slug as string | undefined;
-  if (!slug) return <NotLinked />;
-  return <Navigate to={`/r/${slug}/dashboard`} replace />;
+  const next = appState?.next_route;
+  if (next) return <Navigate to={next} replace />;
+  return <NotLinked />;
 };
 
 // App routes for authenticated users
@@ -104,6 +139,9 @@ const AppRoutes = () => {
       <Route path="/logout" element={<Logout />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/debug" element={<Debug />} />
+
+      {/* Guided onboarding — slug-scoped, standalone (no app chrome). Gated by next_route. */}
+      <Route path="/r/:slug/onboarding" element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
 
       {/* Canonical private routes — slug-scoped, auth + linked restaurant only */}
       <Route path="/r/:slug/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
@@ -125,9 +163,9 @@ const AppRoutes = () => {
 
       {/* Legacy entry points → canonical app or login */}
       <Route path="/signup" element={<Navigate to="/login" replace />} />
-      <Route path="/setup" element={<CanonicalRedirect to="/dashboard" />} />
-      <Route path="/setup/*" element={<CanonicalRedirect to="/dashboard" />} />
-      <Route path="/onboarding" element={<CanonicalRedirect to="/dashboard" />} />
+      <Route path="/setup" element={<CanonicalRedirect to="/onboarding" />} />
+      <Route path="/setup/*" element={<CanonicalRedirect to="/onboarding" />} />
+      <Route path="/onboarding" element={<CanonicalRedirect to="/onboarding" />} />
       <Route path="/start" element={<CanonicalRedirect to="/dashboard" />} />
 
       {/* Root + unknown paths */}
