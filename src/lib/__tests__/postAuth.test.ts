@@ -53,19 +53,19 @@ describe('runPostAuth (single shared post-authentication routine)', () => {
     expect(refreshUser).not.toHaveBeenCalled();
   });
 
-  it('falls back to /login when app-state yields no next_route', async () => {
+  it('routes an authenticated session with no next_route to "/" (contained error, never /login)', async () => {
     getSession.mockResolvedValue({ data: { session: { access_token: 'tok' } } });
     bootstrap.mockResolvedValue({});
     const refreshUser = vi.fn().mockResolvedValue(appState(null));
 
-    expect(await runPostAuth(refreshUser)).toBe('/login');
+    expect(await runPostAuth(refreshUser)).toBe('/');
   });
 
-  it('falls back to /login when refreshUser returns null', async () => {
+  it('routes to "/" when refreshUser returns null (RootRedirect arbitrates, no login loop)', async () => {
     getSession.mockResolvedValue({ data: { session: { access_token: 'tok' } } });
     bootstrap.mockResolvedValue({});
     const refreshUser = vi.fn().mockResolvedValue(null);
 
-    expect(await runPostAuth(refreshUser)).toBe('/login');
+    expect(await runPostAuth(refreshUser)).toBe('/');
   });
 });

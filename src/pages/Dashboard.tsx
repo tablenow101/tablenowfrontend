@@ -195,6 +195,28 @@ const Dashboard: React.FC = () => {
         </div>
     );
 
+    // Defensive, controlled state: routing already sends an incomplete profile to
+    // onboarding, but if we ever render here with an incomplete restaurant we show an
+    // explicit panel + CTA instead of an empty dashboard presented as ready.
+    if (restaurant && restaurant.is_complete === false) {
+        return (
+            <div className="flex items-center justify-center h-[60vh]">
+                <div className="max-w-md w-full text-center space-y-4 bg-[#111] border border-[#2a2a2a] rounded-xl p-8">
+                    <h1 className="text-xl font-bold text-white">Profil incomplet</h1>
+                    <p className="text-sm text-[#888]">
+                        Complétez les informations de votre restaurant pour activer votre tableau de bord.
+                    </p>
+                    <Link
+                        to={`/r/${slug}/onboarding`}
+                        className="inline-flex items-center justify-center h-11 px-6 bg-[#b8f000] text-black font-bold rounded-xl text-sm hover:opacity-90 transition-opacity"
+                    >
+                        Compléter mon profil
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
     const totalBookings     = stats?.bookings?.total ?? 0;
     const confirmedBookings = stats?.bookings?.confirmed ?? 0;
     const cancelledBookings = stats?.bookings?.cancelled ?? 0;

@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { runPostAuth } from '../lib/postAuth';
+import { resendSignupConfirmation } from '../lib/emailResend';
 
 const T = {
   fr: {
@@ -73,6 +74,8 @@ const Register: React.FC = () => {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendError, setResendError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -120,6 +123,20 @@ const Register: React.FC = () => {
     }
   };
 
+  const handleResendEmail = async (): Promise<void> => {
+    setResendError('');
+    setResendLoading(true);
+    try {
+      await resendSignupConfirmation(email);
+      // Success — just confirm it was sent
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setResendError(msg || t.errorDefault);
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4 py-8 sm:py-16">
       <div className="w-full max-w-lg">
@@ -138,10 +155,51 @@ const Register: React.FC = () => {
           style={{ borderTop: '4px solid #b8f000' }}
         >
           {checkEmail ? (
-            <div className="flex flex-col items-center text-center gap-3">
+            <div className="flex flex-col items-center text-center gap-4">
               <CheckCircle2 size={40} className="text-[#b8f000]" />
-              <h1 className="text-2xl font-bold text-white">{t.checkEmailTitle}</h1>
-              <p className="text-sm text-[#888]">{t.checkEmailBody}</p>
+              <div>
+                <h1 className="text-2xl font-bold text-white">{t.checkEmailTitle}</h1>
+                <p className="text-sm text-[#888] mt-1">{t.checkEmailBody}</p>
+              </div>
+
+              {/* Display the email address */}
+              <div className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg w-full">
+                <p className="text-xs text-[#555] uppercase tracking-wide mb-1">E-mail</p>
+                <p className="text-sm text-white font-medium break-all">{email}</p>
+              </div>
+
+              {/* Check spam notice */}
+              <p className="text-xs text-[#555]">
+                {lang === 'fr'
+                  ? 'Vérifiez vos spams si vous ne recevez pas le lien'
+                  : "Check your spam folder if you don't receive the link"}
+              </p>
+
+              {/* Resend error */}
+              {resendError && (
+                <div className="mb-3 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400 w-full">
+                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                  <span>{resendError}</span>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex flex-col gap-3 w-full pt-2">
+                <button
+                  onClick={handleResendEmail}
+                  disabled={resendLoading}
+                  className="w-full h-12 bg-[#b8f000] text-black font-bold rounded-xl text-sm transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {resendLoading && <span className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />}
+                  {lang === 'fr' ? 'Renvoyer le lien' : 'Resend link'}
+                </button>
+                <Link
+                  to="/login"
+                  className="w-full h-12 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center hover:border-[#444] transition-colors"
+                >
+                  {lang === 'fr' ? 'Retour à la connexion' : 'Back to sign in'}
+                </Link>
+              </div>
             </div>
           ) : (
             <>

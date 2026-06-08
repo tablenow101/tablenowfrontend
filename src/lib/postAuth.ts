@@ -20,7 +20,9 @@ export async function runPostAuth(
   // Ensure the restaurant exists / is linked for this session (idempotent).
   await authAPI.bootstrap(token);
 
-  // Pull the unified app state; the backend decides where to go.
+  // Pull the unified app state; the backend decides where to go. If no next_route
+  // comes back for this authenticated session (inconsistent/unreachable state), route
+  // to '/' so RootRedirect can show a contained error — never a silent /login bounce.
   const state = await refreshUser();
-  return state?.next_route || '/login';
+  return state?.next_route || '/';
 }
