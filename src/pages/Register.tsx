@@ -202,7 +202,7 @@ const Register: React.FC = () => {
             <div className="flex flex-col items-center text-center gap-5">
               {/* Enveloppe dans un cercle vert (maquette "Vérif email") */}
               <div className="w-16 h-16 rounded-full border-2 border-[#b8f000] bg-[#0a0a0a] flex items-center justify-center">
-                <Mail size={26} className="text-[#b8f000]" />
+                <Mail size={26} className="text-white" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">{t.checkEmailTitle}</h1>
