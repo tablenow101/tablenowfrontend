@@ -31,7 +31,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setAppState(state);
       setRestaurant(state.restaurant || null);
       return state;
-    } catch (error) {
+    } catch (error: unknown) {
+      const axiosErr = error as { response?: { status?: number; data?: { code?: string } } };
+      const code = axiosErr?.response?.data?.code;
+      if (axiosErr?.response?.status === 403 && code === 'NO_RESTAURANT') {
+        // Expected during the bootstrap window: the user signed in but bootstrap
+        // hasn't created the restaurant yet. Don't blank the state — runPostAuth
+        // will call bootstrap then refreshUser, which will succeed.
+        return null;
+      }
       console.error('Failed to fetch app state:', error);
       setAppState(null);
       setRestaurant(null);
