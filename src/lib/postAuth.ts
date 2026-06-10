@@ -2,6 +2,10 @@ import { supabase } from './supabase';
 import { authAPI } from './api';
 import type { AppState } from '../context/authContext';
 
+// Single-flight guard: if runPostAuth is already in progress, subsequent calls
+// reuse the same promise instead of firing duplicate bootstrap requests.
+let inflight: Promise<string> | null = null;
+
 // The single post-authentication routine, shared by every entry point (email/
 // password login, sign-up, Google OAuth callback). There is NO provider-specific
 // behaviour once a Supabase session exists:
@@ -13,16 +17,22 @@ import type { AppState } from '../context/authContext';
 export async function runPostAuth(
   refreshUser: () => Promise<AppState | null>,
 ): Promise<string> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error('No Supabase session');
+  if (inflight) return inflight;
 
-  // Ensure the restaurant exists / is linked for this session (idempotent).
-  await authAPI.bootstrap(token);
+  inflight = (async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error('No Supabase session');
 
-  // Pull the unified app state; the backend decides where to go. If no next_route
-  // comes back for this authenticated session (inconsistent/unreachable state), route
-  // to '/' so RootRedirect can show a contained error — never a silent /login bounce.
-  const state = await refreshUser();
-  return state?.next_route || '/';
+      await authAPI.bootstrap(token);
+
+      const state = await refreshUser();
+      return state?.next_route || '/';
+    } finally {
+      inflight = null;
+    }
+  })();
+
+  return inflight;
 }

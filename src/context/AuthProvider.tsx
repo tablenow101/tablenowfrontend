@@ -15,9 +15,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [appState, setAppState] = useState<AppState | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
-  // Unified app state from /auth/app-state — single source of truth for routing
-  // and authentication context. Returns the freshly-fetched state so callers
-  // (e.g. AuthCallback) can navigate to next_route without reading stale context.
+  // Fetch the unified app state from /auth/app-state. Only called AFTER bootstrap
+  // has completed (via refreshUser → fetchAppState), never independently from
+  // onAuthStateChange. This prevents the 403 NO_RESTAURANT race where the session
+  // exists but bootstrap hasn't created the restaurant yet.
   const fetchAppState = useCallback(async (hasSession: boolean): Promise<AppState | null> => {
     if (!hasSession) {
       setAppState(null);
@@ -32,14 +33,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setRestaurant(state.restaurant || null);
       return state;
     } catch (error: unknown) {
-      const axiosErr = error as { response?: { status?: number; data?: { code?: string } } };
-      const code = axiosErr?.response?.data?.code;
-      if (axiosErr?.response?.status === 403 && code === 'NO_RESTAURANT') {
-        // Expected during the bootstrap window: the user signed in but bootstrap
-        // hasn't created the restaurant yet. Don't blank the state — runPostAuth
-        // will call bootstrap then refreshUser, which will succeed.
-        return null;
-      }
       console.error('Failed to fetch app state:', error);
       setAppState(null);
       setRestaurant(null);
@@ -50,7 +43,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     let mounted = true;
 
-    // Start getSession in background, don't block render
+    // On mount: check for an existing Supabase session. If one exists, the user
+    // is reconnecting (bootstrap already ran) so we can safely fetch app-state.
+    // For brand-new sign-ins, onAuthStateChange fires but we do NOT call
+    // fetchAppState — runPostAuth (called from Login/Register/AuthCallback)
+    // handles the bootstrap → app-state sequence.
     supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return;
 
@@ -58,7 +55,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(data.session ?? null);
       setUser(data.session?.user ?? null);
 
-      await fetchAppState(hasSession);
+      if (hasSession) {
+        await fetchAppState(true);
+      }
     }).catch((err) => {
       console.error('Failed to get session:', err);
     }).finally(() => {
@@ -67,12 +66,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     });
 
-    // Listen for auth state changes
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      const hasSession = !!newSession;
+    // Auth state changes (sign-in, sign-out, token refresh): update session/user
+    // only. Do NOT call fetchAppState here — for new sign-ins, bootstrap hasn't
+    // run yet (403 NO_RESTAURANT). For sign-outs, clear state. For token refresh
+    // on an existing session, the caller (runPostAuth → refreshUser) will fetch
+    // app-state after bootstrap completes.
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
-      await fetchAppState(hasSession);
+
+      if (!newSession) {
+        setAppState(null);
+        setRestaurant(null);
+      }
+
       setAuthReady(true);
     });
 

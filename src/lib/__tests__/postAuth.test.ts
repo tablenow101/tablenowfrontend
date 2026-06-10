@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { runPostAuth } from '../postAuth';
 import { supabase } from '../supabase';
 import { authAPI } from '../api';
 import type { AppState } from '../../context/authContext';
@@ -27,12 +26,33 @@ const appState = (next: string | null): AppState => ({
   next_route: next,
 });
 
+// runPostAuth uses a module-level inflight guard, so we need a fresh module
+// for each test to avoid cross-test pollution.
+async function freshRunPostAuth() {
+  const mod = await import('../postAuth');
+  return mod.runPostAuth;
+}
+
 describe('runPostAuth (single shared post-authentication routine)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
+  });
+
+  it('calls bootstrap BEFORE refreshUser (sequential: bootstrap → app-state)', async () => {
+    const runPostAuth = await freshRunPostAuth();
+    const order: string[] = [];
+    getSession.mockResolvedValue({ data: { session: { access_token: 'tok-123' } } });
+    bootstrap.mockImplementation(async () => { order.push('bootstrap'); return {}; });
+    const refreshUser = vi.fn().mockImplementation(async () => { order.push('app-state'); return appState('/r/chez-moi/dashboard'); });
+
+    await runPostAuth(refreshUser);
+
+    expect(order).toEqual(['bootstrap', 'app-state']);
   });
 
   it('bootstraps with the Supabase token and returns the backend next_route', async () => {
+    const runPostAuth = await freshRunPostAuth();
     getSession.mockResolvedValue({ data: { session: { access_token: 'tok-123' } } });
     bootstrap.mockResolvedValue({});
     const refreshUser = vi.fn().mockResolvedValue(appState('/r/chez-moi/dashboard'));
@@ -45,6 +65,7 @@ describe('runPostAuth (single shared post-authentication routine)', () => {
   });
 
   it('throws when there is no Supabase session (never silently routes)', async () => {
+    const runPostAuth = await freshRunPostAuth();
     getSession.mockResolvedValue({ data: { session: null } });
     const refreshUser = vi.fn();
 
@@ -54,6 +75,7 @@ describe('runPostAuth (single shared post-authentication routine)', () => {
   });
 
   it('routes an authenticated session with no next_route to "/" (contained error, never /login)', async () => {
+    const runPostAuth = await freshRunPostAuth();
     getSession.mockResolvedValue({ data: { session: { access_token: 'tok' } } });
     bootstrap.mockResolvedValue({});
     const refreshUser = vi.fn().mockResolvedValue(appState(null));
@@ -62,10 +84,50 @@ describe('runPostAuth (single shared post-authentication routine)', () => {
   });
 
   it('routes to "/" when refreshUser returns null (RootRedirect arbitrates, no login loop)', async () => {
+    const runPostAuth = await freshRunPostAuth();
     getSession.mockResolvedValue({ data: { session: { access_token: 'tok' } } });
     bootstrap.mockResolvedValue({});
     const refreshUser = vi.fn().mockResolvedValue(null);
 
     expect(await runPostAuth(refreshUser)).toBe('/');
+  });
+
+  it('concurrent calls reuse the same inflight promise (single-flight guard)', async () => {
+    const runPostAuth = await freshRunPostAuth();
+    let resolveBootstrap: () => void;
+    const bootstrapPromise = new Promise<void>(r => { resolveBootstrap = r; });
+    getSession.mockResolvedValue({ data: { session: { access_token: 'tok' } } });
+    bootstrap.mockImplementation(() => bootstrapPromise);
+    const refreshUser = vi.fn().mockResolvedValue(appState('/r/test/dashboard'));
+
+    const call1 = runPostAuth(refreshUser);
+    const call2 = runPostAuth(refreshUser);
+
+    resolveBootstrap!();
+    const [r1, r2] = await Promise.all([call1, call2]);
+
+    expect(r1).toBe('/r/test/dashboard');
+    expect(r2).toBe('/r/test/dashboard');
+    expect(bootstrap).toHaveBeenCalledTimes(1);
+  });
+
+  it('bootstrap error is visible (propagates, never silently absorbed)', async () => {
+    const runPostAuth = await freshRunPostAuth();
+    getSession.mockResolvedValue({ data: { session: { access_token: 'tok' } } });
+    bootstrap.mockRejectedValue(new Error('Bootstrap failed: 500'));
+    const refreshUser = vi.fn();
+
+    await expect(runPostAuth(refreshUser)).rejects.toThrow('Bootstrap failed: 500');
+    expect(refreshUser).not.toHaveBeenCalled();
+  });
+
+  it('redirect matches backend next_route verbatim (no local reconstruction)', async () => {
+    const runPostAuth = await freshRunPostAuth();
+    getSession.mockResolvedValue({ data: { session: { access_token: 'tok' } } });
+    bootstrap.mockResolvedValue({});
+    const refreshUser = vi.fn().mockResolvedValue(appState('/r/la-trattoria/onboarding'));
+
+    const route = await runPostAuth(refreshUser);
+    expect(route).toBe('/r/la-trattoria/onboarding');
   });
 });
