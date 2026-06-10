@@ -4,15 +4,23 @@ import { referralAPI } from '../../lib/api';
 import { useLang } from '../../hooks/useLang';
 import { Copy, Check } from 'lucide-react';
 
+type Referral = { name?: string; email?: string; status?: string };
+type ReferralStats = { active: number; pending: number; minutes: number; referrals: Referral[] };
+
 const ParrainageSettings: React.FC = () => {
-  const { user } = useAuth();
+  const { restaurant } = useAuth();
   const { t } = useLang();
   const [copied, setCopied] = useState(false);
-  const [stats, setStats] = useState({ active: 0, pending: 0, minutes: 0, referrals: [] as unknown[] });
+  const [stats, setStats] = useState<ReferralStats>({ active: 0, pending: 0, minutes: 0, referrals: [] });
 
-  const code = (user as unknown as Record<string, unknown> | null)?.referral_code
-    || `${(((user as unknown as Record<string, unknown> | null)?.name || 'RESTO') as string).toUpperCase().replace(/\s+/g, '-')}-RAD`;
-  const link = `https://app.tablenow.io/register?ref=${code}`;
+  // Referral code is restaurant business data (falls back to a name-derived code).
+  const r = restaurant as Record<string, unknown> | null;
+  const code = String(
+    r?.referral_code ||
+    `${String(r?.name || 'RESTO').toUpperCase().replace(/\s+/g, '-')}-RAD`
+  );
+  // Same-origin app URL — no hardcoded domain.
+  const link = `${window.location.origin}/register?ref=${code}`;
 
   useEffect(() => {
     referralAPI.getStats().then(r => setStats(r.data)).catch(() => {});
@@ -98,10 +106,10 @@ const ParrainageSettings: React.FC = () => {
           <span className="text-xs text-[#555]">{stats.referrals?.length ?? 0} {t('totalReferrals')}</span>
         </div>
         {stats.referrals?.length > 0 ? (
-          stats.referrals.map((r: unknown, i: number) => (
+          stats.referrals.map((referral: Referral, i: number) => (
             <div key={i} className="flex items-center justify-between py-2 border-b border-[#1a1a1a] last:border-0">
-              <span className="text-sm text-white">{r.name || r.email}</span>
-              <span className="text-xs text-[#b8f000]">{r.status}</span>
+              <span className="text-sm text-white">{referral.name || referral.email}</span>
+              <span className="text-xs text-[#b8f000]">{referral.status}</span>
             </div>
           ))
         ) : (

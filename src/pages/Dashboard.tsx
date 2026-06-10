@@ -39,6 +39,14 @@ interface Insights {
     best_slot_time: string | null;
 }
 
+// Shape of GET /dashboard/stats (backend dashboard route). Typed so the dashboard
+// reads real fields instead of indexing an untyped object.
+interface StatsBuckets {
+    bookings?: { total?: number; confirmed?: number; cancelled?: number; totalGuests?: number };
+    calls?: { total?: number };
+    recent?: { calls?: CallLog[]; bookings?: Booking[] };
+}
+
 function fmtDuration(s: number): string {
     if (!s) return '0s';
     if (s < 60) return `${s}s`;
@@ -132,8 +140,8 @@ const Dashboard: React.FC = () => {
     const { slug: slugParam } = useParams();
     const slug = slugParam || (restaurant?.slug as string | undefined) || '';
 
-    const [stats, setStats]       = useState<Record<string, unknown> | null>(null);
-    const [todayStats, setTodayStats] = useState<Record<string, unknown> | null>(null);
+    const [stats, setStats]       = useState<StatsBuckets | null>(null);
+    const [todayStats, setTodayStats] = useState<StatsBuckets | null>(null);
     const [insights, setInsights] = useState<Insights | null>(null);
     const [loading, setLoading]   = useState(true);
     const [range, setRange]       = useState<Range>('30j');

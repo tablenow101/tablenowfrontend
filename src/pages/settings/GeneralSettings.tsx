@@ -29,7 +29,7 @@ const inp = "w-full h-11 px-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl te
 const ta  = "w-full px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#444] transition-colors resize-vertical";
 
 const GeneralSettings: React.FC = () => {
-  const { user, refreshUser } = useAuth();
+  const { restaurant, refreshUser } = useAuth();
   const { t } = useLang();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [dirty, setDirty] = useState(false);
@@ -37,37 +37,47 @@ const GeneralSettings: React.FC = () => {
   const [error, setError] = useState('');
   const original = useRef<FormState>(EMPTY);
 
+  // Restaurant business data is the source of truth here — NOT the Supabase auth
+  // user (which only carries identity). Read every field from `restaurant`, with
+  // GET /settings (the persisted restaurant row) taking precedence when present.
+  const rField = (k: string): string => {
+    const v = (restaurant as Record<string, unknown> | null)?.[k];
+    return v == null ? '' : String(v);
+  };
+
   useEffect(() => {
-    const fromUser: FormState = {
-      name:                (user as unknown)?.name                ?? '',
-      owner_name:          (user as unknown)?.owner_name          ?? '',
-      phone:               (user as unknown)?.phone               ?? '',
-      cuisine_type:        (user as unknown)?.cuisine_type        ?? '',
-      address:             (user as unknown)?.address             ?? '',
-      confirmation_email:  (user as unknown)?.confirmation_email  ?? '',
-      website:             (user as unknown)?.website             ?? '',
-      cancellation_policy: (user as unknown)?.cancellation_policy ?? '',
-      special_features:    (user as unknown)?.special_features    ?? '',
+    const fromRestaurant: FormState = {
+      name:                rField('name'),
+      owner_name:          rField('owner_name'),
+      phone:               rField('phone'),
+      cuisine_type:        rField('cuisine_type'),
+      address:             rField('address'),
+      confirmation_email:  rField('confirmation_email'),
+      website:             rField('website'),
+      cancellation_policy: rField('cancellation_policy'),
+      special_features:    rField('special_features'),
     };
     settingsAPI.get()
       .then(res => {
-        const d = res.data?.settings ?? res.data?.restaurant ?? res.data ?? {};
+        const d = (res.data?.settings ?? res.data?.restaurant ?? res.data ?? {}) as Record<string, unknown>;
+        const pick = (k: keyof FormState): string => (d[k] == null ? fromRestaurant[k] : String(d[k]));
         const loaded: FormState = {
-          name:                d.name                ?? fromUser.name,
-          owner_name:          d.owner_name          ?? fromUser.owner_name,
-          phone:               d.phone               ?? fromUser.phone,
-          cuisine_type:        d.cuisine_type        ?? fromUser.cuisine_type,
-          address:             d.address             ?? fromUser.address,
-          confirmation_email:  d.confirmation_email  ?? fromUser.confirmation_email,
-          website:             d.website             ?? fromUser.website,
-          cancellation_policy: d.cancellation_policy ?? fromUser.cancellation_policy,
-          special_features:    d.special_features    ?? fromUser.special_features,
+          name:                pick('name'),
+          owner_name:          pick('owner_name'),
+          phone:               pick('phone'),
+          cuisine_type:        pick('cuisine_type'),
+          address:             pick('address'),
+          confirmation_email:  pick('confirmation_email'),
+          website:             pick('website'),
+          cancellation_policy: pick('cancellation_policy'),
+          special_features:    pick('special_features'),
         };
         original.current = loaded;
         setForm(loaded);
       })
-      .catch(() => { original.current = fromUser; setForm(fromUser); });
-  }, [user]);
+      .catch(() => { original.current = fromRestaurant; setForm(fromRestaurant); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurant]);
 
   const set = (k: keyof FormState, v: string) => {
     setForm(s => ({ ...s, [k]: v }));
@@ -129,7 +139,6 @@ const GeneralSettings: React.FC = () => {
       {/* Politique annulation */}
       <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-4">
         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">{t('cancelPolicyLabel')}</p>
-        {/* @ts-expect-error Field component typing not strict */}
         <Field label={t('cancelPolicyField')} hint={t('cancelPolicyHint')}>
           <textarea className={ta} rows={3} value={form.cancellation_policy} onChange={e => set('cancellation_policy', e.target.value)}
             placeholder={t('cancelPolicyPlaceholder')}/>
@@ -139,7 +148,6 @@ const GeneralSettings: React.FC = () => {
       {/* Spécificités */}
       <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-4">
         <p className="text-[10px] font-bold tracking-[.12em] uppercase text-[#555] pb-3 border-b border-[#1a1a1a]">{t('specificities')}</p>
-        {/* @ts-expect-error Field component typing not strict */}
         <Field label={t('specificitiesField')} hint={t('specificitiesHint')}>
           <textarea className={ta} rows={3} value={form.special_features} onChange={e => set('special_features', e.target.value)}
             placeholder={t('specificitiesPlaceholder')}/>
@@ -154,9 +162,9 @@ const GeneralSettings: React.FC = () => {
         </div>
         <div className="space-y-3">
           {[
-            { label: t('tableNowNumber'), value: (user as unknown)?.vapi_phone_number || '—', accent: true },
-            { label: t('bccAddress'),     value: (user as unknown)?.bcc_email          || '—' },
-            { label: t('assistantId'),    value: (user as unknown)?.vapi_assistant_id  ? `${((user as Record<string, unknown>).vapi_assistant_id as string).slice(0,8)}…` : '—' },
+            { label: t('tableNowNumber'), value: rField('vapi_phone_number') || '—', accent: true },
+            { label: t('bccAddress'),     value: rField('bcc_email')          || '—' },
+            { label: t('assistantId'),    value: rField('vapi_assistant_id') ? `${rField('vapi_assistant_id').slice(0, 8)}…` : '—' },
           ].map(({ label, value, accent }) => (
             <div key={label} className="flex items-center justify-between py-2 border-b border-[#1a1a1a] last:border-0">
               <span className="text-xs text-[#555]">{label}</span>
