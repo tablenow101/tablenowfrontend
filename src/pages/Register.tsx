@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../hooks/useLang';
 import { useAuth } from '../hooks/useAuth';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { runPostAuth } from '../lib/postAuth';
 import { resendSignupConfirmation } from '../lib/emailResend';
@@ -25,6 +25,17 @@ const T = {
     errorDefault: "La création du compte a échoué.",
     checkEmailTitle: 'Vérifiez votre email',
     checkEmailBody: 'Nous vous avons envoyé un lien de confirmation. Cliquez dessus pour activer votre compte.',
+    checkEmailSent: 'Un lien de vérification a été envoyé à',
+    onceActive: 'Une fois activé',
+    activeBullets: [
+      'Votre assistant IA est configuré selon les standards de votre établissement',
+      'Une ligne téléphonique dédiée vous est attribuée',
+      'Une adresse BCC privée est créée pour centraliser vos réservations (Zenchef, SevenRooms…)',
+    ],
+    verifiedCta: "J'ai vérifié mon email →",
+    notReceived: 'Pas reçu ? Vérifiez vos spams ou',
+    resendLink: "renvoyez l'email",
+    notConfirmedYet: 'Pas encore confirmé. Cliquez le lien reçu par email, puis réessayez.',
   },
   en: {
     title: 'Create your account',
@@ -43,6 +54,17 @@ const T = {
     errorDefault: 'Account creation failed.',
     checkEmailTitle: 'Check your email',
     checkEmailBody: "We've sent you a confirmation link. Click it to activate your account.",
+    checkEmailSent: 'A verification link was sent to',
+    onceActive: 'Once activated',
+    activeBullets: [
+      'Your AI assistant is configured to your venue’s standards',
+      'A dedicated phone line is assigned to you',
+      'A private BCC address is created to centralize your bookings (Zenchef, SevenRooms…)',
+    ],
+    verifiedCta: "I've verified my email →",
+    notReceived: "Didn't get it? Check your spam or",
+    resendLink: 'resend the email',
+    notConfirmedYet: 'Not confirmed yet. Click the link in the email, then try again.',
   },
 };
 
@@ -76,6 +98,7 @@ const Register: React.FC = () => {
   const [checkEmail, setCheckEmail] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendError, setResendError] = useState('');
+  const [checkLoading, setCheckLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -123,6 +146,27 @@ const Register: React.FC = () => {
     }
   };
 
+  // "J'ai vérifié mon email" — the user confirmed in another tab. Re-read the
+  // Supabase session (identity source of truth); if present, bootstrap + follow
+  // the backend's next_route. Otherwise tell them to click the link first.
+  const handleVerified = async (): Promise<void> => {
+    setResendError('');
+    setCheckLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        const next = await runPostAuth(refreshUser);
+        navigate(next, { replace: true });
+      } else {
+        setResendError(t.notConfirmedYet);
+      }
+    } catch {
+      setResendError(t.errorDefault);
+    } finally {
+      setCheckLoading(false);
+    }
+  };
+
   const handleResendEmail = async (): Promise<void> => {
     setResendError('');
     setResendLoading(true);
@@ -155,51 +199,60 @@ const Register: React.FC = () => {
           style={{ borderTop: '4px solid #b8f000' }}
         >
           {checkEmail ? (
-            <div className="flex flex-col items-center text-center gap-4">
-              <CheckCircle2 size={40} className="text-[#b8f000]" />
+            <div className="flex flex-col items-center text-center gap-5">
+              {/* Enveloppe dans un cercle vert (maquette "Vérif email") */}
+              <div className="w-16 h-16 rounded-full border-2 border-[#b8f000] bg-[#0a0a0a] flex items-center justify-center">
+                <Mail size={26} className="text-[#b8f000]" />
+              </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">{t.checkEmailTitle}</h1>
-                <p className="text-sm text-[#888] mt-1">{t.checkEmailBody}</p>
+                <p className="text-sm text-[#888] mt-2">
+                  {t.checkEmailSent}<br />
+                  <strong className="text-white break-all">{email}</strong>
+                </p>
               </div>
 
-              {/* Display the email address */}
-              <div className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg w-full">
-                <p className="text-xs text-[#555] uppercase tracking-wide mb-1">E-mail</p>
-                <p className="text-sm text-white font-medium break-all">{email}</p>
+              {/* "UNE FOIS ACTIVÉ" */}
+              <div className="w-full bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-5 text-left">
+                <p className="text-[10px] font-bold tracking-[.18em] uppercase text-[#555] mb-3">{t.onceActive}</p>
+                <ul className="space-y-2.5">
+                  {t.activeBullets.map((b, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span className="text-[#b8f000] leading-5 flex-shrink-0">●</span>
+                      <span className="text-[13px] text-[#ccc] leading-relaxed">{b}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
 
-              {/* Check spam notice */}
-              <p className="text-xs text-[#555]">
-                {lang === 'fr'
-                  ? 'Vérifiez vos spams si vous ne recevez pas le lien'
-                  : "Check your spam folder if you don't receive the link"}
-              </p>
-
-              {/* Resend error */}
               {resendError && (
-                <div className="mb-3 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400 w-full">
+                <div className="p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400 w-full">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                   <span>{resendError}</span>
                 </div>
               )}
 
-              {/* Action buttons */}
-              <div className="flex flex-col gap-3 w-full pt-2">
+              {/* CTA principal — "J'ai vérifié mon email →" */}
+              <button
+                onClick={handleVerified}
+                disabled={checkLoading}
+                className="w-full h-12 bg-[#b8f000] text-black font-bold rounded-xl text-sm transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {checkLoading && <span className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />}
+                {t.verifiedCta}
+              </button>
+
+              {/* Renvoi / spams */}
+              <p className="text-xs text-[#555]">
+                {t.notReceived}{' '}
                 <button
                   onClick={handleResendEmail}
                   disabled={resendLoading}
-                  className="w-full h-12 bg-[#b8f000] text-black font-bold rounded-xl text-sm transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="text-[#b8f000] hover:underline disabled:opacity-60"
                 >
-                  {resendLoading && <span className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />}
-                  {lang === 'fr' ? 'Renvoyer le lien' : 'Resend link'}
+                  {t.resendLink}
                 </button>
-                <Link
-                  to="/login"
-                  className="w-full h-12 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center hover:border-[#444] transition-colors"
-                >
-                  {lang === 'fr' ? 'Retour à la connexion' : 'Back to sign in'}
-                </Link>
-              </div>
+              </p>
             </div>
           ) : (
             <>
