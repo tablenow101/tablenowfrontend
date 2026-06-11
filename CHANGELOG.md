@@ -10,8 +10,8 @@ Thèmes : **correction du build** (typecheck), **déploiement conteneurisé**, *
 
 ### 10 juin 2026
 
-- **`daa0be7` — fix(frontend) : le build typecheck enfin l'app + correction de 30 erreurs de types.**
-  Le build lançait `tsc` contre le `tsconfig.json` racine (`files: []`) : il ne compilait donc rien, et Vite/esbuild ne typecheck pas → 30 vraies erreurs de types partaient en prod sans contrôle. Passage à `tsc -b` (project references) pour que les erreurs de types fassent échouer le build, et correction des 30 erreurs :
+- **`daa0be7` — fix(frontend) : le build typecheck enfin l'app + correction des erreurs de types.**
+  Le build lançait `tsc` contre le `tsconfig.json` racine (`files: []`) : il ne compilait donc rien, et Vite/esbuild ne typecheck pas → de vraies erreurs de types partaient en prod sans contrôle. Passage à `tsc -b` (project references) pour que les erreurs de types fassent échouer le build, et correction des erreurs (réparties sur `Dashboard`, `GeneralSettings`, `ParrainageSettings`) :
   - Dashboard : typer la réponse de `GET /dashboard/stats` (`StatsBuckets`) au lieu d'indexer un objet non typé.
   - GeneralSettings / ParrainageSettings : lire les champs restaurant depuis l'objet métier `restaurant` (source de vérité), et non depuis l'utilisateur d'auth Supabase (identité seulement) — c'était à la fois l'erreur de type et un bug latent.
   - ParrainageSettings : typer la liste de parrainage ; dériver le lien de partage de `window.location.origin` au lieu d'un `app.tablenow.io` codé en dur.

@@ -9,7 +9,7 @@ Ce dépôt contient le **frontend** (React + TypeScript + Vite). Il sert deux su
 
 L'agent vocal et l'API de réservation vivent dans le dépôt [`tablenowbackend`](https://github.com/tablenow101/tablenowbackend).
 
-> 🆕 **Nouveautés de la semaine du 4 au 10 juin 2026** : voir [`CHANGELOG.md`](./CHANGELOG.md). Faits marquants : build qui **typecheck enfin** (30 erreurs de types corrigées), image Docker + nginx, écran « vérifier l'e-mail » aligné sur la maquette, **onboarding piloté par le backend** (page `Onboarding` + guards qui consomment `next_route`), et correction de la course `onAuthStateChange` vs 403 `NO_RESTAURANT` (garde *single-flight*).
+> 🆕 **Nouveautés de la semaine du 4 au 10 juin 2026** : voir [`CHANGELOG.md`](./CHANGELOG.md). Faits marquants : build qui **typecheck enfin** (série d'erreurs de types corrigées), image Docker + nginx, écran « vérifier l'e-mail » aligné sur la maquette, **onboarding piloté par le backend** (page `Onboarding` + guards qui consomment `next_route`), et correction de la course `onAuthStateChange` vs 403 `NO_RESTAURANT` (garde *single-flight*).
 
 ---
 
@@ -40,8 +40,6 @@ L'agent vocal et l'API de réservation vivent dans le dépôt [`tablenowbackend`
 | Client HTTP | Axios (intercepteur d'en-tête `Authorization`) |
 | i18n | i18next + `react-i18next` (FR par défaut, EN) — détection auto de langue |
 | Icônes / police | `lucide-react` · `@fontsource/inter` |
-| Voix (démo) | Vapi web SDK |
-| Graphiques | Recharts |
 | Tests | Vitest |
 
 ## 2. Démarrage rapide
@@ -76,7 +74,7 @@ src/
 ├── components/         # UI partagée
 │   ├── Layout.tsx          # Chrome de l'app (navbar fixe, menu mobile, thème, langue)
 │   ├── ErrorBoundary.tsx   # Capture les crashs de composants (fallback)
-│   └── ChatWidget.tsx      # Widget de démo de l'agent vocal (Vapi)
+│   └── ChatWidget.tsx      # Concierge marketing : chatbot texte scripté (FAQ + démo Calendly + capture e-mail → POST /contact)
 ├── context/            # Providers React
 │   ├── AuthProvider.tsx    # Session Supabase, restaurant, app-state
 │   ├── LangProvider.tsx    # i18next (langue persistée)
@@ -155,7 +153,7 @@ navigate(next_route)                ← suivi verbatim (jamais reconstruit)
 {
   user: { id, email },
   restaurant: { id, name, slug, status, is_complete, phone, email, ... } | null,
-  subscription: { status: 'none' | 'trial' | 'active' | ... },
+  subscription: { status: 'none' | 'trial' | 'active' | ... },  // ⚠️ contrat de type ; le backend renvoie aujourd'hui 'none' EN DUR
   calendar: { status: 'not_connected' | 'connected' | 'error', skipped? },
   provisioning: { status, phone_number? },
   onboarding: { status: 'not_started' | 'in_progress' | 'complete' },
@@ -179,7 +177,7 @@ Les écrans d'e-mail (Register « vérifiez votre boîte mail », `AuthCallback`
 | `Bookings` | Liste des réservations + tiroir de détail ; création / modification / annulation. |
 | `CallLogs` | Historique d'appels + lecteur audio + téléchargement de transcription. |
 | `Settings` | Onglets : Général · Horaires · Intégrations (Calendrier + Notifications) · Parrainage. |
-| `Billing` | État de l'abonnement (lit `subscription.status`). |
+| `Billing` | État de l'abonnement (lit `subscription.status` — actuellement toujours `'none'`, le backend ne l'exposant pas encore). |
 | `NotLinked` | Repli quand l'utilisateur est authentifié sans restaurant lié. |
 
 **Réglages** : `GeneralSettings` (infos restaurant — lues depuis l'objet métier `restaurant`, source de vérité, et non depuis l'utilisateur Supabase qui ne porte que l'identité), `HoraireSettings` (7 jours × services), `CalendarSettings` (OAuth Google + statut), `NotificationsSettings`, `ParrainageSettings` (code de parrainage, stats, lien de partage dérivé de `window.location.origin`).
