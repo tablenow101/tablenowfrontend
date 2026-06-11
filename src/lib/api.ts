@@ -90,7 +90,6 @@ export const emailAPI = {
 
 export const referralAPI = {
   getStats: () => api.get('/referral/stats'),
-  getCode: () => api.get('/referral/code'),
 };
 
 export default api;
