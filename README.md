@@ -38,7 +38,7 @@ L'agent vocal et l'API de réservation vivent dans le dépôt [`tablenowbackend`
 | Styles | Tailwind CSS 3 (dark mode, aucun fichier CSS séparé) |
 | Auth | `@supabase/supabase-js` (flux **PKCE**, session persistée en `localStorage`) |
 | Client HTTP | Axios (intercepteur d'en-tête `Authorization`) |
-| i18n | i18next + `react-i18next` (FR par défaut, EN) — détection auto de langue |
+| i18n | `LangProvider` maison — dictionnaire FR/EN (FR par défaut), pas de lib externe |
 | Icônes / police | `lucide-react` · `@fontsource/inter` |
 | Tests | Vitest |
 
@@ -73,8 +73,7 @@ src/
 │   └── settings/       # GeneralSettings, HoraireSettings, CalendarSettings, NotificationsSettings, ParrainageSettings
 ├── components/         # UI partagée
 │   ├── Layout.tsx          # Chrome de l'app (navbar fixe, menu mobile, thème, langue)
-│   ├── ErrorBoundary.tsx   # Capture les crashs de composants (fallback)
-│   └── ChatWidget.tsx      # Concierge marketing : chatbot texte scripté (FAQ + démo Calendly + capture e-mail → POST /contact)
+│   └── ErrorBoundary.tsx   # Capture les crashs de composants (fallback)
 ├── context/            # Providers React
 │   ├── AuthProvider.tsx    # Session Supabase, restaurant, app-state
 │   ├── LangProvider.tsx    # i18next (langue persistée)
