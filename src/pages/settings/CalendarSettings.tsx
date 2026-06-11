@@ -5,11 +5,11 @@ import { Calendar, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import { useLang } from '../../hooks/useLang';
 
 const CalendarSettings: React.FC = () => {
-  const { user, authReady, refreshUser } = useAuth();
+  const { restaurant, authReady, refreshUser } = useAuth();
   const { t } = useLang();
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
-  const isConnected = (user as unknown as Record<string, unknown>)?.calendar_status === 'connected' || !!(user as unknown as Record<string, unknown>)?.google_calendar_connected;
+  const isConnected = restaurant?.calendar_status === 'connected';
 
   // Handle OAuth callback: exchange code for tokens
   useEffect(() => {

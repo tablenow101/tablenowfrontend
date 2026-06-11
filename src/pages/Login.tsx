@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLang } from '../hooks/useLang';
 import { AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import api from '../lib/api';
+import api, { authAPI } from '../lib/api';
 import { supabase } from '../lib/supabase';
+import { getPostAuthRedirect } from '../lib/postAuthRedirect';
 
 const T = {
   fr: {
@@ -65,7 +66,7 @@ function GoogleIcon() {
 const Login: React.FC = () => {
   const { lang } = useLang();
   const t = T[lang];
-  const { login } = useAuth();
+  const { login, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail]           = useState('');
@@ -86,7 +87,15 @@ const Login: React.FC = () => {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/dashboard');
+      await refreshUser();
+      try {
+        const me = await authAPI.getMe();
+        navigate(getPostAuthRedirect(me.data.restaurant || null, {
+          needsOnboarding: me.data.restaurant ? !me.data.restaurant.is_complete : false,
+        }));
+      } catch {
+        navigate('/dashboard');
+      }
     } catch {
       setError(t.errorDefault);
     } finally {

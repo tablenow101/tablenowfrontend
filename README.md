@@ -77,3 +77,16 @@ This is a production codebase. A few rules to keep secrets out of the repo:
 - This frontend is a Vite app, so any `VITE_*` variable is **bundled into the client JavaScript** and visible to anyone in the browser. Treat `VITE_*` values as public. Real secrets (API keys for paid services, DB credentials, signing keys, etc.) belong on the backend, never in `VITE_*`.
 - If a secret was ever committed by mistake: rotate it immediately at the provider, then ask a maintainer to scrub git history (`git filter-repo` or BFG). Rotating is non-negotiable — a leaked secret in git history must be assumed compromised even after deletion.
 - Report suspected leaks privately to the project owner — do not open a public issue.
+
+## Demo seed (développement)
+
+`POST /api/demo/seed` — charge un jeu de données de démonstration pour le restaurant authentifié (réservations, appels simulés, horaires). Option `?reset=1` ou body `{ "reset": true }` pour effacer les réservations/appels existants avant le seed.
+
+Usage (session Supabase requise) :
+
+```bash
+curl -X POST "https://api.tablenow.creez.io/api/demo/seed?reset=1" \
+  -H "Authorization: Bearer <supabase_access_token>"
+```
+
+Endpoint interne ops : `POST /api/demo/seed-internal` avec en-tête `X-Internal-Secret`.

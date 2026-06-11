@@ -87,4 +87,8 @@ export const referralAPI = {
   getCode: () => api.get('/referral/code'),
 };
 
+export const demoAPI = {
+  seed: (reset = false) => api.post('/demo/seed', reset ? { reset: true } : {}),
+};
+
 export default api;

@@ -35,7 +35,7 @@ const PublicRoutes = () => (
 
 // Canonical private routes + guards
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { restaurant, authReady } = useAuth();
+  const { restaurant, authReady, session } = useAuth();
 
   if (!authReady) {
     return (
@@ -43,6 +43,10 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         <div className="loading w-12 h-12"></div>
       </div>
     );
+  }
+
+  if (!session) {
+    return <Navigate to="/login" replace />;
   }
 
   // Restaurant linked: show content

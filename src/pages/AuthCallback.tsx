@@ -42,7 +42,13 @@ const AuthCallback: React.FC = () => {
 
         await refreshUser();
 
-        navigate(getPostAuthRedirect(response.data.restaurant || null), { replace: true });
+        navigate(
+          getPostAuthRedirect(response.data.restaurant || null, {
+            isNewUser: response.data.is_new_user,
+            needsOnboarding: response.data.needs_onboarding,
+          }),
+          { replace: true }
+        );
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error('[AuthCallback] Error:', msg);

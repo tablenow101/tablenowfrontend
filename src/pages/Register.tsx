@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { useLang } from '../hooks/useLang';
 import { AlertCircle, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { api } from '../lib/api';
+import { api, settingsAPI } from '../lib/api';
 
 interface Suggestion {
   placeId: string;
@@ -42,7 +42,9 @@ function GoogleIcon() {
 const Register: React.FC = () => {
   const { lang } = useLang();
   const navigate = useNavigate();
-  const { register: registerSession, refreshUser } = useAuth();
+  const [searchParams] = useSearchParams();
+  const isOnboarding = searchParams.get('onboarding') === '1';
+  const { register: registerSession, refreshUser, session, authReady } = useAuth();
 
   const sessionToken = useRef(crypto.randomUUID());
   const [selectedPlan] = useState(() => new URLSearchParams(window.location.search).get('plan') || '');
@@ -76,9 +78,23 @@ const Register: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  const subtitle = selectedPlan
-    ? `Essai 7 jours gratuits · Puis ${planPrices[selectedPlan] ?? selectedPlan} · Résiliable à tout moment`
-    : 'Essai 7 jours gratuits · Résiliable à tout moment';
+  useEffect(() => {
+    if (!isOnboarding || !authReady) return;
+    if (!session) return;
+
+    settingsAPI.get()
+      .then(res => {
+        const d = res.data?.settings ?? res.data ?? {};
+        if (d.name) { setName(d.name); setSearchInput(d.name); }
+        if (d.owner_name) setOwnerName(d.owner_name);
+        if (d.email) setEmail(d.email);
+        if (d.phone) setPhone(d.phone);
+        if (d.address) setAddress(d.address);
+        if (d.cuisine_type) setCuisineType(d.cuisine_type);
+        if (d.website) setWebsite(d.website);
+      })
+      .catch(() => {});
+  }, [isOnboarding, authReady, session]);
 
   useEffect(() => {
     if (searchInput.length < 2) { setSuggestions([]); return; }
@@ -96,6 +112,18 @@ const Register: React.FC = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  if (isOnboarding && authReady && !session) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const subtitle = isOnboarding
+    ? (lang === 'fr'
+      ? 'Complétez les informations de votre établissement pour activer TableNow'
+      : 'Complete your restaurant profile to activate TableNow')
+    : selectedPlan
+      ? `Essai 7 jours gratuits · Puis ${planPrices[selectedPlan] ?? selectedPlan} · Résiliable à tout moment`
+      : 'Essai 7 jours gratuits · Résiliable à tout moment';
 
   const handleSelectPlace = async (placeId: string, description: string) => {
     setSearchInput(description);
@@ -135,12 +163,16 @@ const Register: React.FC = () => {
       setTimeout(() => placeFieldRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
     }
     if (!ownerName.trim()) errs.ownerName = lang === 'fr' ? 'Champ requis' : 'Required';
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      errs.email = lang === 'fr' ? 'Email invalide' : 'Invalid email';
-    if (password.length < 8)
-      errs.password = lang === 'fr' ? '8 caractères minimum' : 'Min 8 characters';
-    if (password !== confirmPassword)
-      errs.confirmPassword = lang === 'fr' ? 'Mots de passe différents' : 'Passwords do not match';
+    if (!isOnboarding) {
+      if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        errs.email = lang === 'fr' ? 'Email invalide' : 'Invalid email';
+      if (password.length < 8)
+        errs.password = lang === 'fr' ? '8 caractères minimum' : 'Min 8 characters';
+      if (password !== confirmPassword)
+        errs.confirmPassword = lang === 'fr' ? 'Mots de passe différents' : 'Passwords do not match';
+    }
+    if (!phone.trim()) errs.phone = lang === 'fr' ? 'Champ requis' : 'Required';
+    if (!address.trim()) errs.address = lang === 'fr' ? 'Champ requis' : 'Required';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -151,6 +183,20 @@ const Register: React.FC = () => {
     if (!validate()) return;
     setLoading(true);
     try {
+      if (isOnboarding) {
+        await settingsAPI.update({
+          name: (name || searchInput).trim(),
+          owner_name: ownerName,
+          phone,
+          address,
+          cuisine_type: cuisineType,
+          website,
+        });
+        await refreshUser();
+        navigate('/dashboard');
+        return;
+      }
+
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -269,7 +315,9 @@ const Register: React.FC = () => {
         {/* Header */}
         <div className="mb-6 sm:mb-10">
           <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">
-            {lang === 'fr' ? 'Créer votre compte' : 'Create your account'}
+            {isOnboarding
+              ? (lang === 'fr' ? 'Finaliser votre inscription' : 'Complete your signup')
+              : (lang === 'fr' ? 'Créer votre compte' : 'Create your account')}
           </h1>
           <p className="text-[#555] text-sm">{subtitle}</p>
           {selectedPlan && (
@@ -371,7 +419,8 @@ const Register: React.FC = () => {
               {errors.ownerName && <p className="text-red-400 text-xs mt-1">{errors.ownerName}</p>}
             </div>
 
-            {/* Row 2: Email */}
+            {/* Row 2: Email (inscription uniquement) */}
+            {!isOnboarding && (
             <div>
               <label className={labelCls}>E-MAIL *</label>
               <input
@@ -384,8 +433,10 @@ const Register: React.FC = () => {
               />
               {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
             </div>
+            )}
 
-            {/* Row 3: Password + Confirm */}
+            {/* Row 3: Password + Confirm (inscription uniquement) */}
+            {!isOnboarding && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className={labelCls}>
@@ -434,20 +485,22 @@ const Register: React.FC = () => {
                 {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>}
               </div>
             </div>
+            )}
 
             {/* Row 4: Phone + Cuisine */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className={labelCls}>
-                  {lang === 'fr' ? 'TÉLÉPHONE' : 'PHONE'}
+                  {lang === 'fr' ? 'TÉLÉPHONE' : 'PHONE'} *
                 </label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   placeholder={lang === 'fr' ? '+33 1 23 45 67 89' : '+44 20 1234 5678'}
-                  className={fieldCls(false)}
+                  className={fieldCls(!!errors.phone)}
                 />
+                {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone}</p>}
               </div>
               <div>
                 <label className={labelCls}>
@@ -466,15 +519,16 @@ const Register: React.FC = () => {
             {/* Row 5: Address */}
             <div>
               <label className={labelCls}>
-                {lang === 'fr' ? 'ADRESSE' : 'ADDRESS'}
+                {lang === 'fr' ? 'ADRESSE' : 'ADDRESS'} *
               </label>
               <input
                 type="text"
                 value={address}
                 onChange={e => setAddress(e.target.value)}
                 placeholder={lang === 'fr' ? '12 Rue de la Paix, Paris' : '12 Main Street, London'}
-                className={fieldCls(false)}
+                className={fieldCls(!!errors.address)}
               />
+              {errors.address && <p className="text-red-400 text-xs mt-1">{errors.address}</p>}
             </div>
 
             {/* Row 6: Website */}
@@ -504,12 +558,16 @@ const Register: React.FC = () => {
             >
               {loading
                 ? <Loader2 className="animate-spin" size={20} />
-                : (lang === 'fr' ? 'Créer mon compte →' : 'Create my account →')
+                : isOnboarding
+                  ? (lang === 'fr' ? 'Enregistrer et continuer →' : 'Save and continue →')
+                  : (lang === 'fr' ? 'Créer mon compte →' : 'Create my account →')
               }
             </button>
           </div>
         </form>
 
+        {!isOnboarding && (
+        <>
         <div className="flex items-center gap-3 my-6">
           <div className="flex-1 h-px bg-[#2a2a2a]" />
           <span className="text-xs text-[#555]">{lang === 'fr' ? 'OU' : 'OR'}</span>
@@ -538,13 +596,17 @@ const Register: React.FC = () => {
           <GoogleIcon />
           {lang === 'fr' ? "S'inscrire avec Google" : 'Sign up with Google'}
         </button>
+        </>
+        )}
 
+        {!isOnboarding && (
         <p className="text-center text-sm text-[#555] mt-6">
           {lang === 'fr' ? 'Déjà un compte ? ' : 'Already have an account? '}
           <Link to="/login" className="text-[#b8f000] hover:underline font-medium">
             {lang === 'fr' ? 'Se connecter' : 'Sign in'}
           </Link>
         </p>
+        )}
       </div>
     </div>
   );
