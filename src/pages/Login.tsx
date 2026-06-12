@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '../hooks/useLang';
 import { useAuth } from '../hooks/useAuth';
 import { AlertCircle, Loader } from 'lucide-react';
@@ -59,6 +59,8 @@ const Login: React.FC = () => {
   const t = T[lang];
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const justVerified = searchParams.get('verified') === '1';
 
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -199,6 +201,13 @@ const Login: React.FC = () => {
             <>
               <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">{t.title}</h1>
               <p className="text-sm text-[#888] mb-4 sm:mb-6">{t.subtitle}</p>
+
+              {justVerified && (
+                <div className="mb-3 sm:mb-5 p-3 rounded-xl flex items-start gap-2 text-sm bg-[#b8f000]/10 border border-[#b8f000]/30 text-[#b8f000]">
+                  <span className="flex-shrink-0 mt-0.5">&#x2713;</span>
+                  <span>{lang === 'fr' ? 'Email confirmé ! Connectez-vous pour continuer.' : 'Email confirmed! Sign in to continue.'}</span>
+                </div>
+              )}
 
               {error && (
                 <div className="mb-3 sm:mb-5 p-3 rounded-xl flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/30 text-red-400">

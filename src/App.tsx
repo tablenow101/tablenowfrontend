@@ -5,6 +5,7 @@ import { useAuth } from './hooks/useAuth';
 import { LangProvider } from './context/LangProvider';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Logout from './pages/Logout';
@@ -39,6 +40,7 @@ const PublicRoutes = () => (
     <Route path="/" element={<Landing />} />
     <Route path="/login" element={<Login />} />
     <Route path="/register" element={<Register />} />
+    <Route path="/verify-email" element={<VerifyEmail />} />
     <Route path="/forgot-password" element={<ForgotPassword />} />
     <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="*" element={<Navigate to="/" replace />} />
@@ -134,6 +136,7 @@ const AppRoutes = () => {
       {/* Public auth routes — all Supabase-backed */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/logout" element={<Logout />} />
