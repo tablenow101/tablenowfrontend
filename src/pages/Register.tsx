@@ -253,17 +253,9 @@ const Register: React.FC = () => {
   const handleResend = async () => {
     setResendLoading(true);
     try {
-      await api.post('/auth/register', {
-        email, password, confirmPassword: password,
-        restaurantName: (name || searchInput).trim(),
-        ownerName, phone, address, cuisineType, website, language: lang,
-      });
-    } catch {
-      // Already registered — resend via supabase
-      try {
-        await supabase.auth.resend({ type: 'signup', email });
-      } catch { /* silent */ }
-    } finally {
+      await api.post('/auth/resend-verification', { email });
+    } catch { /* silent */ }
+    finally {
       setResendLoading(false);
     }
   };

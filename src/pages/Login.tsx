@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { AlertCircle, Loader } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { runPostAuth } from '../lib/postAuth';
-import { resendSignupConfirmation } from '../lib/emailResend';
+import { api } from '../lib/api';
 
 const T = {
   fr: {
@@ -108,8 +108,7 @@ const Login: React.FC = () => {
     setResendError('');
     setResendLoading(true);
     try {
-      await resendSignupConfirmation(unconfirmedEmail);
-      // Success — just show spinner for a moment
+      await api.post('/auth/resend-verification', { email: unconfirmedEmail });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setResendError(msg || t.errorDefault);
