@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { apiErrorMessage } from '../lib/errorMessage';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 const VerifyEmail: React.FC = () => {
@@ -24,7 +25,7 @@ const VerifyEmail: React.FC = () => {
       .then(() => setStatus('success'))
       .catch((err) => {
         setStatus('error');
-        setErrorMsg(err.response?.data?.error || 'Le lien est invalide ou a expiré.');
+        setErrorMsg(apiErrorMessage(err, 'Le lien est invalide ou a expiré.'));
       });
   }, [token]);
 

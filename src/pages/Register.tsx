@@ -4,6 +4,7 @@ import { useLang } from '../hooks/useLang';
 import { AlertCircle, Mail, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { api } from '../lib/api';
+import { apiErrorMessage } from '../lib/errorMessage';
 
 const fieldCls = (hasError: boolean) =>
   `w-full h-14 px-5 bg-[#1a1a1a] border rounded-xl text-sm text-white placeholder-[#555] focus:outline-none transition-colors ${
@@ -243,8 +244,7 @@ const Register: React.FC = () => {
         setCheckEmail(true);
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { error?: string } } };
-      setGlobalError(e.response?.data?.error || t.errorDefault);
+      setGlobalError(apiErrorMessage(err, t.errorDefault));
     } finally {
       setLoading(false);
     }
@@ -486,8 +486,7 @@ const Register: React.FC = () => {
               });
               if (error) throw error;
             } catch (err: unknown) {
-              const msg = err instanceof Error ? err.message : String(err);
-              setGlobalError(msg || 'OAuth failed');
+              setGlobalError(apiErrorMessage(err, 'OAuth failed'));
             }
           }}
           className="w-full h-14 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white flex items-center justify-center gap-3 hover:border-[#444] transition-colors"
