@@ -25,7 +25,7 @@ const AuthCallback: React.FC = () => {
         setStatus('verifying');
         let session = null;
         for (let attempt = 0; attempt < 10 && !session; attempt++) {
-          await new Promise(r => setTimeout(r, 250));
+          if (attempt > 0) await new Promise(r => setTimeout(r, 250));
           const { data } = await supabase.auth.getSession();
           session = data.session;
         }
